@@ -17,3 +17,5 @@ Imports:
     httr,
     R6,
     xml2
+URL: https://github.com/zachzIAM/soapr
+BugReports: https://github.com/zachzIAM/soapr/issues
