@@ -1,0 +1,2267 @@
+<?xml version='1.0' encoding='UTF-8'?><!-- Published by JAX-WS RI (http://jax-ws.java.net). RI's version is JAX-WS RI 2.3.0 svn-revision#3528ea595bd29309f69172d231bbce272d21035c. -->
+<wsdl:definitions xmlns:bdti="http://barra.com/cp/bdti" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:xmime="http://www.w3.org/2005/05/xmlmime" xmlns="http://schemas.xmlsoap.org/wsdl/" name="BDTInteractive" targetNamespace="http://barra.com/cp/bdti">
+
+    <wsdl:types>
+
+        <xsd:schema elementFormDefault="qualified" targetNamespace="http://barra.com/cp/bdti">
+
+            <xsd:simpleType name="StreamBody">
+                <xsd:restriction base="xsd:base64Binary"/>
+            </xsd:simpleType>
+
+            <xsd:element name="GetExportJobStream">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="User" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+                        <xsd:element name="Client" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+                        <xsd:element name="Password" type="xsd:string" minOccurs="0" maxOccurs="1"/>
+                        <xsd:element name="JobID" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="GetExportJobStreamResponse">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="GetStreamResult" type="bdti:StreamBody" xmime:expectedContentTypes="application/octet-stream" minOccurs="1" maxOccurs="1"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="Login">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="User" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+                        <xsd:element name="Client" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+                        <xsd:element name="Password" type="xsd:string" minOccurs="0" maxOccurs="1"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="LoginResponse">
+                <xsd:complexType>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="LoginUserAgent">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="User" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+                        <xsd:element name="Client" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+                        <xsd:element name="Password" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+                        <xsd:element name="UserAgent" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="LoginUserAgentResponse">
+                <xsd:complexType>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="GetColumnNames">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="Owner" type="xsd:string" minOccurs="0" maxOccurs="1"/>
+                        <xsd:element name="FullColumnName" type="xsd:boolean" minOccurs="0" maxOccurs="1"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="GetColumnNamesResponse">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="ColumnName" type="xsd:string" minOccurs="1" maxOccurs="unbounded"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="GetCalcServers">
+                <xsd:complexType/>
+            </xsd:element>
+
+            <xsd:element name="GetCalcServersResponse">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="CalcServers" type="xsd:string" minOccurs="1" maxOccurs="unbounded"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="GetPositionsReport">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="Column" type="bdti:Column" minOccurs="1" maxOccurs="unbounded"/>
+                        <xsd:element name="Grouping" type="bdti:Grouping" minOccurs="0" maxOccurs="2"/>
+                        <xsd:element name="CustomizeReportSetting" type="bdti:CustomizeReportSetting" minOccurs="0" maxOccurs="1"/>
+                        <xsd:element name="SortCriteria" type="bdti:SortCriteria" minOccurs="0" maxOccurs="3"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="GetPositionsReportResponse">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="ReportRoot" type="bdti:ReportRoot" minOccurs="1" maxOccurs="1"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="GetPortfolioHistoryReport">
+                <xsd:complexType/>
+            </xsd:element>
+
+            <xsd:element name="GetPortfolioHistoryReportResponse">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="ReportRoot" type="bdti:ReportRoot" minOccurs="1" maxOccurs="1"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="SubmitPositionsReport">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="Column" type="bdti:Column" minOccurs="1" maxOccurs="unbounded"/>
+                        <xsd:element name="ReportSettings" type="bdti:KeyValue" minOccurs="0" maxOccurs="unbounded"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="SubmitPositionsReportResponse">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="ReportReponse" type="bdti:ReportResponse" minOccurs="1" maxOccurs="1"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="SubmitRiskDecompReport">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="Column" type="bdti:Column" minOccurs="1" maxOccurs="unbounded"/>
+                        <xsd:element name="ReportSettings" type="bdti:KeyValue" minOccurs="0" maxOccurs="unbounded"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="SubmitRiskDecompReportResponse">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="ReportReponse" type="bdti:ReportResponse" minOccurs="1" maxOccurs="1"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="SubmitFEBReport">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="ReportSettings" type="bdti:KeyValue" minOccurs="0" maxOccurs="unbounded"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="SubmitFEBReportResponse">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="ReportReponse" type="bdti:ReportResponse" minOccurs="1" maxOccurs="1"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="SubmitStressTestPortfolioReport">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="Column" type="bdti:Column" minOccurs="1" maxOccurs="unbounded"/>
+                        <xsd:element name="Scenarios" type="bdti:NameOwner" minOccurs="1" maxOccurs="unbounded"/>
+                        <xsd:element name="ReportSettings" type="bdti:KeyValue" minOccurs="0" maxOccurs="unbounded"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="SubmitStressTestPortfolioReportResponse">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="ReportReponse" type="bdti:ReportResponse" minOccurs="1" maxOccurs="1"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="SubmitStressTestSummaryReport">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="Column" type="bdti:Column" minOccurs="0" maxOccurs="unbounded"/>
+                        <xsd:element name="Scenarios" type="bdti:NameOwner" minOccurs="1" maxOccurs="unbounded"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="SubmitStressTestSummaryReportResponse">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="ReportReponse" type="bdti:ReportResponse" minOccurs="1" maxOccurs="1"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="SubmitAllocationSelectionReport">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="Column" type="bdti:Column" minOccurs="1" maxOccurs="unbounded"/>
+                        <xsd:element name="ReportSettings" type="bdti:KeyValue" minOccurs="1" maxOccurs="unbounded"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="SubmitAllocationSelectionReportResponse">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="ReportReponse" type="bdti:ReportResponse" minOccurs="1" maxOccurs="1"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="RetrievePositionsReport">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="RequestId" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="RetrievePositionsReportResponse">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="ReportReponse" type="bdti:ReportResponse" minOccurs="1" maxOccurs="1"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="RetrieveReport">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="RequestId" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="RetrieveReportResponse">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="ReportReponse" type="bdti:ReportResponse" minOccurs="1" maxOccurs="1"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="SetCurrentPortfolio">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="PortfolioName" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+                        <xsd:element name="PortfolioOwner" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="SetCurrentPortfolioResponse">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="StatusResponse" type="bdti:StatusResponse" minOccurs="1" maxOccurs="1"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="CheckRequestStatus">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="RequestId" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="CheckRequestStatusResponse">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="StatusResponse" type="bdti:StatusResponse" minOccurs="1" maxOccurs="1"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="SetCurrentSettings">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="CurrentSettings" type="bdti:CurrentSettings" minOccurs="1" maxOccurs="1"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="SetCurrentSettingsResponse">
+                <xsd:complexType/>
+            </xsd:element>
+
+            <xsd:element name="SetCurrentSettingsStoredAnalytics">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="CurrentSettingsStoredAnalytics" type="bdti:CurrentSettingsStoredAnalytics" minOccurs="1" maxOccurs="1"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="SetCurrentSettingsStoredAnalyticsResponse">
+                <xsd:complexType/>
+            </xsd:element>
+
+            <xsd:element name="GetCurrentSettings">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="InclSessionOverride" type="xsd:boolean" minOccurs="1" maxOccurs="1"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="GetCurrentSettingsResponse">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="CurrentSettings" type="bdti:KeyValue" minOccurs="0" maxOccurs="unbounded"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="GetCurrentSettingsStoredAnalytics">
+                <xsd:complexType/>
+            </xsd:element>
+
+            <xsd:element name="GetCurrentSettingsStoredAnalyticsResponse">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="CurrentSettingsStoredAnalytics" type="bdti:KeyValue" minOccurs="0" maxOccurs="unbounded"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="GetCurrentSettingsKeys">
+                <xsd:complexType/>
+            </xsd:element>
+
+            <xsd:element name="GetCurrentSettingsKeysResponse">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="Keys" type="xsd:string" minOccurs="1" maxOccurs="unbounded"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="GetCurrentSettingsKeysStoredAnalytics">
+                <xsd:complexType/>
+            </xsd:element>
+
+            <xsd:element name="GetCurrentSettingsKeysStoredAnalyticsResponse">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="Keys" type="xsd:string" minOccurs="1" maxOccurs="unbounded"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="SetCurrentSettingsKeyVal">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="CurrentSettings" type="bdti:KeyValue" minOccurs="0" maxOccurs="unbounded"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="SetCurrentSettingsKeyValResponse">
+                <xsd:complexType/>
+            </xsd:element>
+
+            <xsd:element name="SetCurrentSettingsKeyValStoredAnalytics">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="CurrentSettingsStoredAnalytics" type="bdti:KeyValue" minOccurs="0" maxOccurs="unbounded"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="SetCurrentSettingsKeyValStoredAnalyticsResponse">
+                <xsd:complexType/>
+            </xsd:element>
+
+            <xsd:element name="GetReportSettings">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="ReportName" type="bdti:ReportName" minOccurs="0" maxOccurs="1"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+
+            </xsd:element>
+
+            <xsd:element name="GetReportSettingsResponse">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="KeyDefault" type="bdti:KeyValue" minOccurs="1" maxOccurs="unbounded"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+
+            <xsd:element name="GetFilters">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="FilterType" type="bdti:FilterType" minOccurs="0" maxOccurs="1"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="GetFiltersResponse">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="Filter" type="xsd:string" minOccurs="1" maxOccurs="unbounded"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="GetFactorTree">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="Filter" type="xsd:string" minOccurs="0" maxOccurs="1"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="GetFactorTreeResponse">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="FactorTree" type="bdti:NameOwner" minOccurs="0" maxOccurs="unbounded"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="GetScenarioNames">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="Filter" type="xsd:string" minOccurs="0" maxOccurs="1"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="GetScenarioNamesResponse">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="Scenario" type="bdti:NameOwner" minOccurs="0" maxOccurs="unbounded"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="GetPortfolioTreeFilters">
+                <xsd:complexType>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="GetPortfolioTreeFiltersResponse">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="Filter" type="xsd:string" minOccurs="1" maxOccurs="unbounded"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="GetPortfolioTree">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="Filter" type="xsd:string" minOccurs="0" maxOccurs="1"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="GetPortfolioTreeResponse">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="Folder" type="bdti:Folder" minOccurs="0" maxOccurs="unbounded"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="GetPortfolioTreeStoredAnalytics">
+                <xsd:complexType>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="GetPortfolioTreeStoredAnalyticsResponse">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="StoredAnalyticsFolder" type="bdti:StoredAnalyticsFolder" minOccurs="0" maxOccurs="unbounded"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="SetCurrentPortfolioStoredAnalytics">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="StoredAnalyticsFolder" type="bdti:StoredAnalyticsFolder" minOccurs="1" maxOccurs="1"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="SetCurrentPortfolioStoredAnalyticsResponse">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="StatusResponse" type="bdti:StatusResponse" minOccurs="1" maxOccurs="1"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="GetModelFilters">
+                <xsd:complexType>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="GetModelFiltersResponse">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="Filter" type="xsd:string" minOccurs="1" maxOccurs="unbounded"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="GetModels">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="Filter" type="xsd:string" minOccurs="0" maxOccurs="1"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="GetModelsResponse">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="Model" type="bdti:Model" minOccurs="0" maxOccurs="unbounded"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="SetModel">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="Model" type="bdti:Model" minOccurs="0" maxOccurs="1"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="SetModelResponse">
+                <xsd:complexType/>
+            </xsd:element>
+
+            <xsd:element name="GetCurrentSessionModel">
+                <xsd:complexType/>
+            </xsd:element>
+
+            <xsd:element name="GetCurrentSessionModelResponse">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="Model" type="bdti:Model" minOccurs="1" maxOccurs="1"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="SetAdHocPortfolio">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="Portfolio" type="bdti:Portfolio" minOccurs="1" maxOccurs="1"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="SetAdHocPortfolioResponse">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="RejectedAsset" type="bdti:RejectedAsset" minOccurs="0" maxOccurs="unbounded"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="SavePortfolio">
+                <xsd:complexType>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="SavePortfolioResponse">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="SaveSummary" type="bdti:SaveSummary" minOccurs="1" maxOccurs="1"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="SavePortfolioAs">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="PortfolioName" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+                        <xsd:element name="SaveOptions" type="bdti:SaveOptions" minOccurs="0" maxOccurs="1"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="SavePortfolioAsResponse">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="SaveSummary" type="bdti:SaveSummary" minOccurs="1" maxOccurs="1"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="GetAnalysisDate">
+                <xsd:complexType>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="GetAnalysisDateResponse">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="AnalysisDate" type="xsd:date" minOccurs="1" maxOccurs="1"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="SetAnalysisDate">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="AnalysisDate" type="xsd:date" minOccurs="1" maxOccurs="1"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="SetAnalysisDateResponse">
+                <xsd:complexType>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="GetSystemDates">
+                <xsd:complexType>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="GetSystemDatesResponse">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="SystemDates" type="bdti:SystemDates" minOccurs="1" maxOccurs="1"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="ModifyPortfolio">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="Holding" type="bdti:Holding" minOccurs="1" maxOccurs="unbounded"/>
+                        <xsd:element name="ModType" type="bdti:ModType" minOccurs="1" maxOccurs="1"/> <!-- Only one modification type at a time -->
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="ModifyPortfolioResponse">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="RejectedAsset" type="bdti:RejectedAsset" minOccurs="0" maxOccurs="unbounded"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="GetGroupings">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="Column" type="bdti:Column" minOccurs="1" maxOccurs="unbounded"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="GetGroupingsResponse">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="Grouping" type="bdti:Grouping" minOccurs="0" maxOccurs="unbounded"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="Logout">
+                <xsd:complexType>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="LogoutResponse">
+                <xsd:complexType>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="GetReportColumnName">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="ReportName" type="bdti:ReportName" minOccurs="1" maxOccurs="1"/>
+                        <xsd:element name="Owner" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+                        <xsd:element name="FullColumnName" type="xsd:boolean" minOccurs="0" maxOccurs="1"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="GetReportColumnNameResponse">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="Column" type="xsd:string" minOccurs="1" maxOccurs="unbounded"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="GetFactorTypes">
+                <xsd:complexType/>
+            </xsd:element>
+
+            <xsd:element name="GetFactorTypesResponse">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="FactorTypes" type="xsd:string" minOccurs="1" maxOccurs="unbounded"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="GetFactorGroupings">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="FactorTypes" type="xsd:string" minOccurs="0" maxOccurs="unbounded"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="GetFactorGroupingsResponse">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="Grouping" type="bdti:Grouping" minOccurs="0" maxOccurs="unbounded"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="GetLocalMarket">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="LocalMarketGroupingName" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="GetLocalMarketResponse">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="LocalMarketGroup" type="xsd:string" minOccurs="0" maxOccurs="unbounded"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="GetLocalMarketGrouping">
+                <xsd:complexType/>
+            </xsd:element>
+
+            <xsd:element name="GetLocalMarketGroupingResponse">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="LocalMarketGroupingName" type="xsd:string" minOccurs="0" maxOccurs="unbounded"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:simpleType name="ReportName">
+                <xsd:restriction base="xsd:string">
+                    <xsd:enumeration value="Positions"/>
+                    <xsd:enumeration value="RiskDecomposition"/>
+                    <xsd:enumeration value="FactorExposureBreakdown"/>
+                    <xsd:enumeration value="StressTestPositions"/>
+                    <xsd:enumeration value="AllocationSelection"/>
+                    <xsd:enumeration value="StressTestSummary"/>
+                </xsd:restriction>
+            </xsd:simpleType>
+
+            <xsd:simpleType name="FilterType">
+                <xsd:restriction base="xsd:string">
+                    <xsd:enumeration value="PortfolioTree"/>
+                    <xsd:enumeration value="Model"/>
+                    <xsd:enumeration value="FactorTree"/>
+                    <xsd:enumeration value="Scenario"/>
+                </xsd:restriction>
+            </xsd:simpleType>
+
+            <xsd:complexType name="Folder">
+                <xsd:sequence>
+                    <xsd:element name="PfNode" type="bdti:PfNode" minOccurs="1" maxOccurs="unbounded"/>
+                </xsd:sequence>
+                <xsd:attribute name="Owner" type="xsd:string" use="required"/>
+                <xsd:attribute name="Path" type="xsd:string" use="required"/>
+            </xsd:complexType>
+
+            <xsd:complexType name="StoredAnalyticsFolder">
+                <xsd:attribute name="PortfolioName" type="xsd:string" use="required"/>
+                <xsd:attribute name="BenchmarkPortfolioName" type="xsd:string" use="required"/>
+                <xsd:attribute name="RiskModel" type="xsd:string" use="required"/>
+                <xsd:attribute name="Notional" type="xsd:boolean" use="required"/>
+                <xsd:attribute name="AnalysisDate" type="xsd:date" use="required"/>
+                <xsd:attribute name="CreationDate" type="xsd:date" use="required"/>
+            </xsd:complexType>
+
+            <xsd:complexType name="PfNode">
+                <xsd:sequence>
+                    <xsd:element name="PfNode" type="bdti:PfNode" minOccurs="0" maxOccurs="unbounded"/>
+                </xsd:sequence>
+                <xsd:attribute name="Type" type="bdti:PfNodeType" use="required"/>
+                <xsd:attribute name="Name" type="xsd:string" use="required"/>
+                <xsd:attribute name="Description" type="xsd:string" use="optional"/>
+            </xsd:complexType>
+
+            <xsd:simpleType name="PfNodeType">
+                <xsd:restriction base="xsd:string">
+                    <xsd:enumeration value="PORTFOLIO"/>
+                    <xsd:enumeration value="DYNAMIC"/>
+                    <xsd:enumeration value="SHORTCUT"/>
+                    <xsd:enumeration value="AGGREGATE"/>
+                </xsd:restriction>
+            </xsd:simpleType>
+
+            <xsd:complexType name="NameOwner">
+                <xsd:attribute name="Name" type="xsd:string" use="required"/>
+                <xsd:attribute name="Owner" type="xsd:string" use="required"/>
+            </xsd:complexType>
+
+            <xsd:complexType name="Portfolio">
+                <xsd:sequence>
+                    <xsd:element name="Pos" type="bdti:Position" minOccurs="1" maxOccurs="unbounded"/>
+                </xsd:sequence>
+                <xsd:attribute name="Type" type="bdti:PortfolioType" use="required"/>
+                <xsd:attribute name="PortfolioValue" type="xsd:double" use="optional"/>
+                <xsd:attribute name="PortfolioCurrency" type="xsd:string" use="optional"/>
+            </xsd:complexType>
+
+            <xsd:complexType name="Position">
+                <xsd:sequence>
+                    <xsd:element name="MID" type="bdti:MID" minOccurs="1" maxOccurs="unbounded"/>
+                </xsd:sequence>
+                <xsd:attribute name="Value" type="xsd:double" use="required"/>
+                <xsd:attribute name="Currency" type="xsd:string" use="optional"/>
+            </xsd:complexType>
+
+            <xsd:complexType name="MID">
+                <xsd:attribute name="ID" type="xsd:string" use="required"/>
+                <xsd:attribute name="IDType" type="xsd:string" use="required"/>
+            </xsd:complexType>
+
+            <xsd:simpleType name="PortfolioType">
+                <xsd:restriction base="xsd:string">
+                    <xsd:enumeration value="HOLDINGS"/>
+                    <xsd:enumeration value="WEIGHT"/>
+                    <xsd:enumeration value="VALUE"/>
+                </xsd:restriction>
+            </xsd:simpleType>
+
+            <xsd:simpleType name="StorageType">
+                <xsd:restriction base="xsd:string">
+                    <xsd:enumeration value="HOLDINGS"/>
+                    <xsd:enumeration value="VALUE"/>
+                </xsd:restriction>
+            </xsd:simpleType>
+
+            <xsd:complexType name="RejectedAsset">
+                <xsd:attribute name="Reason" type="xsd:string" use="required"/>
+                <xsd:attribute name="ID" type="xsd:string" use="required"/>
+                <xsd:attribute name="IDType" type="xsd:string" use="required"/>
+            </xsd:complexType>
+
+            <xsd:complexType name="SaveOptions">
+                <xsd:attribute name="UnpackEIFs" type="xsd:boolean" use="required"/>
+                <xsd:attribute name="UnpackCompositesAndETFs" type="xsd:boolean" use="required"/>
+                <xsd:attribute name="StorageType" type="bdti:StorageType" use="required"/>
+            </xsd:complexType>
+
+            <xsd:complexType name="SaveSummary">
+                <xsd:attribute name="PortfolioOwner" type="xsd:string" use="required"/>
+                <xsd:attribute name="PortfolioName" type="xsd:string" use="required"/>
+                <xsd:attribute name="AnalysisDate" type="xsd:date" use="required"/>
+                <xsd:attribute name="RecordsWritten" type="xsd:int" use="required"/>
+            </xsd:complexType>
+
+            <xsd:complexType name="SystemDates">
+                <xsd:attribute name="LatestFinalizedMonthEndDate" type="xsd:date" use="required"/>
+                <xsd:attribute name="LatestFinalizedDate" type="xsd:date" use="required"/>
+                <xsd:attribute name="LatestAnalysisDate" type="xsd:date" use="required"/>
+            </xsd:complexType>
+            <xsd:element name="ReportRoot" type="bdti:ReportRoot"/>
+
+            <xsd:complexType name="ReportRoot">
+                <xsd:sequence>
+                    <xsd:element name="Report" type="bdti:Report" minOccurs="1" maxOccurs="unbounded"/>
+                </xsd:sequence>
+            </xsd:complexType>
+
+            <xsd:complexType name="Report">
+                <xsd:sequence>
+                    <xsd:element name="ReportDefinition" type="bdti:ReportDefinition" minOccurs="1" maxOccurs="1"/>
+                    <xsd:element name="ReportBody" type="bdti:ReportBody" minOccurs="1" maxOccurs="1"/>
+                </xsd:sequence>
+                <xsd:attribute name="Name" type="xsd:string" use="optional"/>
+            </xsd:complexType>
+
+            <xsd:complexType name="ReportDefinition">
+                <xsd:sequence>
+                    <xsd:element ref="bdti:GroupDefinition" minOccurs="0" maxOccurs="unbounded"/>
+                    <xsd:element name="ColDefinition" type="bdti:ColDefinition" minOccurs="1" maxOccurs="unbounded"/>
+                </xsd:sequence>
+            </xsd:complexType>
+
+            <xsd:element name="GroupDefinition">
+                <xsd:complexType>
+                    <xsd:simpleContent>
+                        <xsd:extension base="xsd:string">
+                            <xsd:attribute name="Bucket" type="xsd:string" use="required"/>
+                            <xsd:attribute name="Owner" type="xsd:string" use="required"/>
+                            <xsd:attribute name="Name" type="xsd:string" use="required"/>
+                        </xsd:extension>
+                    </xsd:simpleContent>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:complexType name="ColDefinition">
+                <xsd:sequence>
+                    <xsd:element ref="bdti:ColDefData" minOccurs="0" maxOccurs="unbounded"/>
+                </xsd:sequence>
+                <xsd:attribute name="Name" type="xsd:string" use="required"/>
+            </xsd:complexType>
+
+            <xsd:element name="ColDefData">
+                <xsd:complexType>
+                    <xsd:simpleContent>
+                        <xsd:extension base="xsd:string">
+                            <xsd:attribute name="Type" type="xsd:string" use="required"/>
+                            <xsd:attribute name="Owner" type="xsd:string" use="required"/>
+                            <xsd:attribute name="Name" type="xsd:string" use="required"/>
+                        </xsd:extension>
+                    </xsd:simpleContent>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:complexType name="ReportBody">
+                <xsd:sequence>
+                    <xsd:element name="Row" type="bdti:Row" minOccurs="0" maxOccurs="unbounded"/>
+                    <xsd:element name="ReportGroup" type="bdti:ReportGroup" minOccurs="0" maxOccurs="unbounded"/>
+                </xsd:sequence>
+            </xsd:complexType>
+
+            <xsd:complexType name="ReportGroup">
+                <xsd:sequence>
+                    <xsd:element name="ReportGroup" type="bdti:ReportGroup" minOccurs="0" maxOccurs="unbounded"/>
+                    <xsd:element name="Row" type="bdti:Row" minOccurs="0" maxOccurs="unbounded"/>
+                </xsd:sequence>
+                <xsd:attribute name="DisplayName" type="xsd:string" use="required"/>
+                <xsd:attribute name="Bucket" type="xsd:string" use="required"/>
+                <xsd:attribute name="Owner" type="xsd:string" use="required"/>
+                <xsd:attribute name="Name" type="xsd:string" use="required"/>
+            </xsd:complexType>
+
+            <xsd:complexType name="Row">
+                <xsd:sequence>
+                    <xsd:element name="Cell" type="bdti:Cell" minOccurs="0" maxOccurs="unbounded"/>
+                </xsd:sequence>
+                <xsd:attribute name="ColDef" type="xsd:string" use="required"/>
+                <xsd:attribute name="IsTotalRow" type="xsd:boolean" use="optional" default="false"/>
+            </xsd:complexType>
+
+            <xsd:complexType name="Cell">
+                <xsd:attribute name="Val" type="xsd:string" use="required"/>
+            </xsd:complexType>
+
+            <xsd:complexType name="SortCriteria">
+                <xsd:attribute name="SortKeyName" type="xsd:string" use="required"/>
+                <xsd:attribute name="SortKeyOwner" type="xsd:string" use="required"/>
+                <xsd:attribute name="Ascending" type="xsd:boolean" use="required"/>
+            </xsd:complexType>
+
+            <xsd:complexType name="Grouping">
+                <xsd:attribute name="Name" type="xsd:string" use="required"/>
+                <xsd:attribute name="Owner" type="xsd:string" use="required"/>
+                <xsd:attribute name="Bucket" type="xsd:string" use="required"/>
+            </xsd:complexType>
+
+            <xsd:complexType name="CurrentSettings">
+                <xsd:attribute name="Benchmark" type="xsd:string" use="optional"/>
+                <xsd:attribute name="BenchmarkOwner" type="xsd:string" use="optional"/>
+                <xsd:attribute name="Market" type="xsd:string" use="optional"/>
+                <xsd:attribute name="MarketOwner" type="xsd:string" use="optional"/>
+                <xsd:attribute name="Universe" type="xsd:string" use="optional"/>
+                <xsd:attribute name="UniverseOwner" type="xsd:string" use="optional"/>
+
+				<xsd:attribute name="RebalanceProfile" type="xsd:string" use="optional"/>
+                <xsd:attribute name="RebalanceProfileOwner" type="xsd:string" use="optional"/>
+
+                <xsd:attribute name="BaseCurrency" type="xsd:string" use="optional"/>
+                <xsd:attribute name="BaseValueType" type="bdti:BaseValueType" use="optional"/>
+                <xsd:attribute name="AssignedBaseValue" type="xsd:double" use="optional"/>
+                <xsd:attribute name="AssignedBaseTimeSeriesAttribute" type="xsd:string" use="optional"/>
+                <xsd:attribute name="AssignedBaseTimeSeriesAttributeOwner" type="xsd:string" use="optional"/>
+                <xsd:attribute name="IsBalanceCurrency" type="xsd:boolean" use="optional"/>
+
+                <xsd:attribute name="ParamVarHorizon" type="xsd:int" use="optional"/>
+                <xsd:attribute name="ParamVarConfidenceLevel" type="xsd:double" use="optional"/>
+
+                <xsd:attribute name="SimulationVarLimitCurUnit" type="xsd:double" use="optional"/>
+                <xsd:attribute name="SimulationVarLimitMultiplier" type="xsd:double" use="optional"/>
+                <xsd:attribute name="LossTarget" type="xsd:double" use="optional"/>
+
+                <xsd:attribute name="CurrencyHedgingBenchmark" type="xsd:boolean" use="optional"/>
+                <xsd:attribute name="CurrencyHedgingBenchmarkIsNumeraire" type="xsd:boolean" use="optional"/>
+                <xsd:attribute name="CurrencyHedgingBenchmarkCurrency" type="xsd:string" use="optional"/>
+                <xsd:attribute name="CurrencyHedgingBenchmarkPercentage" type="xsd:double" use="optional"/>
+
+                <xsd:attribute name="CurrencyHedgingPortfolio" type="xsd:boolean" use="optional"/>
+                <xsd:attribute name="CurrencyHedgingPortfolioIsNumeraire" type="xsd:boolean" use="optional"/>
+                <xsd:attribute name="CurrencyHedgingPortfolioCurrency" type="xsd:string" use="optional"/>
+                <xsd:attribute name="CurrencyHedgingPortfolioPercentage" type="xsd:double" use="optional"/>
+
+	            <xsd:attribute name="NetLeverageHedgingCutOff" type="xsd:double" use="optional"/>
+            </xsd:complexType>
+
+            <xsd:complexType name="CurrentSettingsStoredAnalytics">
+                <xsd:attribute name="BaseCurrency" type="xsd:string" use="optional"/>
+                <xsd:attribute name="BaseValueType" type="bdti:BaseValueType" use="optional"/>
+                <xsd:attribute name="AssignedBaseValue" type="xsd:double" use="optional"/>
+                <xsd:attribute name="IsBalanceCurrency" type="xsd:boolean" use="optional"/>
+
+                <xsd:attribute name="ParamVarHorizon" type="xsd:int" use="optional"/>
+                <xsd:attribute name="ParamVarConfidenceLevel" type="xsd:double" use="optional"/>
+
+                <xsd:attribute name="LossTarget" type="xsd:double" use="optional"/>
+
+                <xsd:attribute name="CurrencyHedgingPortfolio" type="xsd:boolean" use="optional"/>
+                <xsd:attribute name="CurrencyHedgingPortfolioIsNumeraire" type="xsd:boolean" use="optional"/>
+                <xsd:attribute name="CurrencyHedgingPortfolioCurrency" type="xsd:string" use="optional"/>
+                <xsd:attribute name="CurrencyHedgingPortfolioPercentage" type="xsd:double" use="optional"/>
+            </xsd:complexType>
+
+            <xsd:simpleType name="BaseValueType">
+                <xsd:restriction base="xsd:string">
+                	<xsd:enumeration value="ASSIGNEDSERIES"/>
+                    <xsd:enumeration value="ASSIGNED"/>
+                    <xsd:enumeration value="LONG"/>
+                    <xsd:enumeration value="LONG+SHORT"/>
+                    <xsd:enumeration value="NET"/>
+                </xsd:restriction>
+            </xsd:simpleType>
+
+            <xsd:complexType name="CustomizeReportSetting">
+                <xsd:attribute name="InclBenchmarkNotHeld" type="xsd:boolean" use="optional" default="false"/>
+                <xsd:attribute name="LookThruEIF" type="xsd:boolean" use="optional" default="false"/>
+                <xsd:attribute name="LookThruComposites" type="xsd:boolean" use="optional" default="false"/>
+                <xsd:attribute name="LookThruSelectiveComposites" type="xsd:boolean" use="optional" default="false"/>
+                <xsd:attribute name="InheritCTDBondFuture" type="xsd:boolean" use="optional" default="false"/>
+                <xsd:attribute name="InheritCTDBondFutureOption" type="xsd:boolean" use="optional" default="false"/>
+                <xsd:attribute name="IsGlobalGroupingMode" type="xsd:boolean" use="optional" default="true"/>
+                <xsd:attribute name="DataRows" type="xsd:boolean" use="optional" default="true"/>
+    			<xsd:attribute name="ResidualReturnContribution" type="xsd:boolean" use="optional" default="false"/>
+                <xsd:attribute name="LookThruCompositesWithoutETF" type="xsd:boolean" use="optional" default="false"/>
+                <xsd:attribute name="LookThruETF" type="xsd:boolean" use="optional" default="false"/>
+                <xsd:attribute name="LookThruFX" type="xsd:boolean" use="optional" default="false"/>
+                <xsd:attribute name="LookThruEquityOption" type="xsd:boolean" use="optional" default="false"/>
+                <xsd:attribute name="LookThruStyle" type="bdti:LookThruStyleType" use="optional"/>
+                <xsd:attribute name="LookThruTotalReturnSwap" type="xsd:boolean" use="optional" default="false"/>
+                <xsd:attribute name="LookThruTenderOptionBond" type="xsd:boolean" use="optional" default="false"/>
+                <xsd:attribute name="LookThruCDS" type="xsd:boolean" use="optional" default="false"/>
+                <xsd:attribute name="SelectiveLTConfig" type="xsd:string" use="optional" default=""/>
+            </xsd:complexType>
+
+            <xsd:complexType name="Column">
+                <xsd:attribute name="Name" type="xsd:string" use="required"/>
+                <xsd:attribute name="Owner" type="xsd:string" use="required"/>
+            </xsd:complexType>
+
+            <xsd:complexType name="Holding">
+                <xsd:attribute name="ID" type="xsd:string" use="required"/>
+                <xsd:attribute name="IDType" type="xsd:string" use="required"/>
+                <xsd:attribute name="Value" type="xsd:double" use="optional"/> <!--share or weight can be 0 or empty -->
+                <xsd:attribute name="ModValueType" type="bdti:ModValueType" use="optional"/> <!-- share or weight for MODIFY call -->
+            </xsd:complexType>
+
+            <xsd:simpleType name="ModType">
+                <xsd:restriction base="xsd:string">
+                    <xsd:enumeration value="ADD"/>
+                    <xsd:enumeration value="DELETE"/>
+                    <xsd:enumeration value="MODIFY"/>
+                </xsd:restriction>
+            </xsd:simpleType>
+
+            <xsd:simpleType name="ModValueType">
+                <xsd:restriction base="xsd:string">
+                    <xsd:enumeration value="SHARE"/>
+                    <xsd:enumeration value="WEIGHT"/>
+                </xsd:restriction>
+            </xsd:simpleType>
+
+            <xsd:complexType name="KeyValue">
+                <xsd:attribute name="Key" type="xsd:string" use="required"/>
+                <xsd:attribute name="Value" type="xsd:string" use="required"/>
+            </xsd:complexType>
+
+            <xsd:complexType name="ReportResponse">
+                <xsd:sequence>
+                    <xsd:element name="RequestId" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+                    <xsd:element name="IsDone" type="xsd:boolean" minOccurs="1" maxOccurs="1"/>
+                    <xsd:element name="ReportRoot" type="bdti:ReportRoot" minOccurs="0" maxOccurs="1"/>
+                </xsd:sequence>
+            </xsd:complexType>
+
+            <xsd:complexType name="StatusResponse">
+                <xsd:sequence>
+                    <xsd:element name="IsDone" type="xsd:boolean" minOccurs="1" maxOccurs="1"/>
+                    <xsd:element name="RequestId" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+                </xsd:sequence>
+            </xsd:complexType>
+
+            <xsd:complexType name="Model">
+                <xsd:attribute name="Name" type="xsd:string" use="required"/>
+                <xsd:attribute name="Owner" type="xsd:string" use="required"/>
+                <xsd:attribute name="CovarianceDate" type="xsd:date" use="optional"/>
+                <xsd:attribute name="CovarianceDateSupport" type="xsd:boolean" use="optional"/>
+            </xsd:complexType>
+
+            <xsd:simpleType name="CurrencyExposure">
+                <xsd:restriction base="xsd:string">
+                    <xsd:enumeration value="Total"/>
+                    <xsd:enumeration value="Implicit"/>
+                    <xsd:enumeration value="Explicit"/>
+                </xsd:restriction>
+            </xsd:simpleType>
+
+            <xsd:simpleType name="LookThruStyleType">
+                <xsd:restriction base="xsd:string">
+                    <xsd:enumeration value="CollapseAsset"/>
+                    <xsd:enumeration value="PreserveTreeStructure"/>
+                    <xsd:enumeration value="PreserveTreeAndSourceStructure"/>
+                    <xsd:enumeration value="CollapseLevel1"/>
+                    <xsd:enumeration value="CollapseLevel2"/>
+                    <xsd:enumeration value="CollapseLevel3"/>
+                    <xsd:enumeration value="CollapseLevel4"/>
+                    <xsd:enumeration value="CollapseLevel5"/>
+                    <xsd:enumeration value="CollapseLevel6"/>
+                    <xsd:enumeration value="CollapseLevel7"/>
+                    <xsd:enumeration value="CollapseLevel8"/>
+                    <xsd:enumeration value="CollapseLevel9"/>
+                    <xsd:enumeration value="CollapseLevel10"/>
+                    <xsd:enumeration value="PreserveTreeStructureAndSrcPath"/>
+                </xsd:restriction>
+            </xsd:simpleType>
+
+
+            <xsd:element name="GetCurrentVersion">
+                <xsd:complexType/>
+            </xsd:element>
+
+            <xsd:element name="GetCurrentVersionResponse">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="version" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+        </xsd:schema>
+    </wsdl:types>
+
+    <wsdl:message name="GetExportJobStreamInputMessage">
+        <wsdl:part name="parameters" element="bdti:GetExportJobStream"/>
+    </wsdl:message>
+    <wsdl:message name="GetExportJobStreamOutputMessage">
+        <wsdl:part name="parameters" element="bdti:GetExportJobStreamResponse"/>
+    </wsdl:message>
+    <wsdl:message name="LoginInputMessage">
+        <wsdl:part name="parameters" element="bdti:Login"/>
+    </wsdl:message>
+    <wsdl:message name="LoginOutputMessage">
+        <wsdl:part name="parameters" element="bdti:LoginResponse"/>
+    </wsdl:message>
+    <wsdl:message name="LoginUserAgentInputMessage">
+        <wsdl:part name="parameters" element="bdti:LoginUserAgent"/>
+    </wsdl:message>
+    <wsdl:message name="LoginUserAgentOutputMessage">
+        <wsdl:part name="parameters" element="bdti:LoginUserAgentResponse"/>
+    </wsdl:message>
+    <wsdl:message name="GetColumnNamesInputMessage">
+        <wsdl:part name="parameters" element="bdti:GetColumnNames"/>
+    </wsdl:message>
+    <wsdl:message name="GetColumnNamesOutputMessage">
+        <wsdl:part name="parameters" element="bdti:GetColumnNamesResponse"/>
+    </wsdl:message>
+    <wsdl:message name="GetCalcServersInputMessage">
+        <wsdl:part name="parameters" element="bdti:GetCalcServers"/>
+    </wsdl:message>
+    <wsdl:message name="GetCalcServersOutputMessage">
+        <wsdl:part name="parameters" element="bdti:GetCalcServersResponse"/>
+    </wsdl:message>
+    <wsdl:message name="GetPositionsReportInputMessage">
+        <wsdl:part name="parameters" element="bdti:GetPositionsReport"/>
+    </wsdl:message>
+    <wsdl:message name="GetPositionsReportOutputMessage">
+        <wsdl:part name="parameters" element="bdti:GetPositionsReportResponse"/>
+    </wsdl:message>
+    <wsdl:message name="GetPortfolioHistoryReportInputMessage">
+        <wsdl:part name="parameters" element="bdti:GetPortfolioHistoryReport"/>
+    </wsdl:message>
+    <wsdl:message name="GetPortfolioHistoryReportOutputMessage">
+        <wsdl:part name="parameters" element="bdti:GetPortfolioHistoryReportResponse"/>
+    </wsdl:message>
+    <wsdl:message name="SubmitPositionsReportInputMessage">
+        <wsdl:part name="parameters" element="bdti:SubmitPositionsReport"/>
+    </wsdl:message>
+    <wsdl:message name="SubmitPositionsReportOutputMessage">
+        <wsdl:part name="parameters" element="bdti:SubmitPositionsReportResponse"/>
+    </wsdl:message>
+    <wsdl:message name="SubmitRiskDecompReportInputMessage">
+        <wsdl:part name="parameters" element="bdti:SubmitRiskDecompReport"/>
+    </wsdl:message>
+    <wsdl:message name="SubmitRiskDecompReportOutputMessage">
+        <wsdl:part name="parameters" element="bdti:SubmitRiskDecompReportResponse"/>
+    </wsdl:message>
+    <wsdl:message name="SubmitFEBReportInputMessage">
+        <wsdl:part name="parameters" element="bdti:SubmitFEBReport"/>
+    </wsdl:message>
+    <wsdl:message name="SubmitFEBReportOutputMessage">
+        <wsdl:part name="parameters" element="bdti:SubmitFEBReportResponse"/>
+    </wsdl:message>
+    <wsdl:message name="SubmitStressTestPortfolioReportInputMessage">
+        <wsdl:part name="parameters" element="bdti:SubmitStressTestPortfolioReport"/>
+    </wsdl:message>
+    <wsdl:message name="SubmitStressTestPortfolioReportOutputMessage">
+        <wsdl:part name="parameters" element="bdti:SubmitStressTestPortfolioReportResponse"/>
+    </wsdl:message>
+
+    <wsdl:message name="SubmitStressTestSummaryReportInputMessage">
+        <wsdl:part name="parameters" element="bdti:SubmitStressTestSummaryReport"/>
+    </wsdl:message>
+    <wsdl:message name="SubmitStressTestSummaryReportOutputMessage">
+        <wsdl:part name="parameters" element="bdti:SubmitStressTestSummaryReportResponse"/>
+    </wsdl:message>
+
+    <wsdl:message name="SubmitAllocationSelectionReportInputMessage">
+        <wsdl:part name="parameters" element="bdti:SubmitAllocationSelectionReport"/>
+    </wsdl:message>
+    <wsdl:message name="SubmitAllocationSelectionReportOutputMessage">
+        <wsdl:part name="parameters" element="bdti:SubmitAllocationSelectionReportResponse"/>
+    </wsdl:message>
+    <wsdl:message name="RetrievePositionsReportInputMessage">
+        <wsdl:part name="parameters" element="bdti:RetrievePositionsReport"/>
+    </wsdl:message>
+    <wsdl:message name="RetrievePositionsReportOutputMessage">
+        <wsdl:part name="parameters" element="bdti:RetrievePositionsReportResponse"/>
+    </wsdl:message>
+    <wsdl:message name="RetrieveReportInputMessage">
+        <wsdl:part name="parameters" element="bdti:RetrieveReport"/>
+    </wsdl:message>
+    <wsdl:message name="RetrieveReportOutputMessage">
+        <wsdl:part name="parameters" element="bdti:RetrieveReportResponse"/>
+    </wsdl:message>
+    <wsdl:message name="CheckRequestStatusInputMessage">
+        <wsdl:part name="parameters" element="bdti:CheckRequestStatus"/>
+    </wsdl:message>
+    <wsdl:message name="CheckRequestStatusOutputMessage">
+        <wsdl:part name="parameters" element="bdti:CheckRequestStatusResponse"/>
+    </wsdl:message>
+    <wsdl:message name="SetCurrentPortfolioInputMessage">
+        <wsdl:part name="parameters" element="bdti:SetCurrentPortfolio"/>
+    </wsdl:message>
+    <wsdl:message name="SetCurrentPortfolioOutputMessage">
+        <wsdl:part name="parameters" element="bdti:SetCurrentPortfolioResponse"/>
+    </wsdl:message>
+    <wsdl:message name="SetCurrentSettingsInputMessage">
+        <wsdl:part name="parameters" element="bdti:SetCurrentSettings"/>
+    </wsdl:message>
+    <wsdl:message name="SetCurrentSettingsOutputMessage">
+        <wsdl:part name="parameters" element="bdti:SetCurrentSettingsResponse"/>
+    </wsdl:message>
+
+    <wsdl:message name="SetCurrentSettingsStoredAnalyticsInputMessage">
+        <wsdl:part name="parameters" element="bdti:SetCurrentSettingsStoredAnalytics"/>
+    </wsdl:message>
+    <wsdl:message name="SetCurrentSettingsStoredAnalyticsOutputMessage">
+        <wsdl:part name="parameters" element="bdti:SetCurrentSettingsStoredAnalyticsResponse"/>
+    </wsdl:message>
+
+    <wsdl:message name="GetCurrentSettingsInputMessage">
+        <wsdl:part name="parameters" element="bdti:GetCurrentSettings"/>
+    </wsdl:message>
+    <wsdl:message name="GetCurrentSettingsOutputMessage">
+        <wsdl:part name="parameters" element="bdti:GetCurrentSettingsResponse"/>
+    </wsdl:message>
+
+    <wsdl:message name="GetCurrentSettingsStoredAnalyticsInputMessage">
+        <wsdl:part name="parameters" element="bdti:GetCurrentSettingsStoredAnalytics"/>
+    </wsdl:message>
+    <wsdl:message name="GetCurrentSettingsStoredAnalyticsOutputMessage">
+        <wsdl:part name="parameters" element="bdti:GetCurrentSettingsStoredAnalyticsResponse"/>
+    </wsdl:message>
+
+    <wsdl:message name="GetCurrentSettingsKeysInputMessage">
+        <wsdl:part name="parameters" element="bdti:GetCurrentSettingsKeys"/>
+    </wsdl:message>
+    <wsdl:message name="GetCurrentSettingsKeysOutputMessage">
+        <wsdl:part name="parameters" element="bdti:GetCurrentSettingsKeysResponse"/>
+    </wsdl:message>
+
+    <wsdl:message name="GetCurrentSettingsKeysStoredAnalyticsInputMessage">
+        <wsdl:part name="parameters" element="bdti:GetCurrentSettingsKeysStoredAnalytics"/>
+    </wsdl:message>
+    <wsdl:message name="GetCurrentSettingsKeysStoredAnalyticsOutputMessage">
+        <wsdl:part name="parameters" element="bdti:GetCurrentSettingsKeysStoredAnalyticsResponse"/>
+    </wsdl:message>
+
+    <wsdl:message name="SetCurrentSettingsKeyValInputMessage">
+        <wsdl:part name="parameters" element="bdti:SetCurrentSettingsKeyVal"/>
+    </wsdl:message>
+    <wsdl:message name="SetCurrentSettingsKeyValOutputMessage">
+        <wsdl:part name="parameters" element="bdti:SetCurrentSettingsKeyValResponse"/>
+    </wsdl:message>
+
+    <wsdl:message name="SetCurrentSettingsKeyValStoredAnalyticsInputMessage">
+        <wsdl:part name="parameters" element="bdti:SetCurrentSettingsKeyValStoredAnalytics"/>
+    </wsdl:message>
+    <wsdl:message name="SetCurrentSettingsKeyValStoredAnalyticsOutputMessage">
+        <wsdl:part name="parameters" element="bdti:SetCurrentSettingsKeyValStoredAnalyticsResponse"/>
+    </wsdl:message>
+
+    <wsdl:message name="GetReportSettingsInputMessage">
+        <wsdl:part name="parameters" element="bdti:GetReportSettings"/>
+    </wsdl:message>
+    <wsdl:message name="GetReportSettingsOutputMessage">
+        <wsdl:part name="parameters" element="bdti:GetReportSettingsResponse"/>
+    </wsdl:message>
+
+    <wsdl:message name="GetFiltersInputMessage">
+        <wsdl:part name="parameters" element="bdti:GetFilters"/>
+    </wsdl:message>
+    <wsdl:message name="GetFiltersOutputMessage">
+        <wsdl:part name="parameters" element="bdti:GetFiltersResponse"/>
+    </wsdl:message>
+
+    <wsdl:message name="GetFactorTreeInputMessage">
+        <wsdl:part name="parameters" element="bdti:GetFactorTree"/>
+    </wsdl:message>
+    <wsdl:message name="GetFactorTreeOutputMessage">
+        <wsdl:part name="parameters" element="bdti:GetFactorTreeResponse"/>
+    </wsdl:message>
+
+    <wsdl:message name="GetScenarioNamesInputMessage">
+        <wsdl:part name="parameters" element="bdti:GetScenarioNames"/>
+    </wsdl:message>
+    <wsdl:message name="GetScenarioNamesOutputMessage">
+        <wsdl:part name="parameters" element="bdti:GetScenarioNamesResponse"/>
+    </wsdl:message>
+
+    <wsdl:message name="GetPortfolioTreeFiltersInputMessage">
+        <wsdl:part name="parameters" element="bdti:GetPortfolioTreeFilters"/>
+    </wsdl:message>
+    <wsdl:message name="GetPortfolioTreeFiltersOutputMessage">
+        <wsdl:part name="parameters" element="bdti:GetPortfolioTreeFiltersResponse"/>
+    </wsdl:message>
+
+    <wsdl:message name="GetModelsInputMessage">
+        <wsdl:part name="parameters" element="bdti:GetModels"/>
+    </wsdl:message>
+    <wsdl:message name="GetModelsOutputMessage">
+        <wsdl:part name="parameters" element="bdti:GetModelsResponse"/>
+    </wsdl:message>
+
+    <wsdl:message name="GetModelFiltersInputMessage">
+        <wsdl:part name="parameters" element="bdti:GetModelFilters"/>
+    </wsdl:message>
+    <wsdl:message name="GetModelFiltersOutputMessage">
+        <wsdl:part name="parameters" element="bdti:GetModelFiltersResponse"/>
+    </wsdl:message>
+
+    <wsdl:message name="SetModelInputMessage">
+        <wsdl:part name="parameters" element="bdti:SetModel"/>
+    </wsdl:message>
+    <wsdl:message name="SetModelOutputMessage">
+        <wsdl:part name="parameters" element="bdti:SetModelResponse"/>
+    </wsdl:message>
+
+    <wsdl:message name="GetCurrentSessionModelInputMessage">
+        <wsdl:part name="parameters" element="bdti:GetCurrentSessionModel"/>
+    </wsdl:message>
+    <wsdl:message name="GetCurrentSessionModelOutputMessage">
+        <wsdl:part name="parameters" element="bdti:GetCurrentSessionModelResponse"/>
+    </wsdl:message>
+
+    <wsdl:message name="GetPortfolioTreeInputMessage">
+        <wsdl:part name="parameters" element="bdti:GetPortfolioTree"/>
+    </wsdl:message>
+    <wsdl:message name="GetPortfolioTreeOutputMessage">
+        <wsdl:part name="parameters" element="bdti:GetPortfolioTreeResponse"/>
+    </wsdl:message>
+
+    <wsdl:message name="GetPortfolioTreeStoredAnalyticsInputMessage">
+        <wsdl:part name="parameters" element="bdti:GetPortfolioTreeStoredAnalytics"/>
+    </wsdl:message>
+    <wsdl:message name="GetPortfolioTreeStoredAnalyticsOutputMessage">
+        <wsdl:part name="parameters" element="bdti:GetPortfolioTreeStoredAnalyticsResponse"/>
+    </wsdl:message>
+
+    <wsdl:message name="SetCurrentPortfolioStoredAnalyticsInputMessage">
+        <wsdl:part name="parameters" element="bdti:SetCurrentPortfolioStoredAnalytics"/>
+    </wsdl:message>
+    <wsdl:message name="SetCurrentPortfolioStoredAnalyticsOutputMessage">
+        <wsdl:part name="parameters" element="bdti:SetCurrentPortfolioStoredAnalyticsResponse"/>
+    </wsdl:message>
+
+    <wsdl:message name="SetAdHocPortfolioInputMessage">
+        <wsdl:part name="parameters" element="bdti:SetAdHocPortfolio"/>
+    </wsdl:message>
+    <wsdl:message name="SetAdHocPortfolioOutputMessage">
+        <wsdl:part name="parameters" element="bdti:SetAdHocPortfolioResponse"/>
+    </wsdl:message>
+    <wsdl:message name="SavePortfolioInputMessage">
+        <wsdl:part name="parameters" element="bdti:SavePortfolio"/>
+    </wsdl:message>
+    <wsdl:message name="SavePortfolioOutputMessage">
+        <wsdl:part name="parameters" element="bdti:SavePortfolioResponse"/>
+    </wsdl:message>
+    <wsdl:message name="SavePortfolioAsInputMessage">
+        <wsdl:part name="parameters" element="bdti:SavePortfolioAs"/>
+    </wsdl:message>
+    <wsdl:message name="SavePortfolioAsOutputMessage">
+        <wsdl:part name="parameters" element="bdti:SavePortfolioAsResponse"/>
+    </wsdl:message>
+    <wsdl:message name="GetAnalysisDateInputMessage">
+        <wsdl:part name="parameters" element="bdti:GetAnalysisDate"/>
+    </wsdl:message>
+    <wsdl:message name="GetAnalysisDateOutputMessage">
+        <wsdl:part name="parameters" element="bdti:GetAnalysisDateResponse"/>
+    </wsdl:message>
+    <wsdl:message name="SetAnalysisDateInputMessage">
+        <wsdl:part name="parameters" element="bdti:SetAnalysisDate"/>
+    </wsdl:message>
+    <wsdl:message name="SetAnalysisDateOutputMessage">
+        <wsdl:part name="parameters" element="bdti:SetAnalysisDateResponse"/>
+    </wsdl:message>
+    <wsdl:message name="GetSystemDatesInputMessage">
+        <wsdl:part name="parameters" element="bdti:GetSystemDates"/>
+    </wsdl:message>
+    <wsdl:message name="GetSystemDatesOutputMessage">
+        <wsdl:part name="parameters" element="bdti:GetSystemDatesResponse"/>
+    </wsdl:message>
+    <wsdl:message name="ModifyPortfolioInputMessage">
+        <wsdl:part name="parameters" element="bdti:ModifyPortfolio"/>
+    </wsdl:message>
+    <wsdl:message name="ModifyPortfolioOutputMessage">
+        <wsdl:part name="parameters" element="bdti:ModifyPortfolioResponse"/>
+    </wsdl:message>
+    <wsdl:message name="GetGroupingsInputMessage">
+        <wsdl:part name="parameters" element="bdti:GetGroupings"/>
+    </wsdl:message>
+    <wsdl:message name="GetGroupingsOutputMessage">
+        <wsdl:part name="parameters" element="bdti:GetGroupingsResponse"/>
+    </wsdl:message>
+    <wsdl:message name="LogOutInputMessage">
+        <wsdl:part name="parameters" element="bdti:Logout"/>
+    </wsdl:message>
+    <wsdl:message name="LogOutOutputMessage">
+        <wsdl:part name="parameters" element="bdti:LogoutResponse"/>
+    </wsdl:message>
+    <wsdl:message name="GetReportColumnNameInputMessage">
+        <wsdl:part name="parameters" element="bdti:GetReportColumnName"/>
+    </wsdl:message>
+    <wsdl:message name="GetReportColumnNameOutputMessage">
+        <wsdl:part name="parameters" element="bdti:GetReportColumnNameResponse"/>
+    </wsdl:message>
+    <wsdl:message name="GetFactorTypesInputMessage">
+        <wsdl:part name="parameters" element="bdti:GetFactorTypes"/>
+    </wsdl:message>
+    <wsdl:message name="GetFactorTypesOutputMessage">
+        <wsdl:part name="parameters" element="bdti:GetFactorTypesResponse"/>
+    </wsdl:message>
+    <wsdl:message name="GetFactorGroupingsInputMessage">
+        <wsdl:part name="parameters" element="bdti:GetFactorGroupings"/>
+    </wsdl:message>
+    <wsdl:message name="GetFactorGroupingsOutputMessage">
+        <wsdl:part name="parameters" element="bdti:GetFactorGroupingsResponse"/>
+    </wsdl:message>
+    <wsdl:message name="GetLocalMarketInputMessage">
+        <wsdl:part name="parameters" element="bdti:GetLocalMarket"/>
+    </wsdl:message>
+    <wsdl:message name="GetLocalMarketOutputMessage">
+        <wsdl:part name="parameters" element="bdti:GetLocalMarketResponse"/>
+    </wsdl:message>
+    <wsdl:message name="GetLocalMarketGroupingInputMessage">
+        <wsdl:part name="parameters" element="bdti:GetLocalMarketGrouping"/>
+    </wsdl:message>
+    <wsdl:message name="GetLocalMarketGroupingOutputMessage">
+        <wsdl:part name="parameters" element="bdti:GetLocalMarketGroupingResponse"/>
+    </wsdl:message>
+    <wsdl:message name="GetCurrentVersionInputMessage">
+        <wsdl:part name="parameters" element="bdti:GetCurrentVersion"/>
+    </wsdl:message>
+    <wsdl:message name="GetCurrentVersionOutputMessage">
+        <wsdl:part name="parameters" element="bdti:GetCurrentVersionResponse"/>
+    </wsdl:message>
+
+    <wsdl:portType name="BDTIWebServicePortType">
+        <wsdl:operation name="GetExportJobStream">
+            <wsdl:input message="bdti:GetExportJobStreamInputMessage"/>
+            <wsdl:output message="bdti:GetExportJobStreamOutputMessage"/>
+        </wsdl:operation>
+        <wsdl:operation name="Login">
+            <wsdl:input message="bdti:LoginInputMessage"/>
+            <wsdl:output message="bdti:LoginOutputMessage"/>
+        </wsdl:operation>
+        <wsdl:operation name="LoginUserAgent">
+            <wsdl:input message="bdti:LoginUserAgentInputMessage"/>
+            <wsdl:output message="bdti:LoginUserAgentOutputMessage"/>
+        </wsdl:operation>
+        <wsdl:operation name="GetColumnNames">
+            <wsdl:input message="bdti:GetColumnNamesInputMessage"/>
+            <wsdl:output message="bdti:GetColumnNamesOutputMessage"/>
+        </wsdl:operation>
+        <wsdl:operation name="GetCalcServers">
+            <wsdl:input message="bdti:GetCalcServersInputMessage"/>
+            <wsdl:output message="bdti:GetCalcServersOutputMessage"/>
+        </wsdl:operation>
+        <wsdl:operation name="GetPositionsReport">
+            <wsdl:input message="bdti:GetPositionsReportInputMessage"/>
+            <wsdl:output message="bdti:GetPositionsReportOutputMessage"/>
+        </wsdl:operation>
+        <wsdl:operation name="GetPortfolioHistoryReport">
+            <wsdl:input message="bdti:GetPortfolioHistoryReportInputMessage"/>
+            <wsdl:output message="bdti:GetPortfolioHistoryReportOutputMessage"/>
+        </wsdl:operation>
+        <wsdl:operation name="SubmitPositionsReport">
+            <wsdl:input message="bdti:SubmitPositionsReportInputMessage"/>
+            <wsdl:output message="bdti:SubmitPositionsReportOutputMessage"/>
+        </wsdl:operation>
+        <wsdl:operation name="SubmitRiskDecompReport">
+            <wsdl:input message="bdti:SubmitRiskDecompReportInputMessage"/>
+            <wsdl:output message="bdti:SubmitRiskDecompReportOutputMessage"/>
+        </wsdl:operation>
+        <wsdl:operation name="SubmitFEBReport">
+            <wsdl:input message="bdti:SubmitFEBReportInputMessage"/>
+            <wsdl:output message="bdti:SubmitFEBReportOutputMessage"/>
+        </wsdl:operation>
+        <wsdl:operation name="SubmitStressTestPortfolioReport">
+            <wsdl:input message="bdti:SubmitStressTestPortfolioReportInputMessage"/>
+            <wsdl:output message="bdti:SubmitStressTestPortfolioReportOutputMessage"/>
+        </wsdl:operation>
+
+        <wsdl:operation name="SubmitStressTestSummaryReport">
+            <wsdl:input message="bdti:SubmitStressTestSummaryReportInputMessage"/>
+            <wsdl:output message="bdti:SubmitStressTestSummaryReportOutputMessage"/>
+        </wsdl:operation>
+
+        <wsdl:operation name="SubmitAllocationSelectionReport">
+            <wsdl:input message="bdti:SubmitAllocationSelectionReportInputMessage"/>
+            <wsdl:output message="bdti:SubmitAllocationSelectionReportOutputMessage"/>
+        </wsdl:operation>
+        <wsdl:operation name="RetrievePositionsReport">
+            <wsdl:input message="bdti:RetrievePositionsReportInputMessage"/>
+            <wsdl:output message="bdti:RetrievePositionsReportOutputMessage"/>
+        </wsdl:operation>
+        <wsdl:operation name="RetrieveReport">
+            <wsdl:input message="bdti:RetrieveReportInputMessage"/>
+            <wsdl:output message="bdti:RetrieveReportOutputMessage"/>
+        </wsdl:operation>
+        <wsdl:operation name="SetCurrentPortfolio">
+            <wsdl:input message="bdti:SetCurrentPortfolioInputMessage"/>
+            <wsdl:output message="bdti:SetCurrentPortfolioOutputMessage"/>
+        </wsdl:operation>
+        <wsdl:operation name="CheckRequestStatus">
+            <wsdl:input message="bdti:CheckRequestStatusInputMessage"/>
+            <wsdl:output message="bdti:CheckRequestStatusOutputMessage"/>
+        </wsdl:operation>
+        <wsdl:operation name="SetCurrentSettings">
+            <wsdl:input message="bdti:SetCurrentSettingsInputMessage"/>
+            <wsdl:output message="bdti:SetCurrentSettingsOutputMessage"/>
+        </wsdl:operation>
+
+        <wsdl:operation name="SetCurrentSettingsStoredAnalytics">
+            <wsdl:input message="bdti:SetCurrentSettingsStoredAnalyticsInputMessage"/>
+            <wsdl:output message="bdti:SetCurrentSettingsStoredAnalyticsOutputMessage"/>
+        </wsdl:operation>
+
+        <wsdl:operation name="GetCurrentSettings">
+            <wsdl:input message="bdti:GetCurrentSettingsInputMessage"/>
+            <wsdl:output message="bdti:GetCurrentSettingsOutputMessage"/>
+        </wsdl:operation>
+        <wsdl:operation name="GetCurrentSettingsStoredAnalytics">
+            <wsdl:input message="bdti:GetCurrentSettingsStoredAnalyticsInputMessage"/>
+            <wsdl:output message="bdti:GetCurrentSettingsStoredAnalyticsOutputMessage"/>
+        </wsdl:operation>
+        <wsdl:operation name="GetCurrentSettingsKeys">
+            <wsdl:input message="bdti:GetCurrentSettingsKeysInputMessage"/>
+            <wsdl:output message="bdti:GetCurrentSettingsKeysOutputMessage"/>
+        </wsdl:operation>
+
+        <wsdl:operation name="GetCurrentSettingsKeysStoredAnalytics">
+            <wsdl:input message="bdti:GetCurrentSettingsKeysStoredAnalyticsInputMessage"/>
+            <wsdl:output message="bdti:GetCurrentSettingsKeysStoredAnalyticsOutputMessage"/>
+        </wsdl:operation>
+
+        <wsdl:operation name="SetCurrentSettingsKeyVal">
+            <wsdl:input message="bdti:SetCurrentSettingsKeyValInputMessage"/>
+            <wsdl:output message="bdti:SetCurrentSettingsKeyValOutputMessage"/>
+        </wsdl:operation>
+
+        <wsdl:operation name="SetCurrentSettingsKeyValStoredAnalytics">
+            <wsdl:input message="bdti:SetCurrentSettingsKeyValStoredAnalyticsInputMessage"/>
+            <wsdl:output message="bdti:SetCurrentSettingsKeyValStoredAnalyticsOutputMessage"/>
+        </wsdl:operation>
+
+        <wsdl:operation name="GetReportSettings">
+            <wsdl:input message="bdti:GetReportSettingsInputMessage"/>
+            <wsdl:output message="bdti:GetReportSettingsOutputMessage"/>
+        </wsdl:operation>
+
+        <wsdl:operation name="GetFilters">
+                    <wsdl:input message="bdti:GetFiltersInputMessage"/>
+                    <wsdl:output message="bdti:GetFiltersOutputMessage"/>
+        </wsdl:operation>
+
+        <wsdl:operation name="GetFactorTree">
+            <wsdl:input message="bdti:GetFactorTreeInputMessage"/>
+            <wsdl:output message="bdti:GetFactorTreeOutputMessage"/>
+        </wsdl:operation>
+
+        <wsdl:operation name="GetScenarioNames">
+            <wsdl:input message="bdti:GetScenarioNamesInputMessage"/>
+            <wsdl:output message="bdti:GetScenarioNamesOutputMessage"/>
+        </wsdl:operation>
+
+        <wsdl:operation name="GetPortfolioTreeFilters">
+            <wsdl:input message="bdti:GetPortfolioTreeFiltersInputMessage"/>
+            <wsdl:output message="bdti:GetPortfolioTreeFiltersOutputMessage"/>
+        </wsdl:operation>
+
+        <wsdl:operation name="GetModelFilters">
+            <wsdl:input message="bdti:GetModelFiltersInputMessage"/>
+            <wsdl:output message="bdti:GetModelFiltersOutputMessage"/>
+        </wsdl:operation>
+
+        <wsdl:operation name="GetModels">
+            <wsdl:input message="bdti:GetModelsInputMessage"/>
+            <wsdl:output message="bdti:GetModelsOutputMessage"/>
+        </wsdl:operation>
+
+        <wsdl:operation name="SetModel">
+            <wsdl:input message="bdti:SetModelInputMessage"/>
+            <wsdl:output message="bdti:SetModelOutputMessage"/>
+        </wsdl:operation>
+
+        <wsdl:operation name="GetCurrentSessionModel">
+            <wsdl:input message="bdti:GetCurrentSessionModelInputMessage"/>
+            <wsdl:output message="bdti:GetCurrentSessionModelOutputMessage"/>
+        </wsdl:operation>
+
+        <wsdl:operation name="GetPortfolioTree">
+            <wsdl:input message="bdti:GetPortfolioTreeInputMessage"/>
+            <wsdl:output message="bdti:GetPortfolioTreeOutputMessage"/>
+        </wsdl:operation>
+
+        <wsdl:operation name="GetPortfolioTreeStoredAnalytics">
+            <wsdl:input message="bdti:GetPortfolioTreeStoredAnalyticsInputMessage"/>
+            <wsdl:output message="bdti:GetPortfolioTreeStoredAnalyticsOutputMessage"/>
+        </wsdl:operation>
+
+        <wsdl:operation name="SetCurrentPortfolioStoredAnalytics">
+            <wsdl:input message="bdti:SetCurrentPortfolioStoredAnalyticsInputMessage"/>
+            <wsdl:output message="bdti:SetCurrentPortfolioStoredAnalyticsOutputMessage"/>
+        </wsdl:operation>
+
+
+        <wsdl:operation name="SetAdHocPortfolio">
+            <wsdl:input message="bdti:SetAdHocPortfolioInputMessage"/>
+            <wsdl:output message="bdti:SetAdHocPortfolioOutputMessage"/>
+        </wsdl:operation>
+        <wsdl:operation name="SavePortfolio">
+            <wsdl:input message="bdti:SavePortfolioInputMessage"/>
+            <wsdl:output message="bdti:SavePortfolioOutputMessage"/>
+        </wsdl:operation>
+        <wsdl:operation name="SavePortfolioAs">
+            <wsdl:input message="bdti:SavePortfolioAsInputMessage"/>
+            <wsdl:output message="bdti:SavePortfolioAsOutputMessage"/>
+        </wsdl:operation>
+        <wsdl:operation name="GetAnalysisDate">
+            <wsdl:input message="bdti:GetAnalysisDateInputMessage"/>
+            <wsdl:output message="bdti:GetAnalysisDateOutputMessage"/>
+        </wsdl:operation>
+        <wsdl:operation name="SetAnalysisDate">
+            <wsdl:input message="bdti:SetAnalysisDateInputMessage"/>
+            <wsdl:output message="bdti:SetAnalysisDateOutputMessage"/>
+        </wsdl:operation>
+        <wsdl:operation name="GetSystemDates">
+            <wsdl:input message="bdti:GetSystemDatesInputMessage"/>
+            <wsdl:output message="bdti:GetSystemDatesOutputMessage"/>
+        </wsdl:operation>
+        <wsdl:operation name="ModifyPortfolio">
+            <wsdl:input message="bdti:ModifyPortfolioInputMessage"/>
+            <wsdl:output message="bdti:ModifyPortfolioOutputMessage"/>
+        </wsdl:operation>
+        <wsdl:operation name="GetGroupings">
+            <wsdl:input message="bdti:GetGroupingsInputMessage"/>
+            <wsdl:output message="bdti:GetGroupingsOutputMessage"/>
+        </wsdl:operation>
+        <wsdl:operation name="Logout">
+            <wsdl:input message="bdti:LogOutInputMessage"/>
+            <wsdl:output message="bdti:LogOutOutputMessage"/>
+        </wsdl:operation>
+        <wsdl:operation name="GetReportColumnName">
+            <wsdl:input message="bdti:GetReportColumnNameInputMessage"/>
+            <wsdl:output message="bdti:GetReportColumnNameOutputMessage"/>
+        </wsdl:operation>
+        <wsdl:operation name="GetFactorTypes">
+            <wsdl:input message="bdti:GetFactorTypesInputMessage"/>
+            <wsdl:output message="bdti:GetFactorTypesOutputMessage"/>
+        </wsdl:operation>
+        <wsdl:operation name="GetFactorGroupings">
+            <wsdl:input message="bdti:GetFactorGroupingsInputMessage"/>
+            <wsdl:output message="bdti:GetFactorGroupingsOutputMessage"/>
+        </wsdl:operation>
+        <wsdl:operation name="GetLocalMarket">
+            <wsdl:input message="bdti:GetLocalMarketInputMessage"/>
+            <wsdl:output message="bdti:GetLocalMarketOutputMessage"/>
+        </wsdl:operation>
+        <wsdl:operation name="GetLocalMarketGrouping">
+            <wsdl:input message="bdti:GetLocalMarketGroupingInputMessage"/>
+            <wsdl:output message="bdti:GetLocalMarketGroupingOutputMessage"/>
+        </wsdl:operation>
+        <wsdl:operation name="GetCurrentVersion">
+            <wsdl:input message="bdti:GetCurrentVersionInputMessage"/>
+            <wsdl:output message="bdti:GetCurrentVersionOutputMessage"/>
+        </wsdl:operation>
+
+    </wsdl:portType>
+
+    <wsdl:binding name="BDTIWebServiceBinding" type="bdti:BDTIWebServicePortType">
+        <soap:binding transport="http://schemas.xmlsoap.org/soap/http" style="document"/>
+
+        <wsdl:operation name="GetExportJobStream">
+            <soap:operation soapAction=""/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+
+        <wsdl:operation name="Login">
+            <soap:operation soapAction=""/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+
+        <wsdl:operation name="LoginUserAgent">
+            <soap:operation soapAction=""/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+
+        <wsdl:operation name="GetColumnNames">
+            <soap:operation soapAction=""/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+
+        <wsdl:operation name="GetCalcServers">
+            <soap:operation soapAction=""/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+
+        <wsdl:operation name="GetPositionsReport">
+            <soap:operation soapAction=""/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+
+        <wsdl:operation name="GetPortfolioHistoryReport">
+            <soap:operation soapAction=""/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+
+        <wsdl:operation name="SubmitPositionsReport">
+            <soap:operation soapAction=""/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+
+        <wsdl:operation name="SubmitRiskDecompReport">
+            <soap:operation soapAction=""/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+
+        <wsdl:operation name="SubmitFEBReport">
+            <soap:operation soapAction=""/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+
+        <wsdl:operation name="SubmitStressTestPortfolioReport">
+            <soap:operation soapAction=""/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+
+        <wsdl:operation name="SubmitStressTestSummaryReport">
+            <soap:operation soapAction=""/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+
+       <wsdl:operation name="SubmitAllocationSelectionReport">
+            <soap:operation soapAction=""/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+
+        <wsdl:operation name="RetrievePositionsReport">
+            <soap:operation soapAction=""/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+
+        <wsdl:operation name="RetrieveReport">
+            <soap:operation soapAction=""/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+
+        <wsdl:operation name="SetCurrentPortfolio">
+            <soap:operation soapAction=""/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+
+        <wsdl:operation name="CheckRequestStatus">
+            <soap:operation soapAction=""/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+
+        <wsdl:operation name="SetCurrentSettings">
+            <soap:operation soapAction=""/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+
+        <wsdl:operation name="SetCurrentSettingsStoredAnalytics">
+            <soap:operation soapAction=""/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+
+
+        <wsdl:operation name="GetFilters">
+            <soap:operation soapAction=""/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+
+        <wsdl:operation name="GetFactorTree">
+            <soap:operation soapAction=""/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+
+        <wsdl:operation name="GetScenarioNames">
+            <soap:operation soapAction=""/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+
+        <wsdl:operation name="GetPortfolioTreeFilters">
+            <soap:operation soapAction=""/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+
+        <wsdl:operation name="GetModelFilters">
+            <soap:operation soapAction=""/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+
+        <wsdl:operation name="GetModels">
+            <soap:operation soapAction=""/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+
+        <wsdl:operation name="SetModel">
+            <soap:operation soapAction=""/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+
+        <wsdl:operation name="GetCurrentSessionModel">
+            <soap:operation soapAction=""/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+
+        <wsdl:operation name="GetPortfolioTree">
+            <soap:operation soapAction=""/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+
+        <wsdl:operation name="GetPortfolioTreeStoredAnalytics">
+            <soap:operation soapAction=""/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+
+        <wsdl:operation name="SetCurrentPortfolioStoredAnalytics">
+            <soap:operation soapAction=""/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+
+        <wsdl:operation name="SetAdHocPortfolio">
+            <soap:operation soapAction=""/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+
+        <wsdl:operation name="SavePortfolio">
+            <soap:operation soapAction=""/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+
+        <wsdl:operation name="SavePortfolioAs">
+            <soap:operation soapAction=""/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+
+        <wsdl:operation name="GetAnalysisDate">
+            <soap:operation soapAction=""/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+
+        <wsdl:operation name="SetAnalysisDate">
+            <soap:operation soapAction=""/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+
+        <wsdl:operation name="GetSystemDates">
+            <soap:operation soapAction=""/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+
+        <wsdl:operation name="ModifyPortfolio">
+            <soap:operation soapAction=""/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+
+        <wsdl:operation name="GetGroupings">
+            <soap:operation soapAction=""/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+
+        <wsdl:operation name="Logout">
+            <soap:operation soapAction=""/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+
+        <wsdl:operation name="GetReportColumnName">
+            <soap:operation soapAction=""/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+
+        <wsdl:operation name="GetFactorTypes">
+            <soap:operation soapAction=""/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+
+        <wsdl:operation name="GetFactorGroupings">
+            <soap:operation soapAction=""/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+
+        <wsdl:operation name="GetLocalMarket">
+            <soap:operation soapAction=""/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+
+        <wsdl:operation name="GetLocalMarketGrouping">
+            <soap:operation soapAction=""/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+
+        <wsdl:operation name="GetCurrentSettings">
+            <soap:operation soapAction=""/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+
+        <wsdl:operation name="GetCurrentSettingsStoredAnalytics">
+            <soap:operation soapAction=""/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+
+        <wsdl:operation name="GetCurrentSettingsKeys">
+            <soap:operation soapAction=""/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+
+        <wsdl:operation name="GetCurrentSettingsKeysStoredAnalytics">
+            <soap:operation soapAction=""/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+
+        <wsdl:operation name="SetCurrentSettingsKeyVal">
+            <soap:operation soapAction=""/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+
+        <wsdl:operation name="SetCurrentSettingsKeyValStoredAnalytics">
+            <soap:operation soapAction=""/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+
+        <wsdl:operation name="GetReportSettings">
+            <soap:operation soapAction=""/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+
+        <wsdl:operation name="GetCurrentVersion">
+            <soap:operation soapAction=""/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+
+    </wsdl:binding>
+
+    <wsdl:service name="BDTInteractive">
+        <wsdl:port name="BDTIWebServicePort" binding="bdti:BDTIWebServiceBinding">
+            <soap:address location="http://www.barraone.com:443/bdti/BDTInteractive"/>
+        </wsdl:port>
+    </wsdl:service>
+</wsdl:definitions>
