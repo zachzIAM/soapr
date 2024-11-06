@@ -30,7 +30,6 @@ WSDL <- R6::R6Class(
   ),
   private = NULL,
   active = NULL,
-
 )
 
 parse_wsdl <- function(url) {
@@ -60,20 +59,15 @@ parse_types <- function(x) {
 
 #' @keywords internal
 parse_bindings <- function(x) {
-
+  stop("Not implemented")
 }
 
 #' @keywords internal
 parse_services <- function(x) {
-
+  stop("Not implemented")
 }
 
 #' @keywords internal
 parse_messages <- function(x) {
-
-}
-
-#' @keywords internal
-parse_port_types <- function(x) {
-
+  stop("Not implemented")
 }
