@@ -90,8 +90,8 @@ parse_operation_faults <- function(node) {
     return(NULL)
   }
 
-  rv <- purrr::map(faults, ~parse_oparation_fault(.x))
-  names(rv) <- purrr::map_chr(rv, ~.x$name)
+  rv <- purrr::map(faults, ~wsdl_element_factory(.x))
+  names(rv) <- purrr::map_chr(rv, ~.x@name)
 
   return(rv)
 }
