@@ -17,6 +17,10 @@ wsdl_fault <- function(node) {
 }
 
 check_xml_wsdl_fault <- function(x, null.ok = FALSE) {
+
+  if (is.null(x) && null.ok)
+    return(TRUE)
+
   type_chk <- check_xml_wsdl_node_type(x, "fault")
   if (!isTRUE(type_chk))
     return(type_chk)
