@@ -11,7 +11,7 @@ test_that("test parsing types from complete WSDLs", {
       expect_gt(length(.x@operations), 0)
       expect_false(is.null(names(.x@operations)))
 
-      purrr::walk(.x@operations, ~expect_s3_class(.x, "wsdl_operation"))
+      purrr::walk(.x@operations, ~expect_s4_class(.x, "wsdl_operation"))
 
     })
   })
@@ -200,8 +200,8 @@ describe("wsdl_port_type S4 Class", {
     empty_port_type <- new("wsdl_port_type")
 
     # Validate prototype defaults
-    expect_true(is.na(empty_port_type@name))
-    expect_true(is.na(empty_port_type@documentation))
+    expect_vector(empty_port_type@name, ptype = "character", size = 0)
+    expect_vector(empty_port_type@documentation, ptype = "character", size = 0)
     expect_identical(empty_port_type@operations, list())
   })
 })

@@ -1,7 +1,6 @@
 setClass(
   Class = "wsdl_port_type",
-  representation(name = "character", operations = "list", documentation = "character"),
-  prototype(name = NA_character_, operations = list(), documentation = NA_character_)
+  slots = list(name = "character", operations = "list", documentation = "character")
 )
 
 port_type <- function(node) {
@@ -44,7 +43,7 @@ parse_operations <- function(node) {
   operation_nodes <- content[content_names == "operation"]
 
   rv <- purrr::map(operation_nodes, ~parse_operation(.x))
-  names(rv) <- purrr::map_chr(rv, ~.x$name)
+  names(rv) <- purrr::map_chr(rv, ~.x@name)
 
   return(rv)
 }

@@ -1,6 +1,6 @@
 setClass(
   "wsdl_service",
-  representation(ports = "list", names = "character", is_resolved = "logical")
+  slots = list(ports = "list", names = "character", is_resolved = "logical")
 )
 
 
@@ -12,5 +12,5 @@ setMethod("show", "wsdl_service", definition = function(object) {
 wsdl_service <- function(name) {
   checkmate::assert_string(name, na.ok = FALSE, null.ok = FALSE, min.chars = 1)
 
-
+  stop("Not implemented")
 }

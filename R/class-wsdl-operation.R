@@ -1,30 +1,12 @@
-wsdl_operation <- R6::R6Class(
-  classname = "wsdl_operation",
-  public = list(
-    initialize = function(
-      name,
-      input_message = NULL,
-      output_message = NULL,
-      fault_message = NULL,
-      parameter_order = NULL,
-      wsa_action = NULL,
-      documentation = NULL
-    ) {
-      self$name = name
-      self$input_message = input_message
-      self$output_message = output_message
-      self$fault_message = fault_message
-      self$parameter_order = parameter_order  # for actions where order matters, e.g. output first, then input
-      self$wsa_action = wsa_action  # full URL to the Action if available
-      self$documentation = documentation
-    },
-    name = NULL,
-    input_message = NULL,
-    output_message = NULL,
-    fault_message = NULL,
-    parameter_order = NULL,
-    wsa_action = NULL,
-    documentation = NULL
+setClass(
+  Class = "wsdl_operation",
+  slots = list(
+    name = "character",
+    input_message = "character",
+    output_message = "character",
+    fault_message = "list",
+    documentation = "character",
+    wsa_action = "character" # full URL to the Action if available
   )
 )
 
@@ -38,13 +20,15 @@ parse_operation <- function(node) {
   fault <- parse_operation_faults(node)
   documentation <- parse_documentation(node)
 
-  rv <- wsdl_operation$new(
+  rv <- new("wsdl_operation",
     name = nm,
     input_message = input,
     output_message = output,
     fault_message = fault,
     documentation = documentation
   )
+
+  return(rv)
 }
 
 parse_operation_input <- function(node) {
@@ -55,7 +39,7 @@ parse_operation_input <- function(node) {
   idx <- match("input", op_content_names)
 
   if (is.na(idx)) {
-    return(NULL)
+    return(character())
   }
 
   rv <- xml2::xml_attr(op_content[[idx]], "message")  # TODO should we resolve to a message object here?
@@ -71,7 +55,7 @@ parse_operation_output <- function(node) {
   idx <- match("output", op_content_names)
 
   if (is.na(idx)) {
-    return(NULL)
+    return(character())
   }
 
   rv <- xml2::xml_attr(op_content[[idx]], "message")  # TODO should we resolve to a message object here?
@@ -87,11 +71,47 @@ parse_operation_faults <- function(node) {
   faults <- op_content[op_content_names == "fault"]
 
   if (length(faults) == 0) {
-    return(NULL)
+    return(list())
   }
 
-  rv <- purrr::map(faults, ~wsdl_element_factory(.x))
+  rv <- purrr::map(faults, ~wsdl_fault(.x))
   names(rv) <- purrr::map_chr(rv, ~.x@name)
 
   return(rv)
+}
+
+check_xml_wsdl_operation <- function(x, null.ok = FALSE) {
+
+  if (is.null(x) && null.ok)
+    return(TRUE)
+
+  type_chk <- check_xml_wsdl_node_type(x, "operation")
+  if (!isTRUE(type_chk))
+    return(type_chk)
+
+  nm_chk <- xml2::xml_has_attr(x, "name", ns = xml2::xml_ns(x))
+  if (!isTRUE(nm_chk)) {
+    msg <- "WSDL Operation node must have a 'name' attribute."
+    return(msg)
+  }
+
+  input_chk <- xml2::xml_has_attr(x, "input", ns = xml2::xml_ns(x))
+  output_chk <- xml2::xml_has_attr(x, "output", ns = xml2::xml_ns(x))
+  if (!isTRUE(input_chk) && !isTRUE(output_chk)) {
+    msg <- "WSDL Operation cannot have both input and output missing"
+    return(msg)
+  }
+
+  return(TRUE)
+}
+
+test_xml_wsdl_operation <- function(x, null.ok = FALSE) {
+  return(isTRUE(check_xml_wsdl_operation(x = x, null.ok = null.ok)))
+}
+
+assert_xml_wsdl_operation <- function(x, null.ok = FALSE, .var.name = checkmate::vname(x), add = NULL) {
+  if (missing(x))
+    stop(sprintf("argument \"%s\" is missing, with no default", .var.name))
+  res <- check_xml_wsdl_operation(x = x, null.ok = null.ok)
+  checkmate::makeAssertion(x, res, .var.name, collection = add)
 }

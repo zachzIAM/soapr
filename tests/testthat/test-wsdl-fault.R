@@ -109,8 +109,8 @@ describe("wsdl_fault Validation", {
     empty_fault <- new("wsdl_fault")
 
     # Validate prototype defaults
-    expect_true(is.na(empty_fault@name))
-    expect_true(is.na(empty_fault@message))
-    expect_true(is.na(empty_fault@documentation))
+    expect_vector(empty_fault@name, ptype = "character", size = 0)
+    expect_vector(empty_fault@message, ptype = "character", size = 0)
+    expect_vector(empty_fault@documentation, ptype = "character", size = 0)
   })
 })

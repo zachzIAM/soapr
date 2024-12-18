@@ -1,7 +1,6 @@
 setClass(
   Class = "wsdl_fault",
-  representation(name = "character", message = "character", documentation = "character"),
-  prototype(name = NA_character_, message = NA_character_, documentation = NA_character_)
+  slots = list(name = "character", message = "character", documentation = "character")
 )
 
 wsdl_fault <- function(node) {
