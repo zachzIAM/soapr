@@ -1,6 +1,7 @@
 setClass(
   "wsdl_service",
-  slots = list(ports = "list", names = "character", is_resolved = "logical")
+  slots = list(name = "character", ports = "list", is_resolved = "logical"),
+  prototype = list(name = character(), ports = list(), is_resolved = FALSE)
 )
 
 
@@ -9,8 +10,10 @@ setMethod("show", "wsdl_service", definition = function(object) {
   cat(repr)
 })
 
-wsdl_service <- function(name) {
+wsdl_service <- function(name, ports = list(), is_resolved = FALSE) {
   checkmate::assert_string(name, na.ok = FALSE, null.ok = FALSE, min.chars = 1)
+  checkmate::assert_list(ports)
+  checkmate::assert_flag(is_resolved)
 
-  stop("Not implemented")
+  new("wsdl_service", name = name, ports = ports, is_resolved = is_resolved)
 }
