@@ -1,19 +1,44 @@
-setClass(
-  Class = "wsdl_fault",
-  slots = list(name = "character", message = "character", documentation = "character")
+wsdl_fault <- S7::new_class(
+  name = "wsdl_fault",
+  properties = list(
+    name = strict_string_prop("name", read_only = TRUE),
+    message = nullable_string_prop("message", read_only = TRUE),
+    documentation = nullable_string_prop("documentation", read_only = TRUE)
+  ),
+  constructor = function(node) {
+    assert_xml_wsdl_fault(node)
+
+    nm <- xml2::xml_attr(node, "name")
+    msg <- xml2::xml_attr(node, "message") # TODO should we resolve to message into an object here?
+    docs <- parse_documentation(node)
+
+    rv <- S7::new_object(
+      S7::S7_object(),
+      name = nm,
+      message = msg,
+      documentation = docs
+    )
+
+    return(rv)
+  }
 )
 
-wsdl_fault <- function(node) {
-  assert_xml_wsdl_fault(node)
-
-  nm <- xml2::xml_attr(node, "name")
-  msg <- xml2::xml_attr(node, "message") # TODO should we resolve to message into an object here?
-  docs <- parse_documentation(node)
-
-  rv <- new("wsdl_fault", name = nm, message = msg, documentation = docs)
-
-  return(rv)
-}
+# setClass(
+#   Class = "wsdl_fault",
+#   slots = list(name = "character", message = "character", documentation = "character")
+# )
+#
+# wsdl_fault <- function(node) {
+#   assert_xml_wsdl_fault(node)
+#
+#   nm <- xml2::xml_attr(node, "name")
+#   msg <- xml2::xml_attr(node, "message") # TODO should we resolve to message into an object here?
+#   docs <- parse_documentation(node)
+#
+#   rv <- new("wsdl_fault", name = nm, message = msg, documentation = docs)
+#
+#   return(rv)
+# }
 
 check_xml_wsdl_fault <- function(x, null.ok = FALSE) {
 
