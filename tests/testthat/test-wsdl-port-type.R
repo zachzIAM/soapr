@@ -11,46 +11,12 @@ test_that("test parsing types from complete WSDLs", {
       expect_gt(length(.x@operations), 0)
       expect_false(is.null(names(.x@operations)))
 
-      purrr::walk(.x@operations, ~expect_s4_class(.x, "wsdl_operation"))
+      purrr::walk(.x@operations, ~expect_s4_class(.x, "wsdl_port_operation"))
 
     })
   })
 
 })
-
-# Helper function to create mock WSDL definitions with port types
-create_mock_wsdl <- function(port_types = list(
-  list(name = "TestPortType",
-       operations = list(
-         list(name = "Operation1"),
-         list(name = "Operation2")
-       )
-  )
-)) {
-  # Start building the XML
-  xml_str <- '<definitions xmlns:tns="http://example.com/namespace">'
-
-  for (pt in port_types) {
-    xml_str <- paste0(xml_str, sprintf('<portType name="%s">', pt$name))
-
-    # Add documentation if exists
-    if (!is.null(pt$documentation)) {
-      xml_str <- paste0(xml_str, sprintf('<documentation>%s</documentation>', pt$documentation))
-    }
-
-    # Add operations
-    for (op in pt$operations) {
-      xml_str <- paste0(xml_str, sprintf('<operation name="%s"></operation>', op$name))
-    }
-
-    xml_str <- paste0(xml_str, '</portType>')
-  }
-
-  xml_str <- paste0(xml_str, '</definitions>')
-
-  # Parse and return the XML node
-  xml2::read_xml(xml_str)
-}
 
 # Mock parse function replacements
 mock_parse_documentation <- function(node) {
@@ -97,18 +63,18 @@ describe("port_type Constructor", {
       list(
         name = "ServicePortType",
         operations = list(
-          list(name = "GetData"),
-          list(name = "UpdateData")
+          list(name = "GetData", output_message = "Data"),
+          list(name = "UpdateData", input_message = "Data")
         ),
         documentation = "Sample service documentation"
       )
     )) |> xml2::xml_find_first(".//portType")
 
     # Create port type object
-    port_type_obj <- port_type(node)
+    port_type_obj <- wsdl_port_type(node)
 
     # Validate object creation
-    expect_s4_class(port_type_obj, "wsdl_port_type")
+    expect_true(S7::S7_inherits(port_type_obj, wsdl_port_type))
     expect_equal(port_type_obj@name, "ServicePortType")
     expect_equal(length(port_type_obj@operations), 2)
     expect_named(port_type_obj@operations, c("GetData", "UpdateData"))
@@ -121,10 +87,10 @@ describe("port_type Constructor", {
     )) |> xml2::xml_find_first(".//portType")
 
     # Create port type object
-    port_type_obj <- port_type(node)
+    port_type_obj <- wsdl_port_type(node)
 
     # Validate object creation
-    expect_s4_class(port_type_obj, "wsdl_port_type")
+    expect_true(S7::S7_inherits(port_type_obj, wsdl_port_type))
     expect_equal(port_type_obj@name, "EmptyPortType")
     expect_equal(length(port_type_obj@operations), 0)
   })
@@ -133,9 +99,17 @@ describe("port_type Constructor", {
 describe("parse_port_types Function", {
   test_that("parse_port_types extracts multiple port types", {
     # Create a WSDL with multiple port types
+    port_data_1 <- list(
+      name = "PortType1",
+      operations = list(list(name = "Op1", input_message="IN_MSG"))
+    )
+    port_data_2 <- list(
+      name = "PortType2",
+      operations = list(list(name = "Op2", output_message="OUT_MSG"))
+    )
     node <- create_mock_wsdl(list(
-      list(name = "PortType1", operations = list(list(name = "Op1"))),
-      list(name = "PortType2", operations = list(list(name = "Op2")))
+      port_data_1,
+      port_data_2
     ))
 
     # Parse port types
@@ -166,8 +140,8 @@ describe("parse_operations Function", {
 
     # Validate extraction
     expect_type(operations, "list")
-    expect_length(operations, 2)
-    expect_named(operations, c("Operation1", "Operation2"))
+    expect_length(operations, 3)
+    expect_named(operations, c("Operation1", "Operation2", "Operation3"))
   })
 
   test_that("parse_operations handles port type with no operations", {
@@ -183,25 +157,23 @@ describe("parse_operations Function", {
   })
 })
 
-describe("wsdl_port_type S4 Class", {
-  test_that("class prevents incorrect attribute types", {
-    # Attempt to create object with incorrect types should fail
-    expect_error(
-      new("wsdl_port_type",
-          name = 123,
-          operations = "invalid",
-          documentation = c(1,2,3)
-      )
-    )
+describe("parse_port_types validation", {
+  test_that("parse_port_types fail when invalid ops", {
+    # Create a WSDL with multiple port types
+    node <- create_mock_wsdl(list(
+      list(name = "PortType1", operations = list(list(name = "Op1")))
+    ))
+
+    # Parse port types
+    expect_error(parse_port_types(node), regexp = "cannot have both.*missing")
+
   })
 
-  test_that("empty constructor respects prototype", {
-    # Create an empty port type object
-    empty_port_type <- new("wsdl_port_type")
+  test_that("parse_port_types throws error with no port types", {
+    # Create a WSDL without port types
+    node <- xml2::read_xml('<definitions xmlns:tns="http://example.com/namespace"></definitions>')
 
-    # Validate prototype defaults
-    expect_vector(empty_port_type@name, ptype = "character", size = 0)
-    expect_vector(empty_port_type@documentation, ptype = "character", size = 0)
-    expect_identical(empty_port_type@operations, list())
+    # Expect error when no port types exist
+    expect_error(parse_port_types(node), "port_type_count > 0")
   })
 })
