@@ -1,17 +1,6 @@
 # Helper function to create a mock XML node
 
-create_mock_fault_node <- function(name = "TestFault",
-                                   message = "tns:TestFaultMessage",
-                                   ns = c(tns = "http://example.com/namespace")) {
-  # Create XML with namespaces
-  xml_str <- sprintf('<fault xmlns:tns="%s" name="%s" message="%s"></fault>',
-                     ns["tns"], name, message)
-  doc <- xml2::read_xml(xml_str)
-  xml2::xml_root(doc)
-}
-
-
-describe("WSDL Fault Validation", {
+describe("WSDL Fault Node Validation", {
 
   test_that("check_xml_wsdl_node_type handles correct node type", {
     node <- create_mock_fault_node()
@@ -56,7 +45,7 @@ describe("WSDL Fault Validation", {
   })
 })
 
-describe("wsdl_fault Constructor", {
+describe("wsdl_port_fault Constructor", {
   test_that("constructor creates object with correct attributes", {
     # Create a mock XML node
     mock_node <- create_mock_fault_node(
@@ -64,13 +53,14 @@ describe("wsdl_fault Constructor", {
       message = "tns:SampleFaultMessage"
     )
 
-    # Create wsdl_fault object
-    fault <- wsdl_fault(mock_node)
+    # Create wsdl_port_fault object
+    fault <- wsdl_port_fault(mock_node)
 
     # Validate object creation
-    expect_s4_class(fault, "wsdl_fault")
+    expect_true(S7::S7_inherits(fault, wsdl_port_fault))
     expect_equal(fault@name, "SampleFault")
     expect_equal(fault@message, "tns:SampleFaultMessage")
+    expect_null(fault@documentation)
   })
 
   test_that("constructor handles different namespace formats", {
@@ -79,7 +69,7 @@ describe("wsdl_fault Constructor", {
       name = "Fault1",
       message = "tns:FaultType"
     )
-    fault1 <- wsdl_fault(node1)
+    fault1 <- wsdl_port_fault(node1)
     expect_equal(fault1@message, "tns:FaultType")
 
     # Test with local message type
@@ -87,30 +77,50 @@ describe("wsdl_fault Constructor", {
       name = "Fault2",
       message = "FaultType"
     )
-    fault2 <- wsdl_fault(node2)
+    fault2 <- wsdl_port_fault(node2)
     expect_equal(fault2@message, "FaultType")
+  })
+
+  test_that("constructor handles docmentation", {
+    # Create a mock XML node
+    docs <- "Example documentation"
+
+    mock_node <- create_mock_fault_node(
+      name = "SampleFault",
+      message = "tns:SampleFaultMessage",
+      documentation = docs
+    )
+
+    # Create wsdl_port_fault object
+    fault <- wsdl_port_fault(mock_node)
+
+    # Validate object creation
+    expect_true(S7::S7_inherits(fault, wsdl_port_fault))
+    expect_equal(fault@name, "SampleFault")
+    expect_equal(fault@message, "tns:SampleFaultMessage")
+    expect_equal(fault@documentation, docs)
   })
 })
 
-describe("wsdl_fault Validation", {
+describe("wsdl_port_fault Validation", {
   test_that("class prevents incorrect attribute types", {
     # Attempt to create object with incorrect types should fail
+
     expect_error(
-      new("wsdl_fault",
-          name = 123,
-          message = list("invalid"),
-          documentation = c(1,2,3)
-      )
+      wsdl_port_fault(create_mock_fault_node(name = "")),
+      regexp = "name Cannot be an empty string"
     )
+
+    expect_error(
+      wsdl_port_fault(create_mock_fault_node(name = "", message = "")),
+      regexp = "name Cannot be an empty string"
+    )
+
+    expect_error(
+      wsdl_port_fault(create_mock_fault_node(message = "")),
+      regexp = "message Cannot be an empty string"
+    )
+
   })
 
-  test_that("empty constructor respects prototype", {
-    # Create an empty fault object
-    empty_fault <- new("wsdl_fault")
-
-    # Validate prototype defaults
-    expect_vector(empty_fault@name, ptype = "character", size = 0)
-    expect_vector(empty_fault@message, ptype = "character", size = 0)
-    expect_vector(empty_fault@documentation, ptype = "character", size = 0)
-  })
 })

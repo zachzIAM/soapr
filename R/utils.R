@@ -20,7 +20,7 @@ parse_documentation <- function(node) {
   doc_idx <- match("documentation", node_content_names)
 
   if (is.na(doc_idx)) {
-    return(NA_character_)
+    return(NULL)
   }
 
   doc_str <- xml2::xml_text(node_content[[doc_idx]])
