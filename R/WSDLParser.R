@@ -5,7 +5,8 @@
 #' @importFrom xml2 read_xml xml_ns xml_find_all xml_attr xml_name xml_children xml_text
 #' @importFrom R6 R6Class
 #' @export
-WSDLParser <- R6::R6Class("WSDLParser",
+WSDLParser <- R6::R6Class(
+  "WSDLParser",
   public = list(
     doc = NULL,
     ns = NULL,
@@ -28,10 +29,18 @@ WSDLParser <- R6::R6Class("WSDLParser",
       lapply(ports, function(port) {
         binding_name <- self$strip_ns(xml2::xml_attr(port, "binding"))
         address_node <- xml2::xml_find_first(port, ".//soap:address", self$ns)
-        location <- if (!is.na(address_node)) xml2::xml_attr(address_node, "location") else NULL
+        location <- if (!is.na(address_node)) {
+          xml2::xml_attr(address_node, "location")
+        } else {
+          NULL
+        }
 
         # Fix for WSDLs that specify http but use port 443
-        if (!is.null(location) && grepl(":443", location) && grepl("^http:", location)) {
+        if (
+          !is.null(location) &&
+            grepl(":443", location) &&
+            grepl("^http:", location)
+        ) {
           location <- sub("^http:", "https:", location)
         }
 
@@ -59,7 +68,11 @@ WSDLParser <- R6::R6Class("WSDLParser",
       for (op in binding_ops) {
         name <- xml2::xml_attr(op, "name")
         soap_op <- xml2::xml_find_first(op, "./soap:operation", self$ns)
-        action <- if (!is.na(soap_op)) xml2::xml_attr(soap_op, "soapAction") else ""
+        action <- if (!is.na(soap_op)) {
+          xml2::xml_attr(soap_op, "soapAction")
+        } else {
+          ""
+        }
         ops_meta[[name]] <- list(action = action)
       }
 
@@ -84,8 +97,94 @@ WSDLParser <- R6::R6Class("WSDLParser",
         )
       })
     },
+    get_type_definitions = function() {
+      # Find schema node
+      schema <- xml2::xml_find_first(self$doc, "//xsd:schema", self$ns)
+      if (inherits(schema, "xml_missing")) {
+        return(list())
+      }
+
+      types <- list()
+
+      # Parse complexTypes
+      complex_types <- xml2::xml_find_all(schema, "./xsd:complexType", self$ns)
+      for (ct in complex_types) {
+        name <- xml2::xml_attr(ct, "name")
+        if (!is.na(name)) {
+          types[[name]] <- self$parse_complex_type(ct)
+        }
+      }
+
+      # Parse simpleTypes (enumerations)
+      simple_types <- xml2::xml_find_all(schema, "./xsd:simpleType", self$ns)
+      for (st in simple_types) {
+        name <- xml2::xml_attr(st, "name")
+        if (!is.na(name)) {
+          types[[name]] <- self$parse_simple_type(st)
+        }
+      }
+
+      # Parse elements that define types directly (like GetPositionsReport)
+      elements <- xml2::xml_find_all(schema, "./xsd:element", self$ns)
+      for (el in elements) {
+        name <- xml2::xml_attr(el, "name")
+        ct <- xml2::xml_find_first(el, "./xsd:complexType", self$ns)
+        if (!inherits(ct, "xml_missing")) {
+          types[[name]] <- self$parse_complex_type(ct)
+        }
+      }
+
+      return(types)
+    },
+    parse_complex_type = function(node) {
+      # Get attributes
+      attrs <- xml2::xml_find_all(node, ".//xsd:attribute", self$ns)
+      attr_defs <- lapply(attrs, function(a) {
+        list(
+          name = xml2::xml_attr(a, "name"),
+          type = self$strip_ns(xml2::xml_attr(a, "type")),
+          use = xml2::xml_attr(a, "use")
+        )
+      })
+      names(attr_defs) <- sapply(attr_defs, function(x) x$name)
+
+      # Get sequence elements
+      seq_elements <- xml2::xml_find_all(
+        node,
+        ".//xsd:sequence/xsd:element",
+        self$ns
+      )
+      elem_defs <- lapply(seq_elements, function(e) {
+        list(
+          name = xml2::xml_attr(e, "name"),
+          type = self$strip_ns(xml2::xml_attr(e, "type")),
+          minOccurs = xml2::xml_attr(e, "minOccurs"),
+          maxOccurs = xml2::xml_attr(e, "maxOccurs")
+        )
+      })
+      names(elem_defs) <- sapply(elem_defs, function(x) x$name)
+
+      list(
+        kind = "complex",
+        attributes = attr_defs,
+        elements = elem_defs
+      )
+    },
+    parse_simple_type = function(node) {
+      restriction <- xml2::xml_find_first(node, "./xsd:restriction", self$ns)
+      base <- self$strip_ns(xml2::xml_attr(restriction, "base"))
+
+      enums <- xml2::xml_find_all(restriction, "./xsd:enumeration", self$ns)
+      values <- xml2::xml_attr(enums, "value")
+
+      list(
+        kind = "simple",
+        base = base,
+        values = values
+      )
+    },
     strip_ns = function(str) {
-      if (is.null(str)) {
+      if (is.null(str) || is.na(str)) {
         return(NULL)
       }
       parts <- strsplit(str, ":")[[1]]

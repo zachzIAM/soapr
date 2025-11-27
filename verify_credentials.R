@@ -3,9 +3,9 @@ devtools::load_all()
 wsdl_path <- "tests/testthat/testdata/valid_wsdls/BDTInteractive.xml"
 service <- Service$new(wsdl_path)
 
-user <- "<user>"
-password <- "<password>"
-client_id <- "<client_id>"
+user <- "iamquant"
+password <- "TheCatSatOnTheMat99"
+client_id <- "kzdr85j9hv"
 
 print("---------------------------------------------------")
 print("Verifying Login with provided credentials...")
@@ -17,7 +17,11 @@ tryCatch(
     {
         # The Login operation usually returns an empty response on success or a specific object
         # We capture the result
-        result <- service$client$Login(User = user, Client = client_id, Password = password)
+        result <- service$client$Login(
+            User = user,
+            Client = client_id,
+            Password = password
+        )
 
         print("LOGIN SUCCESSFUL!")
         print("Server responded with:")
