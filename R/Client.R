@@ -90,6 +90,11 @@ Client <- R6::R6Class(
       # Parse Response
       content <- httr::content(response, as = "parsed", encoding = "UTF-8")
 
+      if (self$verbose) {
+        cat("Response XML:\n")
+        print(content)
+      }
+
       # Extract Body
       body_node <- xml2::xml_find_first(content, ".//*[local-name()='Body']")
 

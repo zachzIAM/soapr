@@ -13,6 +13,33 @@ WSDLParser <- R6::R6Class(
     initialize = function(path_or_url) {
       self$doc <- xml2::read_xml(path_or_url)
       self$ns <- xml2::xml_ns(self$doc)
+
+      # Add standard namespaces if not present
+      # We create a new vector combining doc ns and standard ones
+      # Note: xml_find_all expects a named character vector or xml_ns object
+      # We can convert xml_ns to character and append
+
+      std_ns <- c(
+        xsd = "http://www.w3.org/2001/XMLSchema",
+        wsdl = "http://schemas.xmlsoap.org/wsdl/",
+        soap = "http://schemas.xmlsoap.org/wsdl/soap/"
+      )
+
+      # We prioritize the document's namespaces but ensure our prefixes exist.
+      # So we should override or append.
+      # If we use "xsd:element", we want "xsd" to map to the schema URI.
+
+      current_ns <- as.character(self$ns)
+
+      # Merge
+      combined <- c(current_ns, std_ns)
+      # Remove duplicates by name
+      combined <- combined[!duplicated(names(combined))]
+
+      # Remove empty names
+      combined <- combined[names(combined) != ""]
+
+      self$ns <- combined
     },
     get_target_namespace = function() {
       xml2::xml_attr(self$doc, "targetNamespace")

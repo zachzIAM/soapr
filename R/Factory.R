@@ -64,12 +64,14 @@ Factory <- R6::R6Class(
 
     deserialize = function(node, type_name) {
       if (is.null(self$types[[type_name]])) {
-        # If type not found, return text content or list of children
-        if (length(xml2::xml_children(node)) == 0) {
-          return(xml2::xml_text(node))
+        # Check for built-in XSD types
+        val <- if (length(xml2::xml_children(node)) == 0) {
+          xml2::xml_text(node)
         } else {
-          return(xml2::as_list(node))
+          xml2::as_list(node)
         }
+
+        return(self$convert_builtin_type(val, type_name))
       }
 
       type_def <- self$types[[type_name]]
@@ -136,6 +138,35 @@ Factory <- R6::R6Class(
       attr(obj, "soap_attrs") <- names(type_def$attributes)
 
       return(obj)
+    },
+
+    convert_builtin_type = function(val, type_name) {
+      if (is.list(val)) {
+        # If it's a list, it might be a complex structure that we don't have a definition for.
+        # Or it's a list of values.
+        # For now, just return as is.
+        return(val)
+      }
+
+      # Strip namespace prefix if present
+      local_type <- gsub("^.*:", "", type_name)
+
+      switch(
+        local_type,
+        "int" = as.integer(val),
+        "integer" = as.integer(val),
+        "long" = as.numeric(val), # R doesn't have 64-bit integers natively, use numeric
+        "short" = as.integer(val),
+        "byte" = as.integer(val),
+        "decimal" = as.numeric(val),
+        "float" = as.numeric(val),
+        "double" = as.numeric(val),
+        "boolean" = {
+          if (tolower(val) == "true" || val == "1") TRUE else FALSE
+        },
+        "string" = as.character(val),
+        val # Default: return as is
+      )
     }
   )
 )
