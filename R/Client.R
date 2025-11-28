@@ -34,11 +34,15 @@ Client <- R6::R6Class(
       self$operations <- self$wsdl$get_operations(port_def$binding)
       self$serializer <- XMLSerializer$new()
       self$transport <- transport
+      self$headers <- list()
 
       # Dynamically add methods for each operation
       for (op in self$operations) {
         self$add_operation_method(op)
       }
+    },
+    add_header = function(node) {
+      self$headers <- c(self$headers, list(node))
     },
     add_operation_method = function(op) {
       self[[op$name]] <- function(...) {
@@ -54,6 +58,14 @@ Client <- R6::R6Class(
         "xmlns:xsi" = "http://www.w3.org/2001/XMLSchema-instance",
         "xmlns:xsd" = "http://www.w3.org/2001/XMLSchema"
       )
+
+      # Add Headers if present
+      if (length(self$headers) > 0) {
+        header_node <- xml2::xml_add_child(envelope, "soap:Header")
+        for (h in self$headers) {
+          xml2::xml_add_child(header_node, h)
+        }
+      }
 
       body <- xml2::xml_add_child(envelope, "soap:Body")
 
@@ -135,36 +147,81 @@ Client <- R6::R6Class(
     },
 
     handle_fault = function(response) {
-      if (httr::status_code(response) >= 400) {
-        content <- tryCatch(
-          httr::content(response, as = "parsed", encoding = "UTF-8"),
-          error = function(e) NULL
-        )
-
-        if (!is.null(content)) {
-          fault_node <- xml2::xml_find_first(
-            content,
-            ".//*[local-name()='Fault']"
+      # Parse the response content
+      doc <- tryCatch(
+        {
+          self$serializer$deserialize_response(response)
+        },
+        error = function(e) {
+          cat(
+            "Deserialization error:",
+            e$message,
+            "\n",
+            file = "/tmp/soapr_debug.log",
+            append = TRUE
           )
-          if (inherits(fault_node, "xml_node")) {
-            fault_code <- xml2::xml_text(xml2::xml_find_first(
-              fault_node,
-              ".//*[local-name()='faultcode']"
-            ))
-            fault_string <- xml2::xml_text(xml2::xml_find_first(
-              fault_node,
-              ".//*[local-name()='faultstring']"
-            ))
-            stop(
-              sprintf("SOAP Fault (%s): %s", fault_code, fault_string),
-              call. = FALSE
-            )
-          }
+          # If not XML, let httr handle the status
+          return(NULL)
         }
+      )
 
-        # Fallback to standard error if no SOAP Fault found or content parsing failed
+      if (is.null(doc)) {
         httr::stop_for_status(response)
+        return()
       }
+
+      ns <- xml2::xml_ns(doc)
+
+      # Check for SOAP 1.1 Fault
+      # Only search for soap:Fault if soap prefix is defined or we provide it
+      # Ideally we should use the namespace URI, but xml2 makes that verbose in XPath
+      # Let's try to find it safely
+      fault_node <- tryCatch(
+        xml2::xml_find_first(doc, ".//soap:Fault", ns),
+        warning = function(w) xml2::xml_missing()
+      )
+
+      # Check for SOAP 1.2 Fault
+      if (inherits(fault_node, "xml_missing")) {
+        fault_node <- tryCatch(
+          xml2::xml_find_first(doc, ".//env:Fault", ns),
+          warning = function(w) xml2::xml_missing()
+        )
+      }
+
+      if (inherits(fault_node, "xml_missing")) {
+        # Fallback for when prefix is different but local name is Fault
+        fault_node <- xml2::xml_find_first(doc, ".//*[local-name()='Fault']")
+      }
+
+      if (!inherits(fault_node, "xml_missing")) {
+        # Extract Fault Code
+        fault_code <- xml2::xml_text(xml2::xml_find_first(
+          fault_node,
+          ".//*[local-name()='faultcode' or local-name()='Code']"
+        ))
+
+        # Extract Fault String/Reason
+        fault_string <- xml2::xml_text(xml2::xml_find_first(
+          fault_node,
+          ".//*[local-name()='faultstring' or local-name()='Reason']"
+        ))
+
+        # Extract Detail
+        fault_detail <- xml2::xml_text(xml2::xml_find_first(
+          fault_node,
+          ".//*[local-name()='detail' or local-name()='Detail']"
+        ))
+
+        msg <- sprintf("SOAP Fault: [%s] %s", fault_code, fault_string)
+        if (!is.na(fault_detail) && nchar(fault_detail) > 0) {
+          msg <- paste0(msg, "\nDetail: ", fault_detail)
+        }
+        stop(msg, call. = FALSE)
+      }
+
+      # If no fault found, let httr handle it
+      httr::stop_for_status(response)
     }
   )
 )

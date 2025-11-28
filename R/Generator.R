@@ -116,6 +116,73 @@ build_xml_node <- function(parent, name, value) {
     xml2::xml_set_text(child, as.character(value))
   }
 }
+
+handle_fault <- function(response) {
+  # Try to parse XML
+  doc <- tryCatch({
+    content_type <- httr::headers(response)$`Content-Type`
+    if (!is.null(content_type) && !grepl("xml", content_type, ignore.case = TRUE)) {
+       NULL
+    } else {
+       xml2::read_xml(httr::content(response, "text", encoding = "UTF-8"))
+    }
+  }, error = function(e) NULL)
+  
+  if (is.null(doc)) {
+    httr::stop_for_status(response)
+    return()
+  }
+  
+  ns <- xml2::xml_ns(doc)
+  
+  # Check for SOAP 1.1 Fault
+  fault_node <- tryCatch(
+    xml2::xml_find_first(doc, ".//soap:Fault", ns),
+    warning = function(w) xml2::xml_missing()
+  )
+  
+  # Check for SOAP 1.2 Fault
+  if (inherits(fault_node, "xml_missing")) {
+    fault_node <- tryCatch(
+      xml2::xml_find_first(doc, ".//env:Fault", ns),
+      warning = function(w) xml2::xml_missing()
+    )
+  }
+  
+  if (inherits(fault_node, "xml_missing")) {
+    # Fallback for when prefix is different but local name is Fault
+    fault_node <- xml2::xml_find_first(doc, ".//*[local-name()=\'Fault\']")
+  }
+  
+  if (!inherits(fault_node, "xml_missing")) {
+    # Extract Fault Code
+    fault_code <- xml2::xml_text(xml2::xml_find_first(
+      fault_node,
+      ".//*[local-name()=\'faultcode\' or local-name()=\'Code\']"
+    ))
+    
+    # Extract Fault String/Reason
+    fault_string <- xml2::xml_text(xml2::xml_find_first(
+      fault_node,
+      ".//*[local-name()=\'faultstring\' or local-name()=\'Reason\']"
+    ))
+    
+    # Extract Detail
+    fault_detail <- xml2::xml_text(xml2::xml_find_first(
+      fault_node,
+      ".//*[local-name()=\'detail\' or local-name()=\'Detail\']"
+    ))
+
+    msg <- sprintf("SOAP Fault: [%s] %s", fault_code, fault_string)
+    if (!is.na(fault_detail) && nchar(fault_detail) > 0) {
+      msg <- paste0(msg, "\nDetail: ", fault_detail)
+    }
+    stop(msg, call. = FALSE)
+  }
+  
+  # If no fault found, let httr handle it
+  httr::stop_for_status(response)
+}
 '
             writeLines(code, file.path(path, "R", "utils.R"))
         },
@@ -260,12 +327,22 @@ build_xml_node <- function(parent, name, value) {
                 lines,
                 "#' Create Client",
                 "#' @param url The service endpoint URL. Defaults to the WSDL location.",
-                "#' @return A client object containing the URL and an httr handle.",
+                "#' @return A client object containing the URL, httr handle, and headers.",
                 "#' @export",
                 "new_client <- function(url = NULL) {",
                 paste0('  if (is.null(url)) url <- "', port$location, '"'),
                 "  handle <- httr::handle(url)",
-                "  list(url = url, handle = handle)",
+                "  list(url = url, handle = handle, headers = list())",
+                "}",
+                "",
+                "#' Add SOAP Header",
+                "#' @param client The client object.",
+                "#' @param header An xml_node representing the header.",
+                "#' @return The modified client object.",
+                "#' @export",
+                "add_header <- function(client, header) {",
+                "  client$headers <- c(client$headers, list(header))",
+                "  client",
                 "}"
             )
 
@@ -316,6 +393,15 @@ build_xml_node <- function(parent, name, value) {
                     "    \"xmlns:xsi\" = \"http://www.w3.org/2001/XMLSchema-instance\",",
                     "    \"xmlns:xsd\" = \"http://www.w3.org/2001/XMLSchema\"",
                     "  )",
+                    "",
+                    "  # Add Headers",
+                    "  if (length(client$headers) > 0) {",
+                    "    header_node <- xml2::xml_add_child(envelope, \"soap:Header\")",
+                    "    for (header in client$headers) {",
+                    "      xml2::xml_add_child(header_node, header)",
+                    "    }",
+                    "  }",
+                    "",
                     "  body <- xml2::xml_add_child(envelope, \"soap:Body\")",
                     "  op_node <- xml2::xml_add_child(body, op_name)",
                     paste0(
@@ -335,7 +421,7 @@ build_xml_node <- function(parent, name, value) {
                     "    httr::content_type(\"text/xml; charset=utf-8\"),",
                     "    body = as.character(envelope)",
                     "  )",
-                    "  httr::stop_for_status(response)",
+                    "  handle_fault(response)",
                     "  httr::content(response, as = \"parsed\", encoding = \"UTF-8\")"
                 )
 

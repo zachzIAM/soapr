@@ -54,6 +54,20 @@ XMLSerializer <- R6::R6Class(
                 # Since we set the default namespace on the operation node, we don't need prefixes here
                 xml2::xml_add_child(parent, name, as.character(value))
             }
+        },
+
+        deserialize_response = function(response) {
+            content_type <- httr::headers(response)$`Content-Type`
+
+            # Check if it's XML
+            if (
+                !is.null(content_type) &&
+                    !grepl("xml", content_type, ignore.case = TRUE)
+            ) {
+                stop("Response is not XML")
+            }
+
+            xml2::read_xml(httr::content(response, "text", encoding = "UTF-8"))
         }
     )
 )
