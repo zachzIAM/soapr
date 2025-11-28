@@ -102,6 +102,43 @@ Client <- R6::R6Class(
 
       # Parse Response
       content <- httr::content(response, as = "parsed", encoding = "UTF-8")
+
+      # Extract Body
+      body_node <- xml2::xml_find_first(content, ".//*[local-name()='Body']")
+
+      # The body should contain the response element
+      # We expect the first child of Body to be the response
+      # But we should check op$output to be sure what we are looking for
+
+      # op$output is the output message name.
+      # We need to find the element name associated with that message.
+      # This info is not easily available here without looking up the message definition again.
+      # However, usually it's just the first child.
+
+      response_node <- xml2::xml_children(body_node)[[1]]
+
+      # We need the type name for this response node.
+      # In document/literal wrapped, the element name IS the type name (or close to it).
+      # Let's try to use the local name of the response node.
+      response_name <- xml2::xml_name(response_node)
+
+      # Remove namespace prefix if present (xml_name usually returns local name if not qualified, but let's be safe)
+      # xml_name returns the name with prefix if it has one? No, it returns local name usually.
+      # Wait, xml_name returns "tns:SetAdHocPortfolioResponse" or just "SetAdHocPortfolioResponse"?
+      # It depends on how it was parsed.
+      # Let's assume it matches a type in our factory.
+
+      # If we can't find the type, we return the xml_node (backward compatibility)
+      if (!is.null(self$factory$types[[response_name]])) {
+        return(self$factory$deserialize(response_node, response_name))
+      } else {
+        # Try stripping namespace just in case
+        local_name <- gsub("^.*:", "", response_name)
+        if (!is.null(self$factory$types[[local_name]])) {
+          return(self$factory$deserialize(response_node, local_name))
+        }
+      }
+
       return(content)
     },
 
