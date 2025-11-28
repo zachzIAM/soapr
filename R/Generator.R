@@ -26,6 +26,9 @@ Generator <- R6::R6Class(
             # Create DESCRIPTION
             self$write_description(pkg_path, package_name)
 
+            # Create README.md
+            self$write_readme(pkg_path, package_name)
+
             # Create R/utils.R (helper functions)
             self$write_utils(pkg_path)
 
@@ -79,6 +82,58 @@ Generator <- R6::R6Class(
                 "RoxygenNote: 7.2.3\n"
             )
             writeLines(desc, file.path(path, "DESCRIPTION"))
+        },
+
+        write_readme = function(path, name) {
+            readme <- paste0(
+                "# ",
+                name,
+                "\n\n",
+                "Auto-generated SOAP client for ",
+                name,
+                ".\n\n",
+                "## Installation\n\n",
+                "```r\n",
+                "# Install from local directory\n",
+                "devtools::install(\".\")\n",
+                "```\n\n",
+                "## Usage\n\n",
+                "### Initialization\n\n",
+                "Create a new client instance:\n\n",
+                "```r\n",
+                "library(",
+                name,
+                ")\n",
+                "client <- new_client()\n",
+                "```\n\n",
+                "### Configuration (Authentication, Proxies, etc.)\n\n",
+                "You can pass `httr` configuration options to `new_client` via the `config` argument. This is useful for Basic Authentication, setting timeouts, or configuring proxies.\n\n",
+                "```r\n",
+                "# Basic Authentication\n",
+                "client <- new_client(\n",
+                "  config = httr::authenticate(\"user\", \"password\")\n",
+                ")\n\n",
+                "# Set Timeout\n",
+                "client <- new_client(\n",
+                "  config = httr::timeout(60)\n",
+                ")\n",
+                "```\n\n",
+                "### WS-Security (Headers)\n\n",
+                "You can add arbitrary SOAP headers, such as WS-Security UsernameTokens, using `add_header`.\n\n",
+                "```r\n",
+                "header <- xml2::read_xml('<wsse:Security>...</wsse:Security>')\n",
+                "client <- add_header(client, header)\n",
+                "```\n\n",
+                "### Mocking (Testing)\n\n",
+                "For testing purposes, you can inject a custom transport function to mock network requests.\n\n",
+                "```r\n",
+                "mock_transport <- function(url, action, body, config, handle) {\n",
+                "  # Return a mock response list(status_code = 200, content = ...)\n",
+                "}\n",
+                "client <- new_client(transport = mock_transport)\n",
+                "```\n"
+            )
+            writeLines(readme, file.path(path, "README.md"))
         },
 
         write_utils = function(path) {
@@ -330,6 +385,20 @@ handle_fault <- function(response) {
                 "#' @param config A list of httr configuration options (e.g., authentication).",
                 "#' @param transport A custom transport function for mocking. Defaults to NULL.",
                 "#' @return A client object containing the URL, httr handle, headers, config, and transport.",
+                "#' @examples",
+                "#' \\dontrun{",
+                "#' # Default initialization",
+                "#' client <- new_client()",
+                "#'",
+                "#' # With Basic Authentication",
+                "#' client <- new_client(config = httr::authenticate('user', 'password'))",
+                "#'",
+                "#' # With Custom Transport (Mocking)",
+                "#' mock_transport <- function(url, action, body, config, handle) {",
+                "#'   list(status_code = 200, content = charToRaw('<response>...</response>'))",
+                "#' }",
+                "#' client <- new_client(transport = mock_transport)",
+                "#' }",
                 "#' @export",
                 "new_client <- function(url = NULL, config = list(), transport = NULL) {",
                 paste0('  if (is.null(url)) url <- "', port$location, '"'),
