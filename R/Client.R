@@ -68,7 +68,37 @@ Client <- R6::R6Class(
         body = as.character(envelope)
       )
 
-      httr::stop_for_status(response)
+      # Check for SOAP Fault
+      if (httr::status_code(response) >= 400) {
+        content <- tryCatch(
+          httr::content(response, as = "parsed", encoding = "UTF-8"),
+          error = function(e) NULL
+        )
+
+        if (!is.null(content)) {
+          fault_node <- xml2::xml_find_first(
+            content,
+            ".//*[local-name()='Fault']"
+          )
+          if (inherits(fault_node, "xml_node")) {
+            fault_code <- xml2::xml_text(xml2::xml_find_first(
+              fault_node,
+              ".//*[local-name()='faultcode']"
+            ))
+            fault_string <- xml2::xml_text(xml2::xml_find_first(
+              fault_node,
+              ".//*[local-name()='faultstring']"
+            ))
+            stop(
+              sprintf("SOAP Fault (%s): %s", fault_code, fault_string),
+              call. = FALSE
+            )
+          }
+        }
+
+        # Fallback to standard error if no SOAP Fault found or content parsing failed
+        httr::stop_for_status(response)
+      }
 
       # Parse Response
       content <- httr::content(response, as = "parsed", encoding = "UTF-8")
