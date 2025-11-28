@@ -14,12 +14,25 @@ Client <- R6::R6Class(
     port_def = NULL,
     factory = NULL,
     operations = NULL,
-    verbose = FALSE,
-    initialize = function(wsdl, port_def, factory, verbose = FALSE) {
+    target_namespace = NULL,
+    handle = NULL,
+    initialize = function(
+      wsdl,
+      port_def,
+      factory,
+      target_namespace = NULL,
+      verbose = FALSE
+    ) {
       self$wsdl <- wsdl
       self$port_def <- port_def
       self$factory <- factory
+      self$target_namespace <- if (is.null(target_namespace)) {
+        "http://barra.com/cp/bdti"
+      } else {
+        target_namespace
+      }
       self$verbose <- verbose
+      self$handle <- httr::handle(self$port_def$location)
       self$operations <- self$wsdl$get_operations(port_def$binding)
 
       # Dynamically add methods for each operation
@@ -38,7 +51,7 @@ Client <- R6::R6Class(
       envelope <- xml2::xml_new_root(
         "soap:Envelope",
         "xmlns:soap" = "http://schemas.xmlsoap.org/soap/envelope/",
-        "xmlns:tns" = "http://barra.com/cp/bdti",
+        "xmlns:tns" = self$target_namespace,
         "xmlns:xsi" = "http://www.w3.org/2001/XMLSchema-instance",
         "xmlns:xsd" = "http://www.w3.org/2001/XMLSchema"
       )
@@ -63,6 +76,7 @@ Client <- R6::R6Class(
 
       response <- httr::POST(
         url = self$port_def$location,
+        handle = self$handle,
         httr::add_headers(SOAPAction = op$action),
         httr::content_type("text/xml; charset=utf-8"),
         body = as.character(envelope)

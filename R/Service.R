@@ -32,6 +32,7 @@ Service <- R6::R6Class(
         self$wsdl,
         port_def,
         self$factory,
+        target_namespace = self$wsdl$get_target_namespace(),
         verbose = verbose
       )
     }

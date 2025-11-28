@@ -7,6 +7,9 @@ user <- "iamquant"
 password <- "TheCatSatOnTheMat99"
 client_id <- "kzdr85j9hv"
 
+print("Client Handle:")
+print(service$client$handle)
+
 print("Attempting Login...")
 tryCatch(
     {

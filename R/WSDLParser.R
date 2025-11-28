@@ -14,6 +14,9 @@ WSDLParser <- R6::R6Class(
       self$doc <- xml2::read_xml(path_or_url)
       self$ns <- xml2::xml_ns(self$doc)
     },
+    get_target_namespace = function() {
+      xml2::xml_attr(self$doc, "targetNamespace")
+    },
     get_services = function() {
       # Find all service elements
       services <- xml2::xml_find_all(self$doc, "//wsdl:service", self$ns)

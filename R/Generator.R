@@ -269,6 +269,8 @@ build_xml_node <- function(parent, name, value) {
                 "}"
             )
 
+            tns <- self$wsdl$get_target_namespace()
+
             for (op_name in names(ops)) {
                 op <- ops[[op_name]]
 
@@ -311,7 +313,7 @@ build_xml_node <- function(parent, name, value) {
                     "  # Construct Envelope",
                     "  envelope <- xml2::xml_new_root(\"soap:Envelope\",",
                     "    \"xmlns:soap\" = \"http://schemas.xmlsoap.org/soap/envelope/\",",
-                    "    \"xmlns:tns\" = \"http://barra.com/cp/bdti\",", # TODO: Dynamic TNS
+                    paste0("    \"xmlns:tns\" = \"", tns, "\","),
                     "    \"xmlns:xsi\" = \"http://www.w3.org/2001/XMLSchema-instance\",",
                     "    \"xmlns:xsd\" = \"http://www.w3.org/2001/XMLSchema\"",
                     "  )",

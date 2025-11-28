@@ -63,3 +63,23 @@ if (file.exists(namespace_file)) {
 } else {
     print("NAMESPACE NOT found!")
 }
+
+print("Attempting to load generated package...")
+tryCatch(
+    {
+        devtools::load_all(pkg_dir)
+        print("Package loaded successfully!")
+
+        if (exists("new_client")) {
+            print("new_client function exists.")
+            client <- new_client()
+            print("Client created:")
+            print(client)
+        } else {
+            print("new_client function does NOT exist.")
+        }
+    },
+    error = function(e) {
+        print(paste("Error loading package:", e$message))
+    }
+)
