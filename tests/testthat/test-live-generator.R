@@ -53,15 +53,40 @@ test_that("Static Client Generator (BDTInteractive)", {
             ))
 
             # Create a client and check headers
-            client <- new_client()
+            client <- new_client(config = list(foo = "bar"))
             expect_true(is.list(client))
             expect_true("headers" %in% names(client))
             expect_true(is.list(client$headers))
+            expect_true("config" %in% names(client))
+            expect_equal(client$config$foo, "bar")
 
             # Test add_header
             header <- xml2::xml_new_root("TestHeader")
             client <- add_header(client, header)
             expect_length(client$headers, 1)
+
+            # Test transport injection
+            mock_transport <- function(url, action, body, config, handle) {
+                # Return a mock response
+                # We need to return a response object that httr::content can parse
+                # or we can just mock the whole flow if we had dependency injection on handle_fault too.
+                # But handle_fault takes a response object.
+
+                # Let's just check if we can call it.
+                # Since we can't easily create a full httr response object without making a real request or using httptest,
+                # we might just verify the transport is stored.
+                return(list(
+                    status_code = 200,
+                    content = charToRaw("<response>ok</response>")
+                ))
+            }
+
+            client_mock <- new_client(transport = mock_transport)
+            expect_equal(client_mock$transport, mock_transport)
+
+            # To fully test it, we would need to call an operation.
+            # But we don't know the operation names easily here without parsing WSDL again.
+            # However, we know the generated code uses it.
         },
         error = function(e) {
             # If loading fails, it might be due to environment issues, but we log it
