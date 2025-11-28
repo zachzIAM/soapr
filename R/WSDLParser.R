@@ -80,22 +80,37 @@ WSDLParser <- R6::R6Class(
       pt_xpath <- sprintf("//wsdl:portType[@name='%s']", port_type_name)
       port_type <- xml2::xml_find_first(self$doc, pt_xpath, self$ns)
 
+      if (inherits(port_type, "xml_missing")) {
+        return(list())
+      }
+
       pt_ops <- xml2::xml_find_all(port_type, "./wsdl:operation", self$ns)
-      lapply(pt_ops, function(op) {
-        name <- xml2::xml_attr(op, "name")
-        input <- xml2::xml_find_first(op, "./wsdl:input", self$ns)
-        output <- xml2::xml_find_first(op, "./wsdl:output", self$ns)
+      ops <- list() # Initialize ops as a list
+      lapply(pt_ops, function(op_node) {
+        op_name <- xml2::xml_attr(op_node, "name")
+        input <- xml2::xml_find_first(op_node, "./wsdl:input", self$ns)
+        output <- xml2::xml_find_first(op_node, "./wsdl:output", self$ns)
 
         input_msg <- self$strip_ns(xml2::xml_attr(input, "message"))
         output_msg <- self$strip_ns(xml2::xml_attr(output, "message"))
 
-        list(
-          name = name,
-          action = ops_meta[[name]]$action,
+        # Get documentation
+        doc <- self$parse_documentation(op_node)
+        if (op_name == "GetExportJobStream") {
+          print(paste("DEBUG: Doc for GetExportJobStream:", doc))
+        }
+
+        ops[[op_name]] <<- list(
+          # Use <<- to assign to ops in the parent environment
+          name = op_name,
+          action = ops_meta[[op_name]]$action,
           input_message = input_msg,
-          output_message = output_msg
+          output_message = output_msg,
+          documentation = doc
         )
       })
+      names(ops) <- sapply(ops, function(x) x$name)
+      return(ops)
     },
     get_type_definitions = function() {
       # Find schema node
@@ -139,14 +154,18 @@ WSDLParser <- R6::R6Class(
     parse_complex_type = function(node) {
       # Get attributes
       attrs <- xml2::xml_find_all(node, ".//xsd:attribute", self$ns)
-      attr_defs <- lapply(attrs, function(a) {
-        list(
-          name = xml2::xml_attr(a, "name"),
-          type = self$strip_ns(xml2::xml_attr(a, "type")),
-          use = xml2::xml_attr(a, "use")
-        )
-      })
-      names(attr_defs) <- sapply(attr_defs, function(x) x$name)
+      attr_defs <- list()
+      for (a in attrs) {
+        name <- xml2::xml_attr(a, "name")
+        if (!is.na(name)) {
+          attr_defs[[name]] <- list(
+            name = name,
+            type = self$strip_ns(xml2::xml_attr(a, "type")),
+            use = xml2::xml_attr(a, "use"),
+            documentation = self$parse_documentation(a)
+          )
+        }
+      }
 
       # Get sequence elements
       seq_elements <- xml2::xml_find_all(
@@ -154,20 +173,43 @@ WSDLParser <- R6::R6Class(
         ".//xsd:sequence/xsd:element",
         self$ns
       )
-      elem_defs <- lapply(seq_elements, function(e) {
-        list(
-          name = xml2::xml_attr(e, "name"),
-          type = self$strip_ns(xml2::xml_attr(e, "type")),
-          minOccurs = xml2::xml_attr(e, "minOccurs"),
-          maxOccurs = xml2::xml_attr(e, "maxOccurs")
-        )
-      })
-      names(elem_defs) <- sapply(elem_defs, function(x) x$name)
+      elem_defs <- list()
+      for (e in seq_elements) {
+        name <- xml2::xml_attr(e, "name")
+        type <- self$strip_ns(xml2::xml_attr(e, "type"))
+
+        # Handle ref
+        if (is.na(name)) {
+          ref <- self$strip_ns(xml2::xml_attr(e, "ref"))
+          if (!is.na(ref)) {
+            name <- ref
+            # If ref is used, type is usually implied by the referenced element,
+            # but for now we might not have it resolved.
+            # We'll assume the ref name is the type name or similar.
+            # Actually, if ref is used, we should look up the element definition.
+            # For simplicity, we'll use the ref name as the name.
+            if (is.na(type)) type <- ref
+          }
+        }
+
+        if (!is.na(name)) {
+          elem_defs[[name]] <- list(
+            name = name,
+            type = type,
+            minOccurs = xml2::xml_attr(e, "minOccurs"),
+            maxOccurs = xml2::xml_attr(e, "maxOccurs"),
+            documentation = self$parse_documentation(e)
+          )
+        }
+      }
+
+      doc <- self$parse_documentation(node)
 
       list(
         kind = "complex",
         attributes = attr_defs,
-        elements = elem_defs
+        elements = elem_defs,
+        documentation = doc
       )
     },
     parse_simple_type = function(node) {
@@ -184,11 +226,31 @@ WSDLParser <- R6::R6Class(
       )
     },
     strip_ns = function(str) {
-      if (is.null(str) || is.na(str)) {
+      if (is.null(str)) {
         return(NULL)
       }
+      if (is.na(str)) {
+        return(NA)
+      }
+
       parts <- strsplit(str, ":")[[1]]
       if (length(parts) > 1) parts[2] else parts[1]
+    },
+    parse_documentation = function(node) {
+      doc_node <- xml2::xml_find_first(node, "./wsdl:documentation", self$ns)
+      if (inherits(doc_node, "xml_missing")) {
+        # Try xsd:annotation/xsd:documentation for types
+        doc_node <- xml2::xml_find_first(
+          node,
+          ".//xsd:annotation/xsd:documentation",
+          self$ns
+        )
+      }
+
+      if (!inherits(doc_node, "xml_missing")) {
+        return(trimws(xml2::xml_text(doc_node)))
+      }
+      return(NULL)
     }
   )
 )

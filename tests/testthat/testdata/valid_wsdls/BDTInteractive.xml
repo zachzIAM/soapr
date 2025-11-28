@@ -10,9 +10,18 @@
             </xsd:simpleType>
 
             <xsd:element name="GetExportJobStream">
+                <xsd:annotation>
+                    <xsd:documentation>
+                        Request to get the export job stream.
+                    </xsd:documentation>
+                </xsd:annotation>
                 <xsd:complexType>
                     <xsd:sequence>
-                        <xsd:element name="User" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+                        <xsd:element name="User" type="xsd:string" minOccurs="1" maxOccurs="1">
+                            <xsd:annotation>
+                                <xsd:documentation>The username for authentication.</xsd:documentation>
+                            </xsd:annotation>
+                        </xsd:element>
                         <xsd:element name="Client" type="xsd:string" minOccurs="1" maxOccurs="1"/>
                         <xsd:element name="Password" type="xsd:string" minOccurs="0" maxOccurs="1"/>
                         <xsd:element name="JobID" type="xsd:string" minOccurs="1" maxOccurs="1"/>
@@ -1502,6 +1511,7 @@
 
     <wsdl:portType name="BDTIWebServicePortType">
         <wsdl:operation name="GetExportJobStream">
+            <wsdl:documentation>Request to get the export job stream.</wsdl:documentation>
             <wsdl:input message="bdti:GetExportJobStreamInputMessage"/>
             <wsdl:output message="bdti:GetExportJobStreamOutputMessage"/>
         </wsdl:operation>
@@ -1737,6 +1747,7 @@
         <soap:binding transport="http://schemas.xmlsoap.org/soap/http" style="document"/>
 
         <wsdl:operation name="GetExportJobStream">
+            <wsdl:documentation>Request to get the export job stream.</wsdl:documentation>
             <soap:operation soapAction=""/>
             <wsdl:input>
                 <soap:body use="literal"/>

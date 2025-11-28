@@ -26,9 +26,6 @@ Generator <- R6::R6Class(
             # Create DESCRIPTION
             self$write_description(pkg_path, package_name)
 
-            # Create NAMESPACE
-            self$write_namespace(pkg_path)
-
             # Create R/utils.R (helper functions)
             self$write_utils(pkg_path)
 
@@ -37,6 +34,30 @@ Generator <- R6::R6Class(
 
             # Create R/client.R (operations)
             self$write_client(pkg_path)
+
+            # Document package
+            message("Running roxygen2::roxygenize...")
+            tryCatch(
+                {
+                    if (requireNamespace("roxygen2", quietly = TRUE)) {
+                        roxygen2::roxygenize(
+                            pkg_path,
+                            roclets = c("rd", "namespace", "collate")
+                        )
+                        message("Documentation generated.")
+                    } else {
+                        message(
+                            "roxygen2 not installed. Skipping documentation."
+                        )
+                    }
+                },
+                error = function(e) {
+                    message("Could not run roxygenize: ", e$message)
+                    message(
+                        "Please run roxygen2::roxygenize() manually on the generated package."
+                    )
+                }
+            )
 
             message(paste("Package generated at:", pkg_path))
         },
@@ -54,19 +75,10 @@ Generator <- R6::R6Class(
                 "Imports: httr, xml2, R6\n",
                 "License: MIT\n",
                 "Encoding: UTF-8\n",
+                "Roxygen: list(markdown = TRUE)\n",
                 "RoxygenNote: 7.2.3\n"
             )
             writeLines(desc, file.path(path, "DESCRIPTION"))
-        },
-
-        write_namespace = function(path) {
-            ns <- paste0(
-                "exportPattern(\"^[^\\\\.]\")\n",
-                "import(httr)\n",
-                "import(xml2)\n",
-                "import(R6)\n"
-            )
-            writeLines(ns, file.path(path, "NAMESPACE"))
         },
 
         write_utils = function(path) {
@@ -118,6 +130,7 @@ build_xml_node <- function(parent, name, value) {
                     # Generate constructor
                     args <- c()
                     body <- c("  obj <- list(")
+                    param_docs <- c()
 
                     # Attributes
                     attr_names <- names(def$attributes)
@@ -126,6 +139,17 @@ build_xml_node <- function(parent, name, value) {
                         body <- c(
                             body,
                             paste0("    ", attr_name, " = ", attr_name, ",")
+                        )
+
+                        attr_doc <- def$attributes[[attr_name]]$documentation
+                        doc_text <- if (!is.null(attr_doc)) {
+                            attr_doc
+                        } else {
+                            paste("Attribute", attr_name)
+                        }
+                        param_docs <- c(
+                            param_docs,
+                            paste0("#' @param ", attr_name, " ", doc_text)
                         )
                     }
 
@@ -140,6 +164,17 @@ build_xml_node <- function(parent, name, value) {
                         body <- c(
                             body,
                             paste0("    ", elem_name, " = ", elem_name, ",")
+                        )
+
+                        elem_doc <- elem$documentation
+                        doc_text <- if (!is.null(elem_doc)) {
+                            elem_doc
+                        } else {
+                            paste("Element", elem_name)
+                        }
+                        param_docs <- c(
+                            param_docs,
+                            paste0("#' @param ", elem_name, " ", doc_text)
                         )
                     }
 
@@ -176,9 +211,17 @@ build_xml_node <- function(parent, name, value) {
 
                     body <- c(body, "  return(obj)")
 
+                    doc_str <- if (!is.null(def$documentation)) {
+                        def$documentation
+                    } else {
+                        paste("Constructor for", name)
+                    }
+
                     func_def <- paste0(
-                        "#' Constructor for ",
-                        name,
+                        "#' ",
+                        doc_str,
+                        "\n",
+                        paste(param_docs, collapse = "\n"),
                         "\n",
                         "#' @export\n",
                         "new_",
@@ -216,10 +259,13 @@ build_xml_node <- function(parent, name, value) {
             lines <- c(
                 lines,
                 "#' Create Client",
+                "#' @param url The service endpoint URL. Defaults to the WSDL location.",
+                "#' @return A client object containing the URL and an httr handle.",
                 "#' @export",
                 "new_client <- function(url = NULL) {",
                 paste0('  if (is.null(url)) url <- "', port$location, '"'),
-                "  list(url = url)",
+                "  handle <- httr::handle(url)",
+                "  list(url = url, handle = handle)",
                 "}"
             )
 
@@ -230,6 +276,9 @@ build_xml_node <- function(parent, name, value) {
 
                 args <- c("client")
                 arg_assignments <- c()
+                param_docs <- c(
+                    "#' @param client The client object created by new_client()"
+                )
 
                 if (!is.null(type_def)) {
                     for (elem_name in names(type_def$elements)) {
@@ -237,6 +286,18 @@ build_xml_node <- function(parent, name, value) {
                         arg_assignments <- c(
                             arg_assignments,
                             paste0("  args[['", elem_name, "']] <- ", elem_name)
+                        )
+
+                        elem <- type_def$elements[[elem_name]]
+                        elem_doc <- elem$documentation
+                        doc_text <- if (!is.null(elem_doc)) {
+                            elem_doc
+                        } else {
+                            paste("Parameter", elem_name)
+                        }
+                        param_docs <- c(
+                            param_docs,
+                            paste0("#' @param ", elem_name, " ", doc_text)
                         )
                     }
                 }
@@ -263,6 +324,7 @@ build_xml_node <- function(parent, name, value) {
                     "",
                     "  response <- httr::POST(",
                     "    url = client$url,",
+                    "    handle = client$handle,",
                     "    httr::add_headers(SOAPAction = action),",
                     "    httr::content_type(\"text/xml; charset=utf-8\"),",
                     "    body = as.character(envelope)",
@@ -271,9 +333,17 @@ build_xml_node <- function(parent, name, value) {
                     "  httr::content(response, as = \"parsed\", encoding = \"UTF-8\")"
                 )
 
+                doc_str <- if (!is.null(op$documentation)) {
+                    op$documentation
+                } else {
+                    op_name
+                }
+
                 func_def <- paste0(
                     "#' ",
-                    op_name,
+                    doc_str,
+                    "\n",
+                    paste(param_docs, collapse = "\n"),
                     "\n",
                     "#' @export\n",
                     paste0(
