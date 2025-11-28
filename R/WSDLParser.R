@@ -22,7 +22,9 @@ WSDLParser <- R6::R6Class(
       std_ns <- c(
         xsd = "http://www.w3.org/2001/XMLSchema",
         wsdl = "http://schemas.xmlsoap.org/wsdl/",
-        soap = "http://schemas.xmlsoap.org/wsdl/soap/"
+        soap = "http://schemas.xmlsoap.org/wsdl/soap/",
+        soap12 = "http://schemas.xmlsoap.org/wsdl/soap12/",
+        http = "http://schemas.xmlsoap.org/wsdl/http/"
       )
 
       # We prioritize the document's namespaces but ensure our prefixes exist.
@@ -40,9 +42,16 @@ WSDLParser <- R6::R6Class(
       combined <- combined[names(combined) != ""]
 
       self$ns <- combined
+
+      # Validate targetNamespace exists
+      self$get_target_namespace()
     },
     get_target_namespace = function() {
-      xml2::xml_attr(self$doc, "targetNamespace")
+      tns <- xml2::xml_attr(self$doc, "targetNamespace")
+      if (is.na(tns)) {
+        stop("targetNamespace attribute missing from WSDL definitions")
+      }
+      return(tns)
     },
     get_services = function() {
       # Find all service elements
@@ -58,7 +67,18 @@ WSDLParser <- R6::R6Class(
       ports <- xml2::xml_find_all(service_node, "./wsdl:port", self$ns)
       lapply(ports, function(port) {
         binding_name <- self$strip_ns(xml2::xml_attr(port, "binding"))
+
         address_node <- xml2::xml_find_first(port, ".//soap:address", self$ns)
+        if (inherits(address_node, "xml_missing")) {
+          address_node <- xml2::xml_find_first(
+            port,
+            ".//soap12:address",
+            self$ns
+          )
+        }
+        if (inherits(address_node, "xml_missing")) {
+          address_node <- xml2::xml_find_first(port, ".//http:address", self$ns)
+        }
         location <- if (!is.na(address_node)) {
           xml2::xml_attr(address_node, "location")
         } else {
@@ -87,7 +107,7 @@ WSDLParser <- R6::R6Class(
       binding <- xml2::xml_find_first(self$doc, xpath, self$ns)
 
       if (inherits(binding, "xml_missing")) {
-        return(list())
+        stop(sprintf("Binding '%s' not found in WSDL", binding_name))
       }
 
       port_type_name <- self$strip_ns(xml2::xml_attr(binding, "type"))
@@ -111,7 +131,7 @@ WSDLParser <- R6::R6Class(
       port_type <- xml2::xml_find_first(self$doc, pt_xpath, self$ns)
 
       if (inherits(port_type, "xml_missing")) {
-        return(list())
+        stop(sprintf("PortType '%s' not found in WSDL", port_type_name))
       }
 
       pt_ops <- xml2::xml_find_all(port_type, "./wsdl:operation", self$ns)
@@ -123,6 +143,30 @@ WSDLParser <- R6::R6Class(
 
         input_msg <- self$strip_ns(xml2::xml_attr(input, "message"))
         output_msg <- self$strip_ns(xml2::xml_attr(output, "message"))
+
+        # Validate messages exist
+        if (!is.na(input_msg)) {
+          msg_xpath <- sprintf("//wsdl:message[@name='%s']", input_msg)
+          if (
+            inherits(
+              xml2::xml_find_first(self$doc, msg_xpath, self$ns),
+              "xml_missing"
+            )
+          ) {
+            stop(sprintf("Message '%s' not found in WSDL", input_msg))
+          }
+        }
+        if (!is.na(output_msg)) {
+          msg_xpath <- sprintf("//wsdl:message[@name='%s']", output_msg)
+          if (
+            inherits(
+              xml2::xml_find_first(self$doc, msg_xpath, self$ns),
+              "xml_missing"
+            )
+          ) {
+            stop(sprintf("Message '%s' not found in WSDL", output_msg))
+          }
+        }
 
         # Get documentation
         doc <- self$parse_documentation(op_node)
@@ -139,7 +183,10 @@ WSDLParser <- R6::R6Class(
           documentation = doc
         )
       })
-      names(ops) <- sapply(ops, function(x) x$name)
+      if (length(ops) == 0) {
+        stop(sprintf("No operations found for PortType '%s'", port_type_name))
+      }
+
       return(ops)
     },
     get_type_definitions = function() {
