@@ -20,17 +20,12 @@ Client <- R6::R6Class(
       wsdl,
       port_def,
       factory,
-      target_namespace = NULL,
       verbose = FALSE
     ) {
       self$wsdl <- wsdl
       self$port_def <- port_def
       self$factory <- factory
-      self$target_namespace <- if (is.null(target_namespace)) {
-        "http://barra.com/cp/bdti"
-      } else {
-        target_namespace
-      }
+      self$target_namespace <- self$wsdl$get_target_namespace()
       self$verbose <- verbose
       self$handle <- httr::handle(self$port_def$location)
       self$operations <- self$wsdl$get_operations(port_def$binding)
@@ -51,13 +46,15 @@ Client <- R6::R6Class(
       envelope <- xml2::xml_new_root(
         "soap:Envelope",
         "xmlns:soap" = "http://schemas.xmlsoap.org/soap/envelope/",
-        "xmlns:tns" = self$target_namespace,
         "xmlns:xsi" = "http://www.w3.org/2001/XMLSchema-instance",
         "xmlns:xsd" = "http://www.w3.org/2001/XMLSchema"
       )
 
       body <- xml2::xml_add_child(envelope, "soap:Body")
-      op_node <- xml2::xml_add_child(body, paste0("tns:", op$name))
+
+      # Use default namespace for the operation and its children
+      op_node <- xml2::xml_add_child(body, op$name)
+      xml2::xml_attr(op_node, "xmlns") <- self$target_namespace
 
       # Get input message type definition if available
       # This is tricky because the operation input message points to an element
@@ -171,8 +168,8 @@ Client <- R6::R6Class(
         # If it has a soap_type attribute, we could use it, but for now we rely on structure
 
         # Create element node
-        node_name <- if (grepl(":", name)) name else paste0("tns:", name)
-        node <- xml2::xml_add_child(parent, node_name)
+        # Since we set the default namespace on the operation node, we don't need prefixes here
+        node <- xml2::xml_add_child(parent, name)
 
         # Add attributes
         if (!is.null(attr(value, "soap_attrs"))) {
@@ -215,8 +212,8 @@ Client <- R6::R6Class(
         # This is hard because names are not unique globally.
       } else {
         # Simple Type
-        node_name <- if (grepl(":", name)) name else paste0("tns:", name)
-        xml2::xml_add_child(parent, node_name, as.character(value))
+        # Since we set the default namespace on the operation node, we don't need prefixes here
+        xml2::xml_add_child(parent, name, as.character(value))
       }
     }
   )

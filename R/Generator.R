@@ -313,12 +313,16 @@ build_xml_node <- function(parent, name, value) {
                     "  # Construct Envelope",
                     "  envelope <- xml2::xml_new_root(\"soap:Envelope\",",
                     "    \"xmlns:soap\" = \"http://schemas.xmlsoap.org/soap/envelope/\",",
-                    paste0("    \"xmlns:tns\" = \"", tns, "\","),
                     "    \"xmlns:xsi\" = \"http://www.w3.org/2001/XMLSchema-instance\",",
                     "    \"xmlns:xsd\" = \"http://www.w3.org/2001/XMLSchema\"",
                     "  )",
                     "  body <- xml2::xml_add_child(envelope, \"soap:Body\")",
-                    "  op_node <- xml2::xml_add_child(body, paste0(\"tns:\", op_name))",
+                    "  op_node <- xml2::xml_add_child(body, op_name)",
+                    paste0(
+                        "  xml2::xml_attr(op_node, \"xmlns\") <- \"",
+                        tns,
+                        "\""
+                    ),
                     "",
                     "  for (arg_name in names(args)) {",
                     "    build_xml_node(op_node, arg_name, args[[arg_name]])",
