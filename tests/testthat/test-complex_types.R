@@ -22,24 +22,39 @@ test_that("Complex types are parsed and generated correctly", {
     pos$MID <- list(mid)
     portfolio$Pos <- list(pos)
 
-    # We can't easily test the XML generation without mocking the private build_xml_node or intercepting the request.
-    # But we can verify that call_operation doesn't crash before the network request.
+    # Mock transport
+    mock_transport <- function(url, handle, body, ...) {
+        expect_true(grepl('Type="HOLDINGS"', body))
+        expect_true(grepl('PortfolioCurrency="USD"', body))
+        # No tns: prefix anymore
+        expect_true(
+            grepl('<MID ID="AAPL" IDType="TICKER"/>', body) ||
+                grepl('<MID ID="AAPL" IDType="TICKER" />', body)
+        )
 
-    # Mock httr::POST to avoid network call and capture body
-    with_mock(
-        `httr::POST` = function(url, body, ...) {
-            expect_true(grepl('Type="HOLDINGS"', body))
-            expect_true(grepl('PortfolioCurrency="USD"', body))
-            expect_true(
-                grepl('<tns:MID ID="AAPL" IDType="TICKER"/>', body) ||
-                    grepl('<tns:MID ID="AAPL" IDType="TICKER" />', body)
-            )
-            return(list(status_code = 200, content = charToRaw("<response/>")))
-        },
-        `httr::stop_for_status` = function(...) TRUE,
-        `httr::content` = function(...) list(),
-        {
-            service$client$SetAdHocPortfolio(Portfolio = portfolio)
-        }
-    )
+        structure(
+            list(
+                url = url,
+                status_code = 200,
+                headers = list(`Content-Type` = "text/xml; charset=utf-8"),
+                content = charToRaw(
+                    '
+                    <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+                        <soap:Body>
+                            <SetAdHocPortfolioResponse xmlns="http://barra.com/cp/bdti">
+                                <SetAdHocPortfolioResult>Success</SetAdHocPortfolioResult>
+                            </SetAdHocPortfolioResponse>
+                        </soap:Body>
+                    </soap:Envelope>
+                '
+                )
+            ),
+            class = "response"
+        )
+    }
+
+    # Inject mock transport
+    service$client$transport <- mock_transport
+
+    service$client$SetAdHocPortfolio(Portfolio = portfolio)
 })
