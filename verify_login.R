@@ -10,7 +10,11 @@ client_id <- "kzdr85j9hv"
 print("Attempting Login...")
 tryCatch(
     {
-        service$client$Login(User = user, Client = client_id, Password = password)
+        service$client$Login(
+            User = user,
+            Client = client_id,
+            Password = password
+        )
         print("Login Successful!")
     },
     error = function(e) {

@@ -201,7 +201,8 @@ Client <- R6::R6Class(
         # This is hard because names are not unique globally.
       } else {
         # Simple Type
-        xml2::xml_add_child(parent, name, as.character(value))
+        node_name <- if (grepl(":", name)) name else paste0("tns:", name)
+        xml2::xml_add_child(parent, node_name, as.character(value))
       }
     }
   )
