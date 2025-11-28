@@ -53,6 +53,7 @@ Factory <- R6::R6Class(
       # Add class and type attribute
       class(obj) <- c("soap_object", "list")
       attr(obj, "soap_type") <- type_name
+      attr(obj, "soap_attrs") <- names(type_def$attributes)
 
       return(obj)
     },

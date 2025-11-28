@@ -110,78 +110,61 @@ Client <- R6::R6Class(
         return()
       }
 
-      # Handle lists (maxOccurs="unbounded")
-      if (is.list(value) && is.null(names(value))) {
-        for (item in value) {
-          self$build_xml_node(parent, name, item)
-        }
+      # Skip NA values (scalar atomic NA)
+      if (length(value) == 1 && is.atomic(value) && is.na(value)) {
         return()
       }
 
-      # Create node
-      # Check if name is namespaced
-      node_name <- if (grepl(":", name)) name else paste0("tns:", name)
-      child <- xml2::xml_add_child(parent, node_name)
+      if (inherits(value, "soap_object")) {
+        # Complex Type
+        # If it has a soap_type attribute, we could use it, but for now we rely on structure
 
-      if (is.list(value)) {
-        # Complex type
-        # We need to distinguish between attributes and child elements
-        # Ideally we check the type definition, but for now we can use a heuristic:
+        # Create element node
+        node_name <- if (grepl(":", name)) name else paste0("tns:", name)
+        node <- xml2::xml_add_child(parent, node_name)
+
+        # Add attributes
+        if (!is.null(attr(value, "soap_attrs"))) {
+          for (attr_name in attr(value, "soap_attrs")) {
+            attr_val <- value[[attr_name]]
+            if (!is.null(attr_val) && !is.na(attr_val)) {
+              xml2::xml_attr(node, attr_name) <- as.character(attr_val)
+            }
+          }
+        }
+
+        # Add elements
+        # We need to iterate over names in the object that are NOT attributes
+        soap_attrs <- attr(value, "soap_attrs")
+        for (elem_name in names(value)) {
+          if (!elem_name %in% soap_attrs) {
+            self$build_xml_node(node, elem_name, value[[elem_name]])
+          }
+        }
+      } else if (is.list(value) && !inherits(value, "soap_object")) {
+        # List of items (unbounded)
+        for (item in value) {
+          self$build_xml_node(parent, name, item)
+        }
         # If the list has named elements, treat them as children or attributes
-
         # To support attributes, we need to know which keys are attributes.
         # Since we don't have the type def passed down easily here without a big refactor,
         # let's assume the user (or Factory) constructs the list such that
         # attributes are handled? No, that's hard for the user.
-
         # Better approach: Look up the type definition in the Factory if possible.
         # But we don't know the type name of 'value' easily here.
-
         # Heuristic: If the value is atomic, set text. If list, recurse.
         # Attributes are tricky without schema.
         # Let's try to match against the schema if we can find the type.
-
         # For now, let's just treat everything as child elements unless we have a specific convention.
         # Wait, the user asked for Factory support. The Factory knows the structure.
         # If the Factory creates the object, maybe it can attach metadata?
         # Or we just assume that if it's in the 'attributes' slot of the type def, it's an attribute.
-
         # Let's try to find the type definition for this element name.
         # This is hard because names are not unique globally.
-
-        # Let's stick to a simple recursive strategy first:
-        # Iterate over keys.
-        for (key in names(value)) {
-          val <- value[[key]]
-          # Check if it should be an attribute?
-          # We can check if the key matches a known attribute for this type?
-          # Without type info, we can't be sure.
-
-          # Let's assume for now that we treat everything as elements
-          # UNLESS the key starts with "attr_" (convention?)
-          # OR we look up the type definition.
-
-          # Let's try to look up the element in the schema.
-          # We can search for an element with this name in the schema types.
-          # This is slow and maybe inaccurate.
-
-          # Alternative: The user passes an object created by Factory, which has class "soap_object"
-          # and carries its type name.
-          if (inherits(value, "soap_object")) {
-            type_name <- attr(value, "soap_type")
-            type_def <- self$factory$types[[type_name]]
-
-            if (!is.null(type_def) && !is.null(type_def$attributes[[key]])) {
-              xml2::xml_set_attr(child, key, as.character(val))
-              next
-            }
-          }
-
-          self$build_xml_node(child, key, val)
-        }
       } else {
-        # Simple type
-        xml2::xml_set_text(child, as.character(value))
+        # Simple Type
+        xml2::xml_add_child(parent, name, as.character(value))
       }
     }
   )
