@@ -35,6 +35,9 @@ Generator <- R6::R6Class(
             # Create R/types.R (constructors)
             self$write_types(pkg_path)
 
+            # Create R/schema.R (type definitions for deserialization)
+            self$write_schema(pkg_path)
+
             # Create R/client.R (operations)
             self$write_client(pkg_path)
 
@@ -238,6 +241,98 @@ handle_fault <- function(response) {
   # If no fault found, let httr handle it
   httr::stop_for_status(response)
 }
+
+convert_builtin_type <- function(val, type_name) {
+  if (is.list(val)) {
+    return(val)
+  }
+
+  # Strip namespace prefix if present
+  local_type <- gsub("^.*:", "", type_name)
+
+  switch(
+    local_type,
+    "int" = as.integer(val),
+    "integer" = as.integer(val),
+    "long" = as.numeric(val),
+    "short" = as.integer(val),
+    "byte" = as.integer(val),
+    "decimal" = as.numeric(val),
+    "float" = as.numeric(val),
+    "double" = as.numeric(val),
+    "boolean" = {
+      if (tolower(val) == "true" || val == "1") TRUE else FALSE
+    },
+    "string" = as.character(val),
+    val # Default: return as is
+  )
+}
+
+deserialize <- function(node, type_name, schema) {
+  if (is.null(schema[[type_name]])) {
+    # Check for built-in XSD types
+    val <- if (length(xml2::xml_children(node)) == 0) {
+      xml2::xml_text(node)
+    } else {
+      xml2::as_list(node)
+    }
+
+    return(convert_builtin_type(val, type_name))
+  }
+
+  type_def <- schema[[type_name]]
+
+  if (type_def$kind == "simple") {
+    return(xml2::xml_text(node))
+  }
+
+  # Complex Type
+  obj <- list()
+
+  # Attributes
+  for (attr_name in names(type_def$attributes)) {
+    attr_val <- xml2::xml_attr(node, attr_name)
+    if (!is.na(attr_val)) {
+      obj[[attr_name]] <- attr_val
+    } else {
+      obj[[attr_name]] <- NA
+    }
+  }
+
+  # Elements
+  for (elem_name in names(type_def$elements)) {
+    elem_def <- type_def$elements[[elem_name]]
+
+    children <- xml2::xml_children(node)
+    matching_children <- children[xml2::xml_name(children) == elem_name]
+
+    if (length(matching_children) == 0) {
+      if (!is.na(elem_def$maxOccurs) && elem_def$maxOccurs == "unbounded") {
+        obj[[elem_name]] <- list()
+      } else {
+        obj[[elem_name]] <- NA
+      }
+      next
+    }
+
+    # Deserialize children
+    child_vals <- lapply(matching_children, function(child) {
+      deserialize(child, elem_def$type, schema)
+    })
+
+    if (!is.na(elem_def$maxOccurs) && elem_def$maxOccurs == "unbounded") {
+      obj[[elem_name]] <- child_vals
+    } else {
+      obj[[elem_name]] <- child_vals[[1]]
+    }
+  }
+
+  class(obj) <- c("soap_object", "list")
+  attr(obj, "soap_type") <- type_name
+  attr(obj, "soap_attrs") <- names(type_def$attributes)
+
+  return(obj)
+}
 '
             writeLines(code, file.path(path, "R", "utils.R"))
         },
@@ -361,6 +456,31 @@ handle_fault <- function(response) {
             writeLines(lines, file.path(path, "R", "types.R"))
         },
 
+        write_schema = function(path) {
+            # We need to serialize the type definitions to a file so they can be loaded at runtime
+            # Since they are just lists, we can use dput or similar, but let's make it cleaner
+            # We'll just dump the structure into a function that returns it
+
+            types <- self$wsdl$get_type_definitions()
+
+            # We can't easily dput the whole environment/R6 object, but types is a list of lists
+            # so dput should work reasonably well.
+
+            lines <- c(
+                "#' Get Schema",
+                "#' @return A list of type definitions.",
+                "#' @export",
+                "get_schema <- function() {"
+            )
+
+            # Use capture.output to get the dput output
+            types_code <- capture.output(dput(types))
+            lines <- c(lines, paste0("  ", types_code))
+            lines <- c(lines, "}")
+
+            writeLines(lines, file.path(path, "R", "schema.R"))
+        },
+
         write_client = function(path) {
             # We need to find a service and port
             services <- self$wsdl$get_services()
@@ -462,7 +582,8 @@ handle_fault <- function(response) {
                     "  envelope <- xml2::xml_new_root(\"soap:Envelope\",",
                     "    \"xmlns:soap\" = \"http://schemas.xmlsoap.org/soap/envelope/\",",
                     "    \"xmlns:xsi\" = \"http://www.w3.org/2001/XMLSchema-instance\",",
-                    "    \"xmlns:xsd\" = \"http://www.w3.org/2001/XMLSchema\"",
+                    "    \"xmlns:xsd\" = \"http://www.w3.org/2001/XMLSchema\",",
+                    paste0("    \"xmlns:tns\" = \"", tns, "\""),
                     "  )",
                     "",
                     "  # Add Headers",
@@ -498,7 +619,17 @@ handle_fault <- function(response) {
                     "    )",
                     "  }",
                     "  handle_fault(response)",
-                    "  httr::content(response, as = \"parsed\", encoding = \"UTF-8\")"
+                    "  content <- httr::content(response, as = \"parsed\", encoding = \"UTF-8\")",
+                    "  body_node <- xml2::xml_find_first(content, \".//*[local-name()='Body']\")",
+                    "  response_node <- xml2::xml_children(body_node)[[1]]",
+                    "  response_name <- xml2::xml_name(response_node)",
+                    "  local_name <- gsub(\"^.*:\", \"\", response_name)",
+                    "  schema <- get_schema()",
+                    "  if (!is.null(schema[[local_name]])) {",
+                    "    deserialize(response_node, local_name, schema)",
+                    "  } else {",
+                    "    content",
+                    "  }"
                 )
 
                 doc_str <- if (!is.null(op$documentation)) {
