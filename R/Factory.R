@@ -9,12 +9,10 @@ Factory <- R6::R6Class(
   public = list(
     wsdl = NULL,
     types = NULL,
-
     initialize = function(wsdl) {
       self$wsdl <- wsdl
       self$types <- wsdl$get_type_definitions()
     },
-
     create = function(type_name) {
       if (is.null(self$types[[type_name]])) {
         stop(paste("Type not found:", type_name))
@@ -57,11 +55,9 @@ Factory <- R6::R6Class(
 
       return(obj)
     },
-
     get_type_names = function() {
       return(names(self$types))
     },
-
     deserialize = function(node, type_name) {
       if (is.null(self$types[[type_name]])) {
         # Check for built-in XSD types
@@ -145,7 +141,6 @@ Factory <- R6::R6Class(
 
       return(obj)
     },
-
     convert_builtin_type = function(val, type_name) {
       if (is.list(val)) {
         # If it's a list, it might be a complex structure that we don't have a definition for.
@@ -157,8 +152,7 @@ Factory <- R6::R6Class(
       # Strip namespace prefix if present
       local_type <- gsub("^.*:", "", type_name)
 
-      switch(
-        local_type,
+      switch(local_type,
         "int" = as.integer(val),
         "integer" = as.integer(val),
         "long" = as.numeric(val), # R doesn't have 64-bit integers natively, use numeric

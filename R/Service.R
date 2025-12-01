@@ -10,7 +10,6 @@ Service <- R6::R6Class(
     wsdl = NULL,
     client = NULL,
     factory = NULL,
-
     initialize = function(wsdl_path, verbose = FALSE) {
       self$wsdl <- WSDLParser$new(wsdl_path)
 

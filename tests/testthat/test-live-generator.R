@@ -2,99 +2,99 @@ library(testthat)
 library(soapr)
 
 test_that("Static Client Generator (BDTInteractive)", {
-    skip_on_ci()
+  skip_on_ci()
 
-    wsdl_path <- test_path("testdata/valid_wsdls/BDTInteractive.xml")
-    if (!file.exists(wsdl_path)) {
-        wsdl_path <- "../testdata/valid_wsdls/BDTInteractive.xml"
+  wsdl_path <- test_path("testdata/valid_wsdls/BDTInteractive.xml")
+  if (!file.exists(wsdl_path)) {
+    wsdl_path <- "../testdata/valid_wsdls/BDTInteractive.xml"
+  }
+  if (!file.exists(wsdl_path)) {
+    skip("WSDL file not found")
+  }
+
+  output_path <- tempfile("generated_packages")
+  dir.create(output_path)
+  on.exit(unlink(output_path, recursive = TRUE))
+
+  package_name <- "BDTIClient"
+
+  # Generate package
+  wsdl <- WSDLParser$new(wsdl_path)
+  gen <- Generator$new(wsdl)
+  expect_error(gen$generate_package(output_path, package_name), NA)
+
+  pkg_dir <- file.path(output_path, package_name)
+  expect_true(dir.exists(pkg_dir))
+
+  # Check files
+  expect_true(file.exists(file.path(pkg_dir, "DESCRIPTION")))
+  expect_true(file.exists(file.path(pkg_dir, "NAMESPACE")))
+  expect_true(file.exists(file.path(pkg_dir, "R", "types.R")))
+  expect_true(file.exists(file.path(pkg_dir, "R", "client.R")))
+
+  # Check if we can load it
+  # We use pkgload::load_all to simulate loading
+  # But loading a package inside a test might be tricky if it has dependencies (soapr).
+  # The generated package depends on soapr.
+
+  # We can check if the code parses at least
+  expect_error(parse(file = file.path(pkg_dir, "R", "types.R")), NA)
+  expect_error(parse(file = file.path(pkg_dir, "R", "client.R")), NA)
+
+  # Try to load it
+  tryCatch(
+    {
+      pkgload::load_all(pkg_dir)
+      expect_true(exists(
+        "new_client",
+        where = as.environment(paste0("package:", package_name))
+      ))
+      expect_true(exists(
+        "add_header",
+        where = as.environment(paste0("package:", package_name))
+      ))
+
+      # Create a client and check headers
+      client <- new_client(config = list(foo = "bar"))
+      expect_true(is.list(client))
+      expect_true("headers" %in% names(client))
+      expect_true(is.list(client$headers))
+      expect_true("config" %in% names(client))
+      expect_equal(client$config$foo, "bar")
+
+      # Test add_header
+      header <- xml2::xml_new_root("TestHeader")
+      client <- add_header(client, header)
+      expect_length(client$headers, 1)
+
+      # Test transport injection
+      mock_transport <- function(url, action, body, config, handle) {
+        # Return a mock response
+        # We need to return a response object that httr::content can parse
+        # or we can just mock the whole flow if we had dependency injection on handle_fault too.
+        # But handle_fault takes a response object.
+
+        # Let's just check if we can call it.
+        # Since we can't easily create a full httr response object without making a real request or using httptest,
+        # we might just verify the transport is stored.
+        list(
+          status_code = 200,
+          content = charToRaw("<response>ok</response>")
+        )
+      }
+
+      client_mock <- new_client(transport = mock_transport)
+      expect_equal(client_mock$transport, mock_transport)
+
+      # To fully test it, we would need to call an operation.
+      # But we don't know the operation names easily here without parsing WSDL again.
+      # However, we know the generated code uses it.
+    },
+    error = function(e) {
+      # If loading fails, it might be due to environment issues, but we log it
+      message("Loading generated package failed: ", e$message)
+      # We don't fail the test if loading fails due to complex environment issues,
+      # but we should ideally verify it works.
     }
-    if (!file.exists(wsdl_path)) {
-        skip("WSDL file not found")
-    }
-
-    output_path <- tempfile("generated_packages")
-    dir.create(output_path)
-    on.exit(unlink(output_path, recursive = TRUE))
-
-    package_name <- "BDTIClient"
-
-    # Generate package
-    wsdl <- WSDLParser$new(wsdl_path)
-    gen <- Generator$new(wsdl)
-    expect_error(gen$generate_package(output_path, package_name), NA)
-
-    pkg_dir <- file.path(output_path, package_name)
-    expect_true(dir.exists(pkg_dir))
-
-    # Check files
-    expect_true(file.exists(file.path(pkg_dir, "DESCRIPTION")))
-    expect_true(file.exists(file.path(pkg_dir, "NAMESPACE")))
-    expect_true(file.exists(file.path(pkg_dir, "R", "types.R")))
-    expect_true(file.exists(file.path(pkg_dir, "R", "client.R")))
-
-    # Check if we can load it
-    # We use pkgload::load_all to simulate loading
-    # But loading a package inside a test might be tricky if it has dependencies (soapr).
-    # The generated package depends on soapr.
-
-    # We can check if the code parses at least
-    expect_error(parse(file = file.path(pkg_dir, "R", "types.R")), NA)
-    expect_error(parse(file = file.path(pkg_dir, "R", "client.R")), NA)
-
-    # Try to load it
-    tryCatch(
-        {
-            pkgload::load_all(pkg_dir)
-            expect_true(exists(
-                "new_client",
-                where = as.environment(paste0("package:", package_name))
-            ))
-            expect_true(exists(
-                "add_header",
-                where = as.environment(paste0("package:", package_name))
-            ))
-
-            # Create a client and check headers
-            client <- new_client(config = list(foo = "bar"))
-            expect_true(is.list(client))
-            expect_true("headers" %in% names(client))
-            expect_true(is.list(client$headers))
-            expect_true("config" %in% names(client))
-            expect_equal(client$config$foo, "bar")
-
-            # Test add_header
-            header <- xml2::xml_new_root("TestHeader")
-            client <- add_header(client, header)
-            expect_length(client$headers, 1)
-
-            # Test transport injection
-            mock_transport <- function(url, action, body, config, handle) {
-                # Return a mock response
-                # We need to return a response object that httr::content can parse
-                # or we can just mock the whole flow if we had dependency injection on handle_fault too.
-                # But handle_fault takes a response object.
-
-                # Let's just check if we can call it.
-                # Since we can't easily create a full httr response object without making a real request or using httptest,
-                # we might just verify the transport is stored.
-                return(list(
-                    status_code = 200,
-                    content = charToRaw("<response>ok</response>")
-                ))
-            }
-
-            client_mock <- new_client(transport = mock_transport)
-            expect_equal(client_mock$transport, mock_transport)
-
-            # To fully test it, we would need to call an operation.
-            # But we don't know the operation names easily here without parsing WSDL again.
-            # However, we know the generated code uses it.
-        },
-        error = function(e) {
-            # If loading fails, it might be due to environment issues, but we log it
-            message("Loading generated package failed: ", e$message)
-            # We don't fail the test if loading fails due to complex environment issues,
-            # but we should ideally verify it works.
-        }
-    )
+  )
 })

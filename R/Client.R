@@ -18,13 +18,11 @@ Client <- R6::R6Class(
     handle = NULL,
     serializer = NULL,
     transport = NULL,
-    initialize = function(
-      wsdl,
-      port_def,
-      factory,
-      transport = httr::POST,
-      verbose = FALSE
-    ) {
+    initialize = function(wsdl,
+                          port_def,
+                          factory,
+                          transport = httr::POST,
+                          verbose = FALSE) {
       self$wsdl <- wsdl
       self$port_def <- port_def
       self$factory <- factory
@@ -145,7 +143,6 @@ Client <- R6::R6Class(
 
       return(content)
     },
-
     handle_fault = function(response) {
       # Parse the response content
       doc <- tryCatch(
