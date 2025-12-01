@@ -3,20 +3,23 @@ Package: soapr
 Title: SOAP API Client Generator
 Version: 0.1.0
 Author: Zach (User)
+Maintainer: Zach (User) <zach@example.com>
 Description: A robust SOAP client generator for R. Generates static R packages from WSDL files, supporting WS-Security, custom transports, and type-safe deserialization.
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
-Suggests: 
-    testthat (>= 3.0.0)
-Config/testthat/edition: 3
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.2
+VignetteBuilder: knitr
 Imports: 
     checkmate,
     httr,
     R6,
     xml2,
     desc
+Suggests: 
+    testthat (>= 3.0.0),
+    knitr,
+    rmarkdown
 URL: https://github.com/zachzIAM/soapr
 BugReports: https://github.com/zachzIAM/soapr/issues
