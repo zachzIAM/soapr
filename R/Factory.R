@@ -77,8 +77,14 @@ Factory <- R6::R6Class(
       type_def <- self$types[[type_name]]
 
       if (type_def$kind == "simple") {
-        # TODO: Handle type conversion (int, double, etc.) based on type_def$base
-        return(xml2::xml_text(node))
+        val <- xml2::xml_text(node)
+        # Use the base type for conversion if available
+        base_type <- if (!is.null(type_def$base)) {
+          type_def$base
+        } else {
+          "xsd:string"
+        }
+        return(self$convert_builtin_type(val, base_type))
       }
 
       # Complex Type
@@ -88,8 +94,8 @@ Factory <- R6::R6Class(
       for (attr_name in names(type_def$attributes)) {
         attr_val <- xml2::xml_attr(node, attr_name)
         if (!is.na(attr_val)) {
-          # TODO: Type conversion
-          obj[[attr_name]] <- attr_val
+          attr_type <- type_def$attributes[[attr_name]]$type
+          obj[[attr_name]] <- self$convert_builtin_type(attr_val, attr_type)
         } else {
           obj[[attr_name]] <- NA
         }

@@ -69,13 +69,13 @@ test_that("Factory deserializes complex nested structures (Portfolio example)", 
     expect_length(portfolio_obj$Pos, 2)
 
     pos1 <- portfolio_obj$Pos[[1]]
-    expect_equal(pos1$Value, "1000")
+    expect_equal(pos1$Value, 1000)
     expect_equal(pos1$Currency, "USD")
     expect_length(pos1$MID, 1)
     expect_equal(pos1$MID[[1]]$ID, "AAPL")
 
     pos2 <- portfolio_obj$Pos[[2]]
-    expect_equal(pos2$Value, "2000")
+    expect_equal(pos2$Value, 2000)
     expect_equal(pos2$Currency, "EUR")
     expect_length(pos2$MID, 1)
     expect_equal(pos2$MID[[1]]$ID, "GOOG")

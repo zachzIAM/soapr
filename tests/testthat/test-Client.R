@@ -115,6 +115,6 @@ test_that("Client handles SOAP Faults correctly", {
 
   expect_error(
     client$Login(User = "bad", Password = "bad", Client = "bad"),
-    "SOAP Fault \\(soap:Server\\): Invalid credentials"
+    "SOAP Fault: \\[soap:Server\\] Invalid credentials"
   )
 })

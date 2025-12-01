@@ -62,7 +62,7 @@ test_that("Factory creates and deserializes objects correctly", {
     expect_s3_class(obj, "soap_object")
     expect_equal(obj$ID, "123")
     expect_equal(obj$Name, "John Doe")
-    expect_equal(obj$Age, "30") # Currently strings, TODO: type conversion
+    expect_equal(obj$Age, 30L) # Type conversion should work now
 
     expect_length(obj$Address, 2)
     expect_equal(obj$Address[[1]]$City, "New York")
