@@ -32,11 +32,11 @@ test_that("Static Client Generator works for Calculator service", {
       client <- calculator::new_client()
 
       # Test Add
-      res <- calculator::Add(client, intA = 10, intB = 20)
+      res <- client$Add(intA = 10, intB = 20)
       expect_equal(res$AddResult, 30)
 
       # Test Subtract
-      res <- calculator::Subtract(client, intA = 50, intB = 20)
+      res <- client$Subtract(intA = 50, intB = 20)
       expect_equal(res$SubtractResult, 30)
     },
     error = function(e) {
@@ -69,7 +69,7 @@ test_that("Static Client Generator works for NumberConversion service", {
       client <- numberconversion::new_client()
 
       # Test NumberToWords
-      res <- numberconversion::NumberToWords(client, ubiNum = 123)
+      res <- client$NumberToWords(ubiNum = 123)
       expect_equal(
         trimws(res$NumberToWordsResult),
         "one hundred and twenty three"

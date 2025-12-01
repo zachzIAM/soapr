@@ -306,69 +306,73 @@ Generator <- R6::R6Class(
 
       ops <- self$wsdl$get_operations(port$binding)
 
-      lines <- c()
+      detached_docs <- c()
+      public_members <- c()
 
-      # Helper to create the client object that holds the endpoint
-      lines <- c(
-        lines,
-        "#' Create Client",
-        "#' @param url The service endpoint URL. Defaults to the WSDL location.",
-        "#' @param config A list of httr configuration options (e.g., authentication).",
-        "#' @param transport A custom transport function for mocking. Defaults to NULL.",
-        "#' @return A client object containing the URL, httr handle, headers, config, and transport.",
-        "#' @examples",
-        "#' \\dontrun{",
-        "#' # Default initialization",
-        "#' client <- new_client()",
-        "#'",
-        "#' # With Basic Authentication",
-        "#' client <- new_client(config = httr::authenticate('user', 'password'))",
-        "#'",
-        "#' # With Custom Transport (Mocking)",
-        "#' mock_transport <- function(url, action, body, config, handle) {",
-        "#'   list(status_code = 200, content = charToRaw('<response>...</response>'))",
-        "#' }",
-        "#' client <- new_client(transport = mock_transport)",
-        "#' }",
-        "#' @export",
-        "new_client <- function(url = NULL, config = list(), transport = NULL) {",
-        paste0('  if (is.null(url)) url <- "', port$location, '"'),
-        "  handle <- httr::handle(url)",
-        "  list(url = url, handle = handle, headers = list(), config = config, transport = transport)",
-        "}",
-        "",
-        "#' Add SOAP Header",
-        "#' @param client The client object.",
-        "#' @param header An xml_node representing the header.",
-        "#' @return The modified client object.",
-        "#' @export",
-        "add_header <- function(client, header) {",
-        "  client$headers <- c(client$headers, list(header))",
-        "  client",
-        "}"
+      # --- Fields ---
+      public_members <- c(
+        public_members,
+        "    #' @field url The service endpoint URL.",
+        "    url = NULL",
+        "    #' @field handle The httr handle.",
+        "    handle = NULL",
+        "    #' @field headers List of SOAP headers.",
+        "    headers = list()",
+        "    #' @field config List of httr configuration options.",
+        "    config = list()",
+        "    #' @field transport Custom transport function.",
+        "    transport = NULL"
       )
+
+      # --- Initialize ---
+      init_body <- c(
+        paste0('      if (is.null(url)) url <- "', port$location, '"'),
+        "      self$url <- url",
+        "      self$handle <- httr::handle(url)",
+        "      self$config <- config",
+        "      self$transport <- transport"
+      )
+
+      init_def <- paste0(
+        "    #' @description\n",
+        "    #' Initialize the client.\n",
+        "    #' @param url The service endpoint URL.\n",
+        "    #' @param config A list of httr configuration options.\n",
+        "    #' @param transport A custom transport function.\n",
+        "    initialize = function(url = NULL, config = list(), transport = NULL) {\n",
+        paste(init_body, collapse = "\n"),
+        "\n    }"
+      )
+      public_members <- c(public_members, init_def)
+
+      # --- Add Header ---
+      add_header_def <- paste0(
+        "    #' @description\n",
+        "    #' Add a SOAP header.\n",
+        "    #' @param header An xml_node representing the header.\n",
+        "    add_header = function(header) {\n",
+        "      self$headers <- c(self$headers, list(header))\n",
+        "      invisible(self)\n",
+        "    }"
+      )
+      public_members <- c(public_members, add_header_def)
 
       tns <- self$wsdl$get_target_namespace()
 
       for (op_name in names(ops)) {
         op <- ops[[op_name]]
-
         type_def <- self$wsdl$get_type_definitions()[[op_name]]
 
-        args <- c("client")
-        arg_assignments <- c()
-        param_docs <- c(
-          "#' @param client The client object created by new_client()"
-        )
+        # --- Detached Documentation ---
+        doc_str <- if (!is.null(op$documentation)) {
+          op$documentation
+        } else {
+          paste("Operation", op_name)
+        }
 
+        args_doc <- c()
         if (!is.null(type_def)) {
           for (elem_name in names(type_def$elements)) {
-            args <- c(args, paste0(elem_name, " = NA"))
-            arg_assignments <- c(
-              arg_assignments,
-              paste0("  args[['", elem_name, "']] <- ", elem_name)
-            )
-
             elem <- type_def$elements[[elem_name]]
             elem_doc <- elem$documentation
             doc_text <- if (!is.null(elem_doc)) {
@@ -376,98 +380,145 @@ Generator <- R6::R6Class(
             } else {
               paste("Parameter", elem_name)
             }
-            param_docs <- c(
-              param_docs,
+            args_doc <- c(
+              args_doc,
               paste0("#' @param ", elem_name, " ", doc_text)
             )
           }
         }
 
+        detached_doc <- c(
+          paste0("#' ", doc_str),
+          "#' @description",
+          paste0("#' Call the ", op_name, " operation."),
+          args_doc,
+          paste0("#' @usage client$", op_name, "(...)"),
+          paste0("#' @name ", op_name),
+          paste0("#' @aliases ", op_name),
+          "NULL",
+          ""
+        )
+        detached_docs <- c(detached_docs, detached_doc)
+
+        # --- Method Definition ---
+        args <- c()
+        arg_assignments <- c()
+
+        if (!is.null(type_def)) {
+          for (elem_name in names(type_def$elements)) {
+            args <- c(args, paste0(elem_name, " = NA"))
+            arg_assignments <- c(
+              arg_assignments,
+              paste0("      args[['", elem_name, "']] <- ", elem_name)
+            )
+          }
+        }
+
         func_body <- c(
-          paste0("  op_name <- \"", op_name, "\""),
-          paste0("  action <- \"", op$action, "\""),
-          "  args <- list()",
+          paste0("      op_name <- \"", op_name, "\""),
+          paste0("      action <- \"", op$action, "\""),
+          "      args <- list()",
           arg_assignments,
           "",
-          "  # Construct Envelope",
-          "  envelope <- xml2::xml_new_root(\"soap:Envelope\",",
-          "    \"xmlns:soap\" = \"http://schemas.xmlsoap.org/soap/envelope/\",",
-          "    \"xmlns:xsi\" = \"http://www.w3.org/2001/XMLSchema-instance\",",
-          "    \"xmlns:xsd\" = \"http://www.w3.org/2001/XMLSchema\",",
-          paste0("    \"xmlns:tns\" = \"", tns, "\""),
-          "  )",
+          "      # Construct Envelope",
+          "      envelope <- xml2::xml_new_root(\"soap:Envelope\",",
+          "        \"xmlns:soap\" = \"http://schemas.xmlsoap.org/soap/envelope/\",",
+          "        \"xmlns:xsi\" = \"http://www.w3.org/2001/XMLSchema-instance\",",
+          "        \"xmlns:xsd\" = \"http://www.w3.org/2001/XMLSchema\",",
+          paste0("        \"xmlns:tns\" = \"", tns, "\""),
+          "      )",
           "",
-          "  # Add Headers",
-          "  if (length(client$headers) > 0) {",
-          "    header_node <- xml2::xml_add_child(envelope, \"soap:Header\")",
-          "    for (header in client$headers) {",
-          "      xml2::xml_add_child(header_node, header)",
-          "    }",
-          "  }",
+          "      # Add Headers",
+          "      if (length(self$headers) > 0) {",
+          "        header_node <- xml2::xml_add_child(envelope, \"soap:Header\")",
+          "        for (header in self$headers) {",
+          "          xml2::xml_add_child(header_node, header)",
+          "        }",
+          "      }",
           "",
-          "  body <- xml2::xml_add_child(envelope, \"soap:Body\")",
-          "  op_node <- xml2::xml_add_child(body, op_name)",
+          "      body <- xml2::xml_add_child(envelope, \"soap:Body\")",
+          "      op_node <- xml2::xml_add_child(body, op_name)",
           paste0(
-            "  xml2::xml_attr(op_node, \"xmlns\") <- \"",
+            "      xml2::xml_attr(op_node, \"xmlns\") <- \"",
             tns,
             "\""
           ),
           "",
-          "  for (arg_name in names(args)) {",
-          "    build_xml_node(op_node, arg_name, args[[arg_name]])",
-          "  }",
+          "      for (arg_name in names(args)) {",
+          "        build_xml_node(op_node, arg_name, args[[arg_name]])",
+          "      }",
           "",
-          "  if (!is.null(client$transport)) {",
-          "    response <- client$transport(client$url, action, as.character(envelope), client$config, client$handle)",
-          "  } else {",
-          "    response <- httr::POST(",
-          "      url = client$url,",
-          "      handle = client$handle,",
-          "      httr::add_headers(SOAPAction = action),",
-          "      httr::content_type(\"text/xml; charset=utf-8\"),",
-          "      body = as.character(envelope),",
-          "      config = client$config",
-          "    )",
-          "  }",
-          "  handle_fault(response)",
-          "  content <- httr::content(response, as = \"parsed\", encoding = \"UTF-8\")",
-          "  body_node <- xml2::xml_find_first(content, \".//*[local-name()='Body']\")",
-          "  response_node <- xml2::xml_children(body_node)[[1]]",
-          "  response_name <- xml2::xml_name(response_node)",
-          "  local_name <- gsub(\"^.*:\", \"\", response_name)",
-          "  schema <- get_schema()",
-          "  if (!is.null(schema[[local_name]])) {",
-          "    deserialize(response_node, local_name, schema)",
-          "  } else {",
-          "    content",
-          "  }"
+          "      if (!is.null(self$transport)) {",
+          "        response <- self$transport(self$url, action, as.character(envelope), self$config, self$handle)",
+          "      } else {",
+          "        response <- httr::POST(",
+          "          url = self$url,",
+          "          handle = self$handle,",
+          "          httr::add_headers(SOAPAction = action),",
+          "          httr::content_type(\"text/xml; charset=utf-8\"),",
+          "          body = as.character(envelope),",
+          "          config = self$config",
+          "        )",
+          "      }",
+          "      handle_fault(response)",
+          "      content <- httr::content(response, as = \"parsed\", encoding = \"UTF-8\")",
+          "      body_node <- xml2::xml_find_first(content, \".//*[local-name()='Body']\")",
+          "      response_node <- xml2::xml_children(body_node)[[1]]",
+          "      response_name <- xml2::xml_name(response_node)",
+          "      local_name <- gsub(\"^.*:\", \"\", response_name)",
+          "      schema <- get_schema()",
+          "      if (!is.null(schema[[local_name]])) {",
+          "        deserialize(response_node, local_name, schema)",
+          "      } else {",
+          "        content",
+          "      }"
         )
 
-        doc_str <- if (!is.null(op$documentation)) {
-          op$documentation
-        } else {
-          op_name
-        }
+        method_doc <- c(
+          paste0("    #' @description Call the ", op_name, " operation."),
+          if (length(args_doc) > 0) paste0("    ", args_doc) else NULL
+        )
 
-        func_def <- paste0(
-          "#' ",
-          doc_str,
+        method_def <- paste0(
+          paste(method_doc, collapse = "\n"),
           "\n",
-          paste(param_docs, collapse = "\n"),
-          "\n",
-          "#' @export\n",
-          paste0(
-            op_name,
-            " <- function(",
-            paste(args, collapse = ", "),
-            ") {\n"
-          ),
+          "    ",
+          op_name,
+          " = function(",
+          paste(args, collapse = ", "),
+          ") {\n",
           paste(func_body, collapse = "\n"),
-          "\n",
-          "}\n"
+          "\n    }"
         )
-        lines <- c(lines, func_def)
+        public_members <- c(public_members, method_def)
       }
+
+      # Assemble File
+      lines <- c(
+        detached_docs,
+        "#' SOAP Client Class",
+        "#' @description",
+        "#' R6 class for interacting with the SOAP service.",
+        "#' @importFrom R6 R6Class",
+        "#' @export",
+        "Client <- R6::R6Class(",
+        "  \"Client\",",
+        "  public = list(",
+        paste(public_members, collapse = ",\n"),
+        "  )",
+        ")",
+        "",
+        "#' Create Client",
+        "#' @param url The service endpoint URL. Defaults to the WSDL location.",
+        "#' @param config A list of httr configuration options (e.g., authentication).",
+        "#' @param transport A custom transport function for mocking. Defaults to NULL.",
+        "#' @return A Client object.",
+        "#' @export",
+        "new_client <- function(url = NULL, config = list(), transport = NULL) {",
+        "  Client$new(url = url, config = config, transport = transport)",
+        "}"
+      )
+
       writeLines(lines, file.path(path, "R", "client.R"))
     }
   )
