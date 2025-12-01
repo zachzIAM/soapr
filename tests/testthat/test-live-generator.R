@@ -19,7 +19,9 @@ test_that("Static Client Generator (BDTInteractive)", {
     package_name <- "BDTIClient"
 
     # Generate package
-    expect_error(generate_package(wsdl_path, output_path, package_name), NA)
+    wsdl <- WSDLParser$new(wsdl_path)
+    gen <- Generator$new(wsdl)
+    expect_error(gen$generate_package(output_path, package_name), NA)
 
     pkg_dir <- file.path(output_path, package_name)
     expect_true(dir.exists(pkg_dir))

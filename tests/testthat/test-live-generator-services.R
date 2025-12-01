@@ -33,8 +33,13 @@ test_that("Static Client Generator works with Live Services", {
         message("Testing generator with: ", service$name)
 
         # Generate package
+        # Generate package
         expect_error(
-            generate_package(service$url, temp_dir, service$name),
+            {
+                wsdl <- WSDLParser$new(service$url)
+                gen <- Generator$new(wsdl)
+                gen$generate_package(temp_dir, service$name)
+            },
             NA,
             info = paste("Failed to generate package for", service$name)
         )
