@@ -18,38 +18,94 @@ knitr::opts_chunk$set(
 <!-- badges: start -->
 <!-- badges: end -->
 
-The goal of soapr is to ...
+`soapr` is a robust SOAP client generator for R. It allows you to interact with SOAP services by either dynamically creating clients at runtime or generating full-fledged, static R packages from WSDL files.
+
+## Features
+
+*   **Static Client Generation**: Generate a standalone R package for a SOAP service, complete with documentation and type-safe constructors.
+*   **Dynamic Client**: Interact with SOAP services on-the-fly without generating a package.
+*   **WS-Security**: Built-in support for WS-Security UsernameToken authentication.
+*   **Type Safety**: Automatically handles complex types and nested structures.
+*   **Custom Transports**: Easily mock network requests for testing.
 
 ## Installation
 
 You can install the development version of soapr from [GitHub](https://github.com/) with:
 
 ``` r
-# install.packages("pak")
-pak::pak("zachzIAM/soapr")
+# install.packages("devtools")
+devtools::install_github("zachzIAM/soapr")
 ```
 
-## Example
+## Usage
 
-This is a basic example which shows you how to solve a common problem:
+### Static Client Generator (Recommended)
 
-```{r example}
+The recommended way to use `soapr` is to generate a static client package. This gives you a dedicated package for your service with auto-complete and documentation.
+
+```r
 library(soapr)
-## basic example code
+
+# 1. Parse the WSDL
+wsdl_url <- "http://www.dneonline.com/calculator.asmx?WSDL"
+wsdl <- WSDLParser$new(wsdl_url)
+
+# 2. Initialize the Generator
+gen <- Generator$new(wsdl)
+
+# 3. Generate the Package
+# This will create a directory 'calculator' in your current working directory
+gen$generate_package(".", "calculator")
 ```
 
-What is special about using `README.Rmd` instead of just `README.md`? You can include R chunks like so:
+Once generated, you can install and use the package:
 
-```{r cars}
-summary(cars)
+```r
+# Install the generated package
+devtools::install("calculator")
+
+# Load it
+library(calculator)
+
+# Create a client
+client <- calculator::new_client()
+
+# Call an operation
+result <- calculator::Add(client, intA = 5, intB = 10)
+print(result$AddResult)
+#> [1] 15
 ```
 
-You'll still need to render `README.Rmd` regularly, to keep `README.md` up-to-date. `devtools::build_readme()` is handy for this.
+### Dynamic Client
 
-You can also embed plots, for example:
+For quick interactions or exploration, you can use the dynamic client.
 
-```{r pressure, echo = FALSE}
-plot(pressure)
+```r
+library(soapr)
+
+# 1. Create the Client
+client <- Client$new("http://www.dneonline.com/calculator.asmx?WSDL")
+
+# 2. Call Operations directly
+result <- client$Add(intA = 5, intB = 10)
+print(result$AddResult)
+#> [1] 15
 ```
 
-In that case, don't forget to commit and push the resulting figure files, so they display on GitHub and CRAN.
+### Authentication (WS-Security)
+
+`soapr` supports WS-Security UsernameToken.
+
+```r
+library(soapr)
+
+# Create a WS-Security Header
+header <- WSSecurity$new(username = "myuser", password = "mypassword")
+
+# Add it to your client (works for both static and dynamic)
+client <- add_header(client, header)
+```
+
+## License
+
+MIT
