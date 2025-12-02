@@ -152,14 +152,27 @@ Generator <- R6::R6Class(
     },
     write_types = function(path) {
       types <- self$wsdl$get_type_definitions()
+
       lines <- c()
+      lines <- c(lines, "#' Type Factory")
+      lines <- c(
+        lines,
+        "#' @description Factory for creating SOAP complex types."
+      )
+      lines <- c(lines, "#' @importFrom R6 R6Class")
+      lines <- c(lines, "#' @export")
+      lines <- c(lines, "TypeFactory <- R6::R6Class(")
+      lines <- c(lines, '  "TypeFactory",')
+      lines <- c(lines, "  public = list(")
+
+      methods <- c()
 
       for (name in names(types)) {
         def <- types[[name]]
         if (def$kind == "complex") {
-          # Generate constructor
+          # Generate constructor method
           args <- c()
-          body <- c("  obj <- list(")
+          body <- c("      obj <- list(")
           param_docs <- c()
 
           # Attributes
@@ -168,7 +181,7 @@ Generator <- R6::R6Class(
             args <- c(args, paste0(attr_name, " = NA"))
             body <- c(
               body,
-              paste0("    ", attr_name, " = ", attr_name, ",")
+              paste0("        ", attr_name, " = ", attr_name, ",")
             )
 
             attr_doc <- def$attributes[[attr_name]]$documentation
@@ -179,7 +192,7 @@ Generator <- R6::R6Class(
             }
             param_docs <- c(
               param_docs,
-              paste0("#' @param ", attr_name, " ", doc_text)
+              paste0("    #' @param ", attr_name, " ", doc_text)
             )
           }
 
@@ -193,7 +206,7 @@ Generator <- R6::R6Class(
             args <- c(args, paste0(elem_name, " = ", default_val))
             body <- c(
               body,
-              paste0("    ", elem_name, " = ", elem_name, ",")
+              paste0("        ", elem_name, " = ", elem_name, ",")
             )
 
             elem_doc <- elem$documentation
@@ -204,7 +217,7 @@ Generator <- R6::R6Class(
             }
             param_docs <- c(
               param_docs,
-              paste0("#' @param ", elem_name, " ", doc_text)
+              paste0("    #' @param ", elem_name, " ", doc_text)
             )
           }
 
@@ -212,16 +225,16 @@ Generator <- R6::R6Class(
           if (length(body) > 1) {
             body[length(body)] <- sub(",$", "", body[length(body)])
           }
-          body <- c(body, "  )")
+          body <- c(body, "      )")
 
           # Add metadata
           body <- c(
             body,
-            paste0('  class(obj) <- c("soap_object", "list")')
+            paste0('      class(obj) <- c("soap_object", "list")')
           )
           body <- c(
             body,
-            paste0('  attr(obj, "soap_type") <- "', name, '"')
+            paste0('      attr(obj, "soap_type") <- "', name, '"')
           )
 
           if (length(attr_names) > 0) {
@@ -232,14 +245,14 @@ Generator <- R6::R6Class(
             body <- c(
               body,
               paste0(
-                '  attr(obj, "soap_attrs") <- c(',
+                '      attr(obj, "soap_attrs") <- c(',
                 attrs_str,
                 ")"
               )
             )
           }
 
-          body <- c(body, "  return(obj)")
+          body <- c(body, "      return(obj)")
 
           doc_str <- if (!is.null(def$documentation)) {
             def$documentation
@@ -247,25 +260,28 @@ Generator <- R6::R6Class(
             paste("Constructor for", name)
           }
 
-          func_def <- paste0(
-            "#' ",
+          method_def <- paste0(
+            "    #' @description ",
             doc_str,
             "\n",
             paste(param_docs, collapse = "\n"),
             "\n",
-            "#' @export\n",
-            "new_",
+            "    ",
             name,
-            " <- function(",
+            " = function(",
             paste(args, collapse = ", "),
             ") {\n",
             paste(body, collapse = "\n"),
-            "\n",
-            "}\n"
+            "\n    }"
           )
-          lines <- c(lines, func_def)
+          methods <- c(methods, method_def)
         }
       }
+
+      lines <- c(lines, paste(methods, collapse = ",\n"))
+      lines <- c(lines, "  )")
+      lines <- c(lines, ")")
+
       writeLines(lines, file.path(path, "R", "types.R"))
     },
     write_schema = function(path) {
@@ -321,7 +337,9 @@ Generator <- R6::R6Class(
         "    #' @field config List of httr configuration options.",
         "    config = list()",
         "    #' @field transport Custom transport function.",
-        "    transport = NULL"
+        "    transport = NULL",
+        "    #' @field types Factory for creating complex types.",
+        "    types = NULL"
       )
 
       # --- Initialize ---
@@ -330,7 +348,8 @@ Generator <- R6::R6Class(
         "      self$url <- url",
         "      self$handle <- httr::handle(url)",
         "      self$config <- config",
-        "      self$transport <- transport"
+        "      self$transport <- transport",
+        "      self$types <- TypeFactory$new()"
       )
 
       init_def <- paste0(

@@ -170,9 +170,6 @@ WSDLParser <- R6::R6Class(
 
         # Get documentation
         doc <- self$parse_documentation(op_node)
-        if (op_name == "GetExportJobStream") {
-          print(paste("DEBUG: Doc for GetExportJobStream:", doc))
-        }
 
         ops[[op_name]] <<- list(
           # Use <<- to assign to ops in the parent environment
