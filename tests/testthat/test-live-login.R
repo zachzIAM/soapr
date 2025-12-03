@@ -14,9 +14,9 @@ test_that("Login Operation (BDTInteractive)", {
 
   service <- Service$new(wsdl_path, verbose = TRUE)
 
-  user <- "iamquant"
-  password <- "TheCatSatOnTheMat99"
-  client_id <- "kzdr85j9hv"
+  user <- "DUMMY_USER"
+  password <- "DUMMY_PASSWORD"
+  client_id <- "DUMMY_CLIENT_ID"
 
   # Attempt Login
   # We expect this to fail due to network issues or invalid endpoint/credentials.
