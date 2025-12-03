@@ -2,9 +2,7 @@
 #'
 #' Handles SOAP requests.
 #'
-#' @importFrom R6 R6Class
-#' @importFrom httr POST add_headers content_type content
-#' @importFrom xml2 xml_new_root xml_add_child xml_set_attr xml_set_text as_xml_document
+
 #' @export
 Client <- R6::R6Class(
   "Client",
