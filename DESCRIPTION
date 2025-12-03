@@ -15,7 +15,6 @@ Imports:
     httr,
     R6,
     xml2,
-    desc,
     bit64,
     whisker
 Suggests: 

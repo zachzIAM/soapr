@@ -3,7 +3,6 @@
 
 ## usethis namespace: start
 #' @importFrom R6 R6Class
-#' @importFrom desc description
 #' @importFrom httr POST
 ## usethis namespace: end
 NULL

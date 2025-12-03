@@ -79,18 +79,15 @@ Generator <- R6::R6Class(
     #' Write the DESCRIPTION file.
     #' @param path The package directory path.
     #' @param name The package name.
+    #' @description
+    #' Write the DESCRIPTION file.
+    #' @param path The package directory path.
+    #' @param name The package name.
     write_description = function(path, name) {
-      d <- desc::description$new("!new")
-      d$set("Package", name)
-      d$set("Title", paste("SOAP Client for", name))
-      d$set("Version", "0.1.0")
-      d$set("Description", "Auto-generated SOAP client.")
-      d$set("Imports", "httr, xml2, R6")
-      d$set("License", "MIT")
-      d$set("Encoding", "UTF-8")
-      d$set("Roxygen", "list(markdown = TRUE)")
-      d$set("RoxygenNote", "7.2.3")
-      d$write(file.path(path, "DESCRIPTION"))
+      view <- list(package_name = name)
+      template <- private$get_template("DESCRIPTION.mustache")
+      content <- whisker::whisker.render(template, view)
+      writeLines(content, file.path(path, "DESCRIPTION"))
     },
 
     #' @description
@@ -98,88 +95,8 @@ Generator <- R6::R6Class(
     #' @param path The package directory path.
     #' @param name The package name.
     write_readme = function(path, name) {
-      # Get operations list
-      ops <- self$wsdl$get_operations(
-        self$wsdl$get_services()[[1]]$ports[[1]]$binding
-      )
-      op_list <- paste0("- `", names(ops), "`", collapse = "\n")
-
-      # Generate Example for First Operation
-      example_code <- ""
-      if (length(ops) > 0) {
-        op_name <- names(ops)[1]
-        op <- ops[[1]]
-
-        # Get arguments
-        type_def <- self$wsdl$get_type_definitions()[[op_name]]
-        args_str <- ""
-
-        if (!is.null(type_def)) {
-          arg_parts <- c()
-          for (elem_name in names(type_def$elements)) {
-            elem <- type_def$elements[[elem_name]]
-
-            # Determine dummy value based on type
-            dummy_val <- "NULL"
-            type_info <- self$wsdl$get_type_definitions()[[elem$type]]
-
-            if (
-              !is.null(type_info) &&
-                type_info$kind == "simple" &&
-                !is.null(type_info$values)
-            ) {
-              # Enum
-              dummy_val <- paste0('"', type_info$values[1], '"')
-            } else if (
-              grepl(
-                "int|long|short|byte|decimal|float|double",
-                elem$type,
-                ignore.case = TRUE
-              )
-            ) {
-              dummy_val <- "0"
-            } else if (grepl("boolean", elem$type, ignore.case = TRUE)) {
-              dummy_val <- "TRUE"
-            } else if (
-              grepl("dateTime|date|time", elem$type, ignore.case = TRUE)
-            ) {
-              dummy_val <- paste0('"', Sys.Date(), '"')
-            } else {
-              dummy_val <- '"string"'
-            }
-
-            arg_parts <- c(arg_parts, paste0(elem_name, " = ", dummy_val))
-          }
-          args_str <- paste(arg_parts, collapse = ", ")
-        }
-
-        example_code <- paste0(
-          "### \U1F4A1 Example: ",
-          op_name,
-          "\n\n",
-          "```r\n",
-          "# Call the ",
-          op_name,
-          " operation\n",
-          "result <- client$",
-          op_name,
-          "(",
-          args_str,
-          ")\n",
-          "print(result)\n",
-          "```\n\n"
-        )
-      }
-
-      view <- list(
-        package_name = name,
-        wsdl_location = self$wsdl$get_services()[[1]]$ports[[1]]$location,
-        target_namespace = self$wsdl$get_target_namespace(),
-        example_code = example_code,
-        op_list = op_list
-      )
-
-      template <- private$get_template("README.md")
+      view <- private$get_readme_view_model(name)
+      template <- private$get_template("README.mustache")
       readme <- whisker::whisker.render(template, view)
       writeLines(readme, file.path(path, "README.md"))
     },
@@ -204,6 +121,52 @@ Generator <- R6::R6Class(
     #' Write the types.R file.
     #' @param path The package directory path.
     write_types = function(path) {
+      view <- private$get_types_view_model()
+      template <- private$get_template("types.mustache")
+      content <- whisker::whisker.render(template, view)
+      writeLines(content, file.path(path, "R", "types.R"))
+    },
+
+    #' @description
+    #' Write the schema.R file.
+    #' @param path The package directory path.
+    write_schema = function(path) {
+      types <- self$wsdl$get_type_definitions()
+      types_code <- capture.output(dput(types))
+
+      view <- list(types_code = paste(types_code, collapse = "\n"))
+      template <- private$get_template("schema.mustache")
+      content <- whisker::whisker.render(template, view)
+      writeLines(content, file.path(path, "R", "schema.R"))
+    },
+
+    #' @description
+    #' Write the client.R file.
+    #' @param path The package directory path.
+    write_client = function(path) {
+      view <- private$get_client_view_model()
+      if (is.null(view)) {
+        return()
+      }
+
+      template <- private$get_template("client.mustache")
+      content <- whisker::whisker.render(template, view)
+      writeLines(content, file.path(path, "R", "client.R"))
+    }
+  ),
+  private = list(
+    get_template = function(name) {
+      template_path <- system.file(
+        file.path("templates", name),
+        package = "soapr"
+      )
+      if (template_path == "") {
+        template_path <- file.path(getwd(), "inst", "templates", name)
+      }
+      paste(readLines(template_path, warn = FALSE), collapse = "\n")
+    },
+
+    get_types_view_model = function() {
       types <- self$wsdl$get_type_definitions()
       type_list <- list()
 
@@ -296,52 +259,18 @@ Generator <- R6::R6Class(
         type_list[[length(type_list)]]$last <- TRUE
       }
 
-      view <- list(types = type_list)
-      template <- private$get_template("types.R")
-      content <- whisker::whisker.render(template, view)
-      writeLines(content, file.path(path, "R", "types.R"))
+      list(types = type_list)
     },
 
-    #' @description
-    #' Write the schema.R file.
-    #' @param path The package directory path.
-    write_schema = function(path) {
-      # We need to serialize the type definitions to a file so they can be loaded at runtime
-      # Since they are just lists, we can use dput or similar, but let's make it cleaner
-      # We'll just dump the structure into a function that returns it
-
-      types <- self$wsdl$get_type_definitions()
-
-      # We can't easily dput the whole environment/R6 object, but types is a list of lists
-      # so dput should work reasonably well.
-
-      lines <- c(
-        "#' Get Schema",
-        "#' @return A list of type definitions.",
-        "#' @export",
-        "get_schema <- function() {"
-      )
-
-      # Use capture.output to get the dput output
-      types_code <- capture.output(dput(types))
-      lines <- c(lines, paste0("  ", types_code))
-      lines <- c(lines, "}")
-
-      writeLines(lines, file.path(path, "R", "schema.R"))
-    },
-
-    #' @description
-    #' Write the client.R file.
-    #' @param path The package directory path.
-    write_client = function(path) {
+    get_client_view_model = function() {
       # We need to find a service and port
       services <- self$wsdl$get_services()
       if (length(services) == 0) {
-        return()
+        return(NULL)
       }
       service <- services[[1]]
       if (length(service$ports) == 0) {
-        return()
+        return(NULL)
       }
       port <- service$ports[[1]]
 
@@ -448,28 +377,95 @@ Generator <- R6::R6Class(
         operations[[length(operations)]]$last <- TRUE
       }
 
-      view <- list(
+      list(
         service_url = port$location,
         tns = tns,
         detached_docs = detached_docs,
         operations = operations
       )
+    },
 
-      template <- private$get_template("client.R")
-      content <- whisker::whisker.render(template, view)
-      writeLines(content, file.path(path, "R", "client.R"))
-    }
-  ),
-  private = list(
-    get_template = function(name) {
-      template_path <- system.file(
-        file.path("templates", name),
-        package = "soapr"
+    get_readme_view_model = function(name) {
+      # Get operations list
+      ops <- self$wsdl$get_operations(
+        self$wsdl$get_services()[[1]]$ports[[1]]$binding
       )
-      if (template_path == "") {
-        template_path <- file.path(getwd(), "inst", "templates", name)
+      op_list <- paste0("- `", names(ops), "`", collapse = "\n")
+
+      # Generate Example for First Operation
+      example_code <- ""
+      if (length(ops) > 0) {
+        op_name <- names(ops)[1]
+        op <- ops[[1]]
+
+        # Get arguments
+        type_def <- self$wsdl$get_type_definitions()[[op_name]]
+        args_str <- ""
+
+        if (!is.null(type_def)) {
+          arg_parts <- c()
+          for (elem_name in names(type_def$elements)) {
+            elem <- type_def$elements[[elem_name]]
+
+            # Determine dummy value based on type
+            dummy_val <- "NULL"
+            type_info <- self$wsdl$get_type_definitions()[[elem$type]]
+
+            if (
+              !is.null(type_info) &&
+                type_info$kind == "simple" &&
+                !is.null(type_info$values)
+            ) {
+              # Enum
+              dummy_val <- paste0('"', type_info$values[1], '"')
+            } else if (
+              grepl(
+                "int|long|short|byte|decimal|float|double",
+                elem$type,
+                ignore.case = TRUE
+              )
+            ) {
+              dummy_val <- "0"
+            } else if (grepl("boolean", elem$type, ignore.case = TRUE)) {
+              dummy_val <- "TRUE"
+            } else if (
+              grepl("dateTime|date|time", elem$type, ignore.case = TRUE)
+            ) {
+              dummy_val <- paste0('"', Sys.Date(), '"')
+            } else {
+              dummy_val <- '"string"'
+            }
+
+            arg_parts <- c(arg_parts, paste0(elem_name, " = ", dummy_val))
+          }
+          args_str <- paste(arg_parts, collapse = ", ")
+        }
+
+        example_code <- paste0(
+          "### \U1F4A1 Example: ",
+          op_name,
+          "\n\n",
+          "```r\n",
+          "# Call the ",
+          op_name,
+          " operation\n",
+          "result <- client$",
+          op_name,
+          "(",
+          args_str,
+          ")\n",
+          "print(result)\n",
+          "```\n\n"
+        )
       }
-      paste(readLines(template_path, warn = FALSE), collapse = "\n")
+
+      list(
+        package_name = name,
+        wsdl_location = self$wsdl$get_services()[[1]]$ports[[1]]$location,
+        target_namespace = self$wsdl$get_target_namespace(),
+        example_code = example_code,
+        op_list = op_list
+      )
     }
   )
 )

@@ -73,6 +73,9 @@ Generate the R package.
 \if{latex}{\out{\hypertarget{method-Generator-write_description}{}}}
 \subsection{Method \code{write_description()}}{
 Write the DESCRIPTION file.
+
+
+Write the DESCRIPTION file.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{Generator$write_description(path, name)}\if{html}{\out{</div>}}
 }
@@ -81,6 +84,10 @@ Write the DESCRIPTION file.
 \if{html}{\out{<div class="arguments">}}
 \describe{
 \item{\code{path}}{The package directory path.}
+
+\item{\code{path}}{The package directory path.}
+
+\item{\code{name}}{The package name.}
 
 \item{\code{name}}{The package name.}
 }
