@@ -7,10 +7,20 @@
 Generator <- R6::R6Class(
   "Generator",
   public = list(
+    #' @field wsdl The WSDLParser instance.
     wsdl = NULL,
+
+    #' @description
+    #' Initialize the Generator.
+    #' @param wsdl A WSDLParser instance.
     initialize = function(wsdl) {
       self$wsdl <- wsdl
     },
+
+    #' @description
+    #' Generate the R package.
+    #' @param path The output directory path.
+    #' @param package_name The name of the package to generate.
     generate_package = function(path, package_name) {
       # Create directories
       pkg_path <- file.path(path, package_name)
@@ -65,6 +75,11 @@ Generator <- R6::R6Class(
 
       message(paste("Package generated at:", pkg_path))
     },
+
+    #' @description
+    #' Write the DESCRIPTION file.
+    #' @param path The package directory path.
+    #' @param name The package name.
     write_description = function(path, name) {
       d <- desc::description$new("!new")
       d$set("Package", name)
@@ -78,6 +93,11 @@ Generator <- R6::R6Class(
       d$set("RoxygenNote", "7.2.3")
       d$write(file.path(path, "DESCRIPTION"))
     },
+
+    #' @description
+    #' Write the README.md file.
+    #' @param path The package directory path.
+    #' @param name The package name.
     write_readme = function(path, name) {
       # Get operations list
       ops <- self$wsdl$get_operations(
@@ -220,6 +240,10 @@ Generator <- R6::R6Class(
       )
       writeLines(readme, file.path(path, "README.md"))
     },
+
+    #' @description
+    #' Write the utils.R file.
+    #' @param path The package directory path.
     write_utils = function(path) {
       template_path <- system.file("templates/utils.R", package = "soapr")
       if (template_path == "") {
@@ -232,6 +256,10 @@ Generator <- R6::R6Class(
         overwrite = TRUE
       )
     },
+
+    #' @description
+    #' Write the types.R file.
+    #' @param path The package directory path.
     write_types = function(path) {
       types <- self$wsdl$get_type_definitions()
 
@@ -366,6 +394,10 @@ Generator <- R6::R6Class(
 
       writeLines(lines, file.path(path, "R", "types.R"))
     },
+
+    #' @description
+    #' Write the schema.R file.
+    #' @param path The package directory path.
     write_schema = function(path) {
       # We need to serialize the type definitions to a file so they can be loaded at runtime
       # Since they are just lists, we can use dput or similar, but let's make it cleaner
@@ -390,6 +422,10 @@ Generator <- R6::R6Class(
 
       writeLines(lines, file.path(path, "R", "schema.R"))
     },
+
+    #' @description
+    #' Write the client.R file.
+    #' @param path The package directory path.
     write_client = function(path) {
       # We need to find a service and port
       services <- self$wsdl$get_services()

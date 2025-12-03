@@ -7,9 +7,17 @@
 Service <- R6::R6Class(
   "Service",
   public = list(
+    #' @field wsdl The WSDLParser instance.
     wsdl = NULL,
+    #' @field client The Client instance.
     client = NULL,
+    #' @field factory The Factory instance.
     factory = NULL,
+
+    #' @description
+    #' Initialize the Service.
+    #' @param wsdl_path Path or URL to the WSDL file.
+    #' @param verbose Logical, whether to print debug info.
     initialize = function(wsdl_path, verbose = FALSE) {
       self$wsdl <- WSDLParser$new(wsdl_path)
 

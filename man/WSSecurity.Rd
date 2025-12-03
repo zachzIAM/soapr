@@ -4,6 +4,11 @@
 \alias{WSSecurity}
 \title{WS-Security Helper}
 \description{
+WS-Security Helper
+
+WS-Security Helper
+}
+\details{
 Provides methods for generating WS-Security headers.
 }
 \section{Methods}{
@@ -16,6 +21,7 @@ Provides methods for generating WS-Security headers.
 \if{html}{\out{<a id="method-WSSecurity-new"></a>}}
 \if{latex}{\out{\hypertarget{method-WSSecurity-new}{}}}
 \subsection{Method \code{new()}}{
+Initialize the WSSecurity helper.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{WSSecurity$new()}\if{html}{\out{</div>}}
 }

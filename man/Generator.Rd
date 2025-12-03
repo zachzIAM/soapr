@@ -4,7 +4,19 @@
 \alias{Generator}
 \title{Generator Class}
 \description{
+Generator Class
+
+Generator Class
+}
+\details{
 Generates a static R package from a WSDL.
+}
+\section{Public fields}{
+\if{html}{\out{<div class="r6-fields">}}
+\describe{
+\item{\code{wsdl}}{The WSDLParser instance.}
+}
+\if{html}{\out{</div>}}
 }
 \section{Methods}{
 \subsection{Public methods}{
@@ -24,73 +36,143 @@ Generates a static R package from a WSDL.
 \if{html}{\out{<a id="method-Generator-new"></a>}}
 \if{latex}{\out{\hypertarget{method-Generator-new}{}}}
 \subsection{Method \code{new()}}{
+Initialize the Generator.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{Generator$new(wsdl)}\if{html}{\out{</div>}}
 }
 
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{wsdl}}{A WSDLParser instance.}
+}
+\if{html}{\out{</div>}}
+}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Generator-generate_package"></a>}}
 \if{latex}{\out{\hypertarget{method-Generator-generate_package}{}}}
 \subsection{Method \code{generate_package()}}{
+Generate the R package.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{Generator$generate_package(path, package_name)}\if{html}{\out{</div>}}
 }
 
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{path}}{The output directory path.}
+
+\item{\code{package_name}}{The name of the package to generate.}
+}
+\if{html}{\out{</div>}}
+}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Generator-write_description"></a>}}
 \if{latex}{\out{\hypertarget{method-Generator-write_description}{}}}
 \subsection{Method \code{write_description()}}{
+Write the DESCRIPTION file.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{Generator$write_description(path, name)}\if{html}{\out{</div>}}
 }
 
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{path}}{The package directory path.}
+
+\item{\code{name}}{The package name.}
+}
+\if{html}{\out{</div>}}
+}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Generator-write_readme"></a>}}
 \if{latex}{\out{\hypertarget{method-Generator-write_readme}{}}}
 \subsection{Method \code{write_readme()}}{
+Write the README.md file.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{Generator$write_readme(path, name)}\if{html}{\out{</div>}}
 }
 
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{path}}{The package directory path.}
+
+\item{\code{name}}{The package name.}
+}
+\if{html}{\out{</div>}}
+}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Generator-write_utils"></a>}}
 \if{latex}{\out{\hypertarget{method-Generator-write_utils}{}}}
 \subsection{Method \code{write_utils()}}{
+Write the utils.R file.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{Generator$write_utils(path)}\if{html}{\out{</div>}}
 }
 
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{path}}{The package directory path.}
+}
+\if{html}{\out{</div>}}
+}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Generator-write_types"></a>}}
 \if{latex}{\out{\hypertarget{method-Generator-write_types}{}}}
 \subsection{Method \code{write_types()}}{
+Write the types.R file.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{Generator$write_types(path)}\if{html}{\out{</div>}}
 }
 
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{path}}{The package directory path.}
+}
+\if{html}{\out{</div>}}
+}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Generator-write_schema"></a>}}
 \if{latex}{\out{\hypertarget{method-Generator-write_schema}{}}}
 \subsection{Method \code{write_schema()}}{
+Write the schema.R file.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{Generator$write_schema(path)}\if{html}{\out{</div>}}
 }
 
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{path}}{The package directory path.}
+}
+\if{html}{\out{</div>}}
+}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Generator-write_client"></a>}}
 \if{latex}{\out{\hypertarget{method-Generator-write_client}{}}}
 \subsection{Method \code{write_client()}}{
+Write the client.R file.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{Generator$write_client(path)}\if{html}{\out{</div>}}
 }
 
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{path}}{The package directory path.}
+}
+\if{html}{\out{</div>}}
+}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Generator-clone"></a>}}

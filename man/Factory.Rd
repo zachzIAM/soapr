@@ -4,7 +4,21 @@
 \alias{Factory}
 \title{Factory Class}
 \description{
+Factory Class
+
+Factory Class
+}
+\details{
 Creates objects for SOAP requests.
+}
+\section{Public fields}{
+\if{html}{\out{<div class="r6-fields">}}
+\describe{
+\item{\code{wsdl}}{The WSDLParser instance.}
+
+\item{\code{types}}{List of type definitions.}
+}
+\if{html}{\out{</div>}}
 }
 \section{Methods}{
 \subsection{Public methods}{
@@ -21,46 +35,95 @@ Creates objects for SOAP requests.
 \if{html}{\out{<a id="method-Factory-new"></a>}}
 \if{latex}{\out{\hypertarget{method-Factory-new}{}}}
 \subsection{Method \code{new()}}{
+Initialize the Factory.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{Factory$new(wsdl)}\if{html}{\out{</div>}}
 }
 
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{wsdl}}{A WSDLParser instance.}
+}
+\if{html}{\out{</div>}}
+}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Factory-create"></a>}}
 \if{latex}{\out{\hypertarget{method-Factory-create}{}}}
 \subsection{Method \code{create()}}{
+Create a new object of a given type.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{Factory$create(type_name)}\if{html}{\out{</div>}}
 }
 
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{type_name}}{The name of the type to create.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+A list representing the object, or NULL if simple type.
+}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Factory-get_type_names"></a>}}
 \if{latex}{\out{\hypertarget{method-Factory-get_type_names}{}}}
 \subsection{Method \code{get_type_names()}}{
+Get a list of available type names.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{Factory$get_type_names()}\if{html}{\out{</div>}}
 }
 
+\subsection{Returns}{
+Character vector of type names.
+}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Factory-deserialize"></a>}}
 \if{latex}{\out{\hypertarget{method-Factory-deserialize}{}}}
 \subsection{Method \code{deserialize()}}{
+Deserialize an XML node into an R object.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{Factory$deserialize(node, type_name)}\if{html}{\out{</div>}}
 }
 
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{node}}{The xml_node to deserialize.}
+
+\item{\code{type_name}}{The expected type name.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+The deserialized R object.
+}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Factory-convert_builtin_type"></a>}}
 \if{latex}{\out{\hypertarget{method-Factory-convert_builtin_type}{}}}
 \subsection{Method \code{convert_builtin_type()}}{
+Convert a value to a built-in R type.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{Factory$convert_builtin_type(val, type_name)}\if{html}{\out{</div>}}
 }
 
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{val}}{The value to convert.}
+
+\item{\code{type_name}}{The XSD type name.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+The converted value.
+}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Factory-clone"></a>}}

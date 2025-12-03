@@ -4,7 +4,37 @@
 \alias{Client}
 \title{Client Class}
 \description{
+Client Class
+
+Client Class
+}
+\details{
 Handles SOAP requests.
+}
+\section{Public fields}{
+\if{html}{\out{<div class="r6-fields">}}
+\describe{
+\item{\code{wsdl}}{The WSDLParser instance.}
+
+\item{\code{port_def}}{The port definition.}
+
+\item{\code{factory}}{The TypeFactory instance.}
+
+\item{\code{operations}}{List of operations.}
+
+\item{\code{target_namespace}}{The target namespace.}
+
+\item{\code{handle}}{The httr handle.}
+
+\item{\code{serializer}}{The XMLSerializer instance.}
+
+\item{\code{transport}}{The transport function.}
+
+\item{\code{headers}}{List of SOAP headers.}
+
+\item{\code{verbose}}{Logical, whether to print debug info.}
+}
+\if{html}{\out{</div>}}
 }
 \section{Methods}{
 \subsection{Public methods}{
@@ -21,46 +51,105 @@ Handles SOAP requests.
 \if{html}{\out{<a id="method-Client-new"></a>}}
 \if{latex}{\out{\hypertarget{method-Client-new}{}}}
 \subsection{Method \code{new()}}{
+Initialize the Client.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Client$new(wsdl, port_def, factory, transport = httr::POST, verbose = FALSE)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{Client$new(
+  wsdl,
+  port_def = NULL,
+  factory = NULL,
+  transport = httr::POST,
+  verbose = FALSE
+)}\if{html}{\out{</div>}}
 }
 
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{wsdl}}{A WSDLParser instance.}
+
+\item{\code{port_def}}{A port definition list (optional).}
+
+\item{\code{factory}}{A TypeFactory instance (optional).}
+
+\item{\code{transport}}{A function to handle the HTTP request (default: httr::POST).}
+
+\item{\code{verbose}}{Logical, whether to print debug info (default: FALSE).}
+}
+\if{html}{\out{</div>}}
+}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Client-add_header"></a>}}
 \if{latex}{\out{\hypertarget{method-Client-add_header}{}}}
 \subsection{Method \code{add_header()}}{
+Add a SOAP header.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{Client$add_header(node)}\if{html}{\out{</div>}}
 }
 
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{node}}{An xml_node object representing the header.}
+}
+\if{html}{\out{</div>}}
+}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Client-add_operation_method"></a>}}
 \if{latex}{\out{\hypertarget{method-Client-add_operation_method}{}}}
 \subsection{Method \code{add_operation_method()}}{
+Add a method for an operation to the client.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{Client$add_operation_method(op)}\if{html}{\out{</div>}}
 }
 
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{op}}{The operation definition.}
+}
+\if{html}{\out{</div>}}
+}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Client-call_operation"></a>}}
 \if{latex}{\out{\hypertarget{method-Client-call_operation}{}}}
 \subsection{Method \code{call_operation()}}{
+Call a SOAP operation.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{Client$call_operation(op, args)}\if{html}{\out{</div>}}
 }
 
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{op}}{The operation definition.}
+
+\item{\code{args}}{A list of arguments for the operation.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+The result of the operation.
+}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Client-handle_fault"></a>}}
 \if{latex}{\out{\hypertarget{method-Client-handle_fault}{}}}
 \subsection{Method \code{handle_fault()}}{
+Handle SOAP Faults.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{Client$handle_fault(response)}\if{html}{\out{</div>}}
 }
 
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{response}}{The httr response object.}
+}
+\if{html}{\out{</div>}}
+}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Client-clone"></a>}}

@@ -7,6 +7,8 @@
 WSSecurity <- R6::R6Class(
   "WSSecurity",
   public = list(
+    #' @description
+    #' Initialize the WSSecurity helper.
     initialize = function() {}
   ),
   active = list(),

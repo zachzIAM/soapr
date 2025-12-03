@@ -4,6 +4,11 @@
 \alias{XMLSerializer}
 \title{XML Serializer Class}
 \description{
+XML Serializer Class
+
+XML Serializer Class
+}
+\details{
 Handles serialization of R objects to XML nodes.
 }
 \section{Methods}{
@@ -18,19 +23,42 @@ Handles serialization of R objects to XML nodes.
 \if{html}{\out{<a id="method-XMLSerializer-serialize"></a>}}
 \if{latex}{\out{\hypertarget{method-XMLSerializer-serialize}{}}}
 \subsection{Method \code{serialize()}}{
+Serialize an R object to an XML node.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{XMLSerializer$serialize(parent, name, value)}\if{html}{\out{</div>}}
 }
 
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{parent}}{The parent xml_node.}
+
+\item{\code{name}}{The name of the element.}
+
+\item{\code{value}}{The value to serialize.}
+}
+\if{html}{\out{</div>}}
+}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-XMLSerializer-deserialize_response"></a>}}
 \if{latex}{\out{\hypertarget{method-XMLSerializer-deserialize_response}{}}}
 \subsection{Method \code{deserialize_response()}}{
+Deserialize a response object to an XML document.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{XMLSerializer$deserialize_response(response)}\if{html}{\out{</div>}}
 }
 
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{response}}{The httr response object.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+An xml_document.
+}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-XMLSerializer-clone"></a>}}

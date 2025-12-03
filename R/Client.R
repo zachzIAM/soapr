@@ -10,28 +10,57 @@ Client <- R6::R6Class(
   "Client",
   lock_objects = FALSE,
   public = list(
+    #' @field wsdl The WSDLParser instance.
     wsdl = NULL,
+    #' @field port_def The port definition.
     port_def = NULL,
+    #' @field factory The TypeFactory instance.
     factory = NULL,
+    #' @field operations List of operations.
     operations = NULL,
+    #' @field target_namespace The target namespace.
     target_namespace = NULL,
+    #' @field handle The httr handle.
     handle = NULL,
+    #' @field serializer The XMLSerializer instance.
     serializer = NULL,
+    #' @field transport The transport function.
     transport = NULL,
+    #' @field headers List of SOAP headers.
+    headers = NULL,
+    #' @field verbose Logical, whether to print debug info.
+    verbose = FALSE,
+
+    #' @description
+    #' Initialize the Client.
+    #' @param wsdl A WSDLParser instance.
+    #' @param port_def A port definition list (optional).
+    #' @param factory A TypeFactory instance (optional).
+    #' @param transport A function to handle the HTTP request (default: httr::POST).
+    #' @param verbose Logical, whether to print debug info (default: FALSE).
     initialize = function(
       wsdl,
-      port_def,
-      factory,
+      port_def = NULL,
+      factory = NULL,
       transport = httr::POST,
       verbose = FALSE
     ) {
       self$wsdl <- wsdl
-      self$port_def <- port_def
-      self$factory <- factory
+      if (is.null(port_def)) {
+        # Default to first port of first service
+        self$port_def <- self$wsdl$get_services()[[1]]$ports[[1]]
+      } else {
+        self$port_def <- port_def
+      }
+      if (is.null(factory)) {
+        self$factory <- Factory$new(wsdl)
+      } else {
+        self$factory <- factory
+      }
       self$target_namespace <- self$wsdl$get_target_namespace()
       self$verbose <- verbose
       self$handle <- httr::handle(self$port_def$location)
-      self$operations <- self$wsdl$get_operations(port_def$binding)
+      self$operations <- self$wsdl$get_operations(self$port_def$binding)
       self$serializer <- XMLSerializer$new()
       self$transport <- transport
       self$headers <- list()
@@ -41,15 +70,29 @@ Client <- R6::R6Class(
         self$add_operation_method(op)
       }
     },
+
+    #' @description
+    #' Add a SOAP header.
+    #' @param node An xml_node object representing the header.
     add_header = function(node) {
       self$headers <- c(self$headers, list(node))
     },
+
+    #' @description
+    #' Add a method for an operation to the client.
+    #' @param op The operation definition.
     add_operation_method = function(op) {
       self[[op$name]] <- function(...) {
         args <- list(...)
         self$call_operation(op, args)
       }
     },
+
+    #' @description
+    #' Call a SOAP operation.
+    #' @param op The operation definition.
+    #' @param args A list of arguments for the operation.
+    #' @return The result of the operation.
     call_operation = function(op, args) {
       # Construct SOAP Envelope
       envelope <- xml2::xml_new_root(
@@ -231,6 +274,9 @@ Client <- R6::R6Class(
 
       return(content)
     },
+    #' @description
+    #' Handle SOAP Faults.
+    #' @param response The httr response object.
     handle_fault = function(response) {
       # Parse the response content
       doc <- tryCatch(

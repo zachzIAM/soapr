@@ -4,7 +4,23 @@
 \alias{Service}
 \title{Service Class}
 \description{
+Service Class
+
+Service Class
+}
+\details{
 Represents a SOAP service.
+}
+\section{Public fields}{
+\if{html}{\out{<div class="r6-fields">}}
+\describe{
+\item{\code{wsdl}}{The WSDLParser instance.}
+
+\item{\code{client}}{The Client instance.}
+
+\item{\code{factory}}{The Factory instance.}
+}
+\if{html}{\out{</div>}}
 }
 \section{Methods}{
 \subsection{Public methods}{
@@ -17,10 +33,20 @@ Represents a SOAP service.
 \if{html}{\out{<a id="method-Service-new"></a>}}
 \if{latex}{\out{\hypertarget{method-Service-new}{}}}
 \subsection{Method \code{new()}}{
+Initialize the Service.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{Service$new(wsdl_path, verbose = FALSE)}\if{html}{\out{</div>}}
 }
 
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{wsdl_path}}{Path or URL to the WSDL file.}
+
+\item{\code{verbose}}{Logical, whether to print debug info.}
+}
+\if{html}{\out{</div>}}
+}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Service-clone"></a>}}

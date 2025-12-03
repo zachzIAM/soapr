@@ -4,7 +4,21 @@
 \alias{WSDLParser}
 \title{WSDL Parser}
 \description{
+WSDL Parser
+
+WSDL Parser
+}
+\details{
 Parses a WSDL file to extract services, ports, operations, and types.
+}
+\section{Public fields}{
+\if{html}{\out{<div class="r6-fields">}}
+\describe{
+\item{\code{doc}}{The parsed XML document.}
+
+\item{\code{ns}}{The namespace definitions.}
+}
+\if{html}{\out{</div>}}
 }
 \section{Methods}{
 \subsection{Public methods}{
@@ -26,91 +40,177 @@ Parses a WSDL file to extract services, ports, operations, and types.
 \if{html}{\out{<a id="method-WSDLParser-new"></a>}}
 \if{latex}{\out{\hypertarget{method-WSDLParser-new}{}}}
 \subsection{Method \code{new()}}{
+Initialize the WSDLParser.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{WSDLParser$new(path_or_url)}\if{html}{\out{</div>}}
 }
 
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{path_or_url}}{Path or URL to the WSDL file.}
+}
+\if{html}{\out{</div>}}
+}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-WSDLParser-get_target_namespace"></a>}}
 \if{latex}{\out{\hypertarget{method-WSDLParser-get_target_namespace}{}}}
 \subsection{Method \code{get_target_namespace()}}{
+Get the target namespace of the WSDL.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{WSDLParser$get_target_namespace()}\if{html}{\out{</div>}}
 }
 
+\subsection{Returns}{
+The target namespace URI.
+}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-WSDLParser-get_services"></a>}}
 \if{latex}{\out{\hypertarget{method-WSDLParser-get_services}{}}}
 \subsection{Method \code{get_services()}}{
+Get a list of services defined in the WSDL.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{WSDLParser$get_services()}\if{html}{\out{</div>}}
 }
 
+\subsection{Returns}{
+A list of services.
+}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-WSDLParser-get_ports"></a>}}
 \if{latex}{\out{\hypertarget{method-WSDLParser-get_ports}{}}}
 \subsection{Method \code{get_ports()}}{
+Get a list of ports for a service.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{WSDLParser$get_ports(service_node)}\if{html}{\out{</div>}}
 }
 
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{service_node}}{The service xml_node.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+A list of ports.
+}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-WSDLParser-get_operations"></a>}}
 \if{latex}{\out{\hypertarget{method-WSDLParser-get_operations}{}}}
 \subsection{Method \code{get_operations()}}{
+Get a list of operations for a binding.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{WSDLParser$get_operations(binding_name)}\if{html}{\out{</div>}}
 }
 
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{binding_name}}{The name of the binding.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+A list of operations.
+}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-WSDLParser-get_type_definitions"></a>}}
 \if{latex}{\out{\hypertarget{method-WSDLParser-get_type_definitions}{}}}
 \subsection{Method \code{get_type_definitions()}}{
+Get all type definitions from the WSDL.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{WSDLParser$get_type_definitions()}\if{html}{\out{</div>}}
 }
 
+\subsection{Returns}{
+A list of type definitions.
+}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-WSDLParser-parse_complex_type"></a>}}
 \if{latex}{\out{\hypertarget{method-WSDLParser-parse_complex_type}{}}}
 \subsection{Method \code{parse_complex_type()}}{
+Parse a complexType node.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{WSDLParser$parse_complex_type(node)}\if{html}{\out{</div>}}
 }
 
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{node}}{The complexType xml_node.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+A list representing the complex type.
+}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-WSDLParser-parse_simple_type"></a>}}
 \if{latex}{\out{\hypertarget{method-WSDLParser-parse_simple_type}{}}}
 \subsection{Method \code{parse_simple_type()}}{
+Parse a simpleType node.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{WSDLParser$parse_simple_type(node)}\if{html}{\out{</div>}}
 }
 
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{node}}{The simpleType xml_node.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+A list representing the simple type.
+}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-WSDLParser-strip_ns"></a>}}
 \if{latex}{\out{\hypertarget{method-WSDLParser-strip_ns}{}}}
 \subsection{Method \code{strip_ns()}}{
+Strip namespace prefix from a string.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{WSDLParser$strip_ns(str)}\if{html}{\out{</div>}}
 }
 
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{str}}{The string to strip.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+The string without the namespace prefix.
+}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-WSDLParser-parse_documentation"></a>}}
 \if{latex}{\out{\hypertarget{method-WSDLParser-parse_documentation}{}}}
 \subsection{Method \code{parse_documentation()}}{
+Parse documentation from a node.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{WSDLParser$parse_documentation(node)}\if{html}{\out{</div>}}
 }
 
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{node}}{The xml_node.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+The documentation text, or NULL.
+}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-WSDLParser-clone"></a>}}

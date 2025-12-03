@@ -8,8 +8,14 @@
 WSDLParser <- R6::R6Class(
   "WSDLParser",
   public = list(
+    #' @field doc The parsed XML document.
     doc = NULL,
+    #' @field ns The namespace definitions.
     ns = NULL,
+
+    #' @description
+    #' Initialize the WSDLParser.
+    #' @param path_or_url Path or URL to the WSDL file.
     initialize = function(path_or_url) {
       self$doc <- xml2::read_xml(path_or_url)
       self$ns <- xml2::xml_ns(self$doc)
@@ -46,6 +52,10 @@ WSDLParser <- R6::R6Class(
       # Validate targetNamespace exists
       self$get_target_namespace()
     },
+
+    #' @description
+    #' Get the target namespace of the WSDL.
+    #' @return The target namespace URI.
     get_target_namespace = function() {
       tns <- xml2::xml_attr(self$doc, "targetNamespace")
       if (is.na(tns)) {
@@ -53,6 +63,10 @@ WSDLParser <- R6::R6Class(
       }
       return(tns)
     },
+
+    #' @description
+    #' Get a list of services defined in the WSDL.
+    #' @return A list of services.
     get_services = function() {
       # Find all service elements
       services <- xml2::xml_find_all(self$doc, "//wsdl:service", self$ns)
@@ -63,6 +77,11 @@ WSDLParser <- R6::R6Class(
         )
       })
     },
+
+    #' @description
+    #' Get a list of ports for a service.
+    #' @param service_node The service xml_node.
+    #' @return A list of ports.
     get_ports = function(service_node) {
       ports <- xml2::xml_find_all(service_node, "./wsdl:port", self$ns)
       lapply(ports, function(port) {
@@ -101,6 +120,10 @@ WSDLParser <- R6::R6Class(
         )
       })
     },
+    #' @description
+    #' Get a list of operations for a binding.
+    #' @param binding_name The name of the binding.
+    #' @return A list of operations.
     get_operations = function(binding_name) {
       # Find the binding
       xpath <- sprintf("//wsdl:binding[@name='%s']", binding_name)
@@ -186,6 +209,10 @@ WSDLParser <- R6::R6Class(
 
       return(ops)
     },
+
+    #' @description
+    #' Get all type definitions from the WSDL.
+    #' @return A list of type definitions.
     get_type_definitions = function() {
       # Find schema node
       schema <- xml2::xml_find_first(self$doc, "//xsd:schema", self$ns)
@@ -225,6 +252,11 @@ WSDLParser <- R6::R6Class(
 
       return(types)
     },
+
+    #' @description
+    #' Parse a complexType node.
+    #' @param node The complexType xml_node.
+    #' @return A list representing the complex type.
     parse_complex_type = function(node) {
       # Get attributes
       attrs <- xml2::xml_find_all(node, ".//xsd:attribute", self$ns)
@@ -286,6 +318,11 @@ WSDLParser <- R6::R6Class(
         documentation = doc
       )
     },
+
+    #' @description
+    #' Parse a simpleType node.
+    #' @param node The simpleType xml_node.
+    #' @return A list representing the simple type.
     parse_simple_type = function(node) {
       restriction <- xml2::xml_find_first(node, "./xsd:restriction", self$ns)
       base <- self$strip_ns(xml2::xml_attr(restriction, "base"))
@@ -299,6 +336,11 @@ WSDLParser <- R6::R6Class(
         values = values
       )
     },
+
+    #' @description
+    #' Strip namespace prefix from a string.
+    #' @param str The string to strip.
+    #' @return The string without the namespace prefix.
     strip_ns = function(str) {
       if (is.null(str)) {
         return(NULL)
@@ -310,6 +352,11 @@ WSDLParser <- R6::R6Class(
       parts <- strsplit(str, ":")[[1]]
       if (length(parts) > 1) parts[2] else parts[1]
     },
+
+    #' @description
+    #' Parse documentation from a node.
+    #' @param node The xml_node.
+    #' @return The documentation text, or NULL.
     parse_documentation = function(node) {
       doc_node <- xml2::xml_find_first(node, "./wsdl:documentation", self$ns)
       if (inherits(doc_node, "xml_missing")) {

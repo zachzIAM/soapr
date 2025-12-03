@@ -8,6 +8,11 @@
 XMLSerializer <- R6::R6Class(
   "XMLSerializer",
   public = list(
+    #' @description
+    #' Serialize an R object to an XML node.
+    #' @param parent The parent xml_node.
+    #' @param name The name of the element.
+    #' @param value The value to serialize.
     serialize = function(parent, name, value) {
       if (is.null(value)) {
         return()
@@ -55,6 +60,11 @@ XMLSerializer <- R6::R6Class(
         xml2::xml_add_child(parent, name, as.character(value))
       }
     },
+
+    #' @description
+    #' Deserialize a response object to an XML document.
+    #' @param response The httr response object.
+    #' @return An xml_document.
     deserialize_response = function(response) {
       content_type <- httr::headers(response)$`Content-Type`
 
