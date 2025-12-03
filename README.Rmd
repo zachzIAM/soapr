@@ -38,8 +38,10 @@ You can install the development version of soapr from [GitHub](https://github.co
 
 ``` r
 # install.packages("devtools")
-devtools::install_github("zachzIAM/soapr")
+devtools::install_github("zachzIAM/soapr", build_vignettes = TRUE)
 ```
+
+> **Note**: `build_vignettes = TRUE` is required to view the vignettes locally.
 
 ## 🚀 Quick Start
 
