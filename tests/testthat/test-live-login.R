@@ -12,7 +12,7 @@ test_that("Login Operation (BDTInteractive)", {
     skip("WSDL file not found")
   }
 
-  service <- Service$new(wsdl_path, verbose = TRUE)
+  service <- Service$new(wsdl_path, verbose = FALSE)
 
   user <- "DUMMY_USER"
   password <- "DUMMY_PASSWORD"
