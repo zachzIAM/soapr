@@ -1,0 +1,28 @@
+#' Type Factory
+#' @description Factory for creating SOAP complex types.
+#' @importFrom R6 R6Class
+#' @export
+TypeFactory <- R6::R6Class(
+  "TypeFactory",
+  public = list(
+    {{#types}}
+    #' @description {{{doc}}}
+    {{#param_docs}}
+    {{{.}}}
+    {{/param_docs}}
+    {{{name}}} = function({{{args}}}) {
+      obj <- list(
+        {{#body}}
+        {{{.}}}
+        {{/body}}
+      )
+      class(obj) <- c("soap_object", "list")
+      attr(obj, "soap_type") <- "{{{name}}}"
+      {{#has_attrs}}
+      attr(obj, "soap_attrs") <- c({{{attr_names}}})
+      {{/has_attrs}}
+      return(obj)
+    }{{^last}},{{/last}}
+    {{/types}}
+  )
+)

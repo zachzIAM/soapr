@@ -16,7 +16,8 @@ Imports:
     R6,
     xml2,
     desc,
-    bit64
+    bit64,
+    whisker
 Suggests: 
     testthat (>= 3.0.0),
     knitr,

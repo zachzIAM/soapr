@@ -1,0 +1,124 @@
+{{#detached_docs}}
+{{{.}}}
+{{/detached_docs}}
+#' SOAP Client Class
+#' @description
+#' R6 class for interacting with the SOAP service.
+#' @importFrom R6 R6Class
+#' @export
+Client <- R6::R6Class(
+  "Client",
+  public = list(
+    #' @field url The service endpoint URL.
+    url = NULL,
+    #' @field handle The httr handle.
+    handle = NULL,
+    #' @field headers List of SOAP headers.
+    headers = list(),
+    #' @field config List of httr configuration options.
+    config = list(),
+    #' @field transport Custom transport function.
+    transport = NULL,
+    #' @field types Factory for creating complex types.
+    types = NULL,
+
+    #' @description
+    #' Initialize the client.
+    #' @param url The service endpoint URL.
+    #' @param config A list of httr configuration options.
+    #' @param transport A custom transport function.
+    initialize = function(url = NULL, config = list(), transport = NULL) {
+      if (is.null(url)) url <- "{{{service_url}}}"
+      self$url <- url
+      self$handle <- httr::handle(url)
+      self$config <- config
+      self$transport <- transport
+      self$types <- TypeFactory$new()
+    },
+
+    #' @description
+    #' Add a SOAP header.
+    #' @param header An xml_node representing the header.
+    add_header = function(header) {
+      self$headers <- c(self$headers, list(header))
+      invisible(self)
+    },
+
+    {{#operations}}
+    #' @description Call the {{{name}}} operation.
+    {{#args_doc}}
+    {{{.}}}
+    {{/args_doc}}
+    {{{name}}} = function({{{args}}}) {
+      op_name <- "{{{name}}}"
+      action <- "{{{action}}}"
+      {{#arg_validations}}
+      {{{.}}}
+      {{/arg_validations}}
+      args <- list()
+      {{#arg_assignments}}
+      {{{.}}}
+      {{/arg_assignments}}
+
+      # Construct Envelope
+      envelope <- xml2::xml_new_root("soap:Envelope",
+        "xmlns:soap" = "http://schemas.xmlsoap.org/soap/envelope/",
+        "xmlns:xsi" = "http://www.w3.org/2001/XMLSchema-instance",
+        "xmlns:xsd" = "http://www.w3.org/2001/XMLSchema",
+        "xmlns:tns" = "{{{tns}}}"
+      )
+
+      # Add Headers
+      if (length(self$headers) > 0) {
+        header_node <- xml2::xml_add_child(envelope, "soap:Header")
+        for (header in self$headers) {
+          xml2::xml_add_child(header_node, header)
+        }
+      }
+
+      body <- xml2::xml_add_child(envelope, "soap:Body")
+      op_node <- xml2::xml_add_child(body, op_name)
+      xml2::xml_attr(op_node, "xmlns") <- "{{{tns}}}"
+
+      for (arg_name in names(args)) {
+        build_xml_node(op_node, arg_name, args[[arg_name]])
+      }
+
+      if (!is.null(self$transport)) {
+        response <- self$transport(self$url, action, as.character(envelope), self$config, self$handle)
+      } else {
+        response <- httr::POST(
+          url = self$url,
+          handle = self$handle,
+          httr::add_headers(SOAPAction = action),
+          httr::content_type("text/xml; charset=utf-8"),
+          body = as.character(envelope),
+          config = self$config
+        )
+      }
+      handle_fault(response)
+      content <- httr::content(response, as = "parsed", encoding = "UTF-8")
+      body_node <- xml2::xml_find_first(content, ".//*[local-name()='Body']")
+      response_node <- xml2::xml_children(body_node)[[1]]
+      response_name <- xml2::xml_name(response_node)
+      local_name <- gsub("^.*:", "", response_name)
+      schema <- get_schema()
+      if (!is.null(schema[[local_name]])) {
+        deserialize(response_node, local_name, schema)
+      } else {
+        content
+      }
+    }{{^last}},{{/last}}
+    {{/operations}}
+  )
+)
+
+#' Create Client
+#' @param url The service endpoint URL. Defaults to the WSDL location.
+#' @param config A list of httr configuration options (e.g., authentication).
+#' @param transport A custom transport function for mocking. Defaults to NULL.
+#' @return A Client object.
+#' @export
+new_client <- function(url = NULL, config = list(), transport = NULL) {
+  Client$new(url = url, config = config, transport = transport)
+}
