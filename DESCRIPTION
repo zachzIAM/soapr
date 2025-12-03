@@ -15,7 +15,8 @@ Imports:
     httr,
     R6,
     xml2,
-    desc
+    desc,
+    bit64
 Suggests: 
     testthat (>= 3.0.0),
     knitr,

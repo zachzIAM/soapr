@@ -182,7 +182,7 @@ Factory <- R6::R6Class(
         local_type,
         "int" = as.integer(val),
         "integer" = as.integer(val),
-        "long" = as.numeric(val), # R doesn't have 64-bit integers natively, use numeric
+        "long" = bit64::as.integer64(val),
         "short" = as.integer(val),
         "byte" = as.integer(val),
         "decimal" = as.numeric(val),
