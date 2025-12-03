@@ -55,10 +55,35 @@ client <- new_client()
 
 # Call an operation
 # Arguments are named parameters
-result <- Add(client, intA = 10, intB = 20)
+result <- client$Add(intA = 10, intB = 20)
 
 # The result is a list
 print(result$AddResult)
+```
+
+### Complex Types (Type Factory)
+
+For operations that require complex objects, use the **Type Factory**. This ensures your objects have the correct structure and attributes.
+
+```r
+# Create a complex object using the factory
+# client$types$TypeName(...)
+col <- client$types$Column(
+  Name = "ISIN", 
+  Owner = "SYSTEM"
+)
+
+# Pass it to an operation
+client$GetPositionsReport(Column = col)
+```
+
+### Enumerations
+
+Arguments that are enumerated types are automatically validated and provide autocomplete support.
+
+```r
+# 'ReportName' must be one of the allowed values
+client$GetReportColumnName(ReportName = "Positions")
 ```
 
 ## 2. Dynamic Client
@@ -92,7 +117,7 @@ wsse_header <- WSSecurity$new(
 )
 
 # Add to client
-client <- add_header(client, wsse_header)
+client$add_header(wsse_header)
 ```
 
 ### Custom Transports (Mocking)
