@@ -18,11 +18,13 @@ Client <- R6::R6Class(
     handle = NULL,
     serializer = NULL,
     transport = NULL,
-    initialize = function(wsdl,
-                          port_def,
-                          factory,
-                          transport = httr::POST,
-                          verbose = FALSE) {
+    initialize = function(
+      wsdl,
+      port_def,
+      factory,
+      transport = httr::POST,
+      verbose = FALSE
+    ) {
       self$wsdl <- wsdl
       self$port_def <- port_def
       self$factory <- factory
@@ -77,6 +79,92 @@ Client <- R6::R6Class(
 
       # For now, we assume args match the expected structure
       for (arg_name in names(args)) {
+        # Validate Enums
+        # Find the element definition for this argument
+        # The operation input message name is op$input_message
+        # We need to find the message part, then the element, then the type.
+        # This is complex to traverse at runtime efficiently without a full schema map.
+        # However, we can try a best-effort lookup if we have the type definitions.
+
+        # Simplified approach: Check if any type in the WSDL matches the argument name (common convention)
+        # Or better, iterate through all types and see if any simpleType has this name? No, that's slow.
+
+        # Let's rely on the fact that we have `self$wsdl$get_type_definitions()` available.
+        # But we need to know the TYPE of the argument.
+        # In document/literal, the arg_name IS the element name.
+        # So we look up the element in the schema.
+
+        # We need a way to look up element -> type.
+        # The WSDLParser doesn't expose a direct element map, but get_type_definitions returns types.
+        # Some types are elements.
+
+        # Let's try to find the type definition for the element 'arg_name'
+        type_def <- self$wsdl$get_type_definitions()[[arg_name]]
+
+        # If not found directly, it might be a complex type's element.
+        # But for top-level arguments to an operation, they are usually elements of the input message wrapper.
+
+        # If we found a type definition and it's a simple type with values (enum)
+        if (
+          !is.null(type_def) &&
+            type_def$kind == "simple" &&
+            !is.null(type_def$values)
+        ) {
+          val <- args[[arg_name]]
+          if (!val %in% type_def$values) {
+            stop(sprintf(
+              "Invalid value '%s' for argument '%s'. Allowed values: %s",
+              val,
+              arg_name,
+              paste(type_def$values, collapse = ", ")
+            ))
+          }
+        } else {
+          # It might be an element that refers to a simpleType
+          # In our parser, elements that define types are in the types list.
+          # If the element has a 'type' attribute, we need to look that up.
+          # Our parser structure for elements in `get_type_definitions` is:
+          # types[[name]] <- parse_complex_type(ct)
+          # This only covers elements that have INLINE complexTypes.
+
+          # If an element refers to a named simpleType, it might not be in the top-level types list as an element.
+          # It would be in the complexType definition of the operation's input wrapper.
+
+          # To do this correctly, we need the operation's input type definition.
+          # self$operations[[op$name]] doesn't have the full type tree.
+
+          # Let's try to get the input type definition for the operation.
+          # The operation name usually matches the input element name in wrapped doc/lit.
+          op_input_type <- self$wsdl$get_type_definitions()[[op$name]]
+
+          if (
+            !is.null(op_input_type) &&
+              !is.null(op_input_type$elements[[arg_name]])
+          ) {
+            elem_def <- op_input_type$elements[[arg_name]]
+            elem_type_name <- elem_def$type
+
+            # Look up the type of the element
+            elem_type_def <- self$wsdl$get_type_definitions()[[elem_type_name]]
+
+            if (
+              !is.null(elem_type_def) &&
+                elem_type_def$kind == "simple" &&
+                !is.null(elem_type_def$values)
+            ) {
+              val <- args[[arg_name]]
+              if (!val %in% elem_type_def$values) {
+                stop(sprintf(
+                  "Invalid value '%s' for argument '%s'. Allowed values: %s",
+                  val,
+                  arg_name,
+                  paste(elem_type_def$values, collapse = ", ")
+                ))
+              }
+            }
+          }
+        }
+
         self$serializer$serialize(op_node, arg_name, args[[arg_name]])
       }
 

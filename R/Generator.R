@@ -422,10 +422,34 @@ Generator <- R6::R6Class(
         # --- Method Definition ---
         args <- c()
         arg_assignments <- c()
+        arg_validations <- c()
 
         if (!is.null(type_def)) {
           for (elem_name in names(type_def$elements)) {
-            args <- c(args, paste0(elem_name, " = NA"))
+            elem <- type_def$elements[[elem_name]]
+
+            # Check if type is an enum
+            type_info <- self$wsdl$get_type_definitions()[[elem$type]]
+            if (
+              !is.null(type_info) &&
+                type_info$kind == "simple" &&
+                !is.null(type_info$values)
+            ) {
+              # It's an enum!
+              default_val <- paste0(
+                "c(",
+                paste(paste0('"', type_info$values, '"'), collapse = ", "),
+                ")"
+              )
+              args <- c(args, paste0(elem_name, " = ", default_val))
+              arg_validations <- c(
+                arg_validations,
+                paste0("      ", elem_name, " <- match.arg(", elem_name, ")")
+              )
+            } else {
+              args <- c(args, paste0(elem_name, " = NA"))
+            }
+
             arg_assignments <- c(
               arg_assignments,
               paste0("      args[['", elem_name, "']] <- ", elem_name)
@@ -436,6 +460,7 @@ Generator <- R6::R6Class(
         func_body <- c(
           paste0("      op_name <- \"", op_name, "\""),
           paste0("      action <- \"", op$action, "\""),
+          arg_validations,
           "      args <- list()",
           arg_assignments,
           "",
