@@ -2,7 +2,7 @@
 #'
 #' Generates a static R package from a WSDL.
 #'
-
+#' @importFrom R6 R6Class
 #' @export
 Generator <- R6::R6Class(
   "Generator",
@@ -269,7 +269,7 @@ Generator <- R6::R6Class(
         lines,
         "#' @description Factory for creating SOAP complex types."
       )
-
+      lines <- c(lines, "#' @importFrom R6 R6Class")
       lines <- c(lines, "#' @export")
       lines <- c(lines, "TypeFactory <- R6::R6Class(")
       lines <- c(lines, '  "TypeFactory",')
@@ -661,7 +661,7 @@ Generator <- R6::R6Class(
         "#' SOAP Client Class",
         "#' @description",
         "#' R6 class for interacting with the SOAP service.",
-
+        "#' @importFrom R6 R6Class",
         "#' @export",
         "Client <- R6::R6Class(",
         "  \"Client\",",

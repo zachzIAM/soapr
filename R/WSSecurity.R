@@ -2,7 +2,7 @@
 #'
 #' Provides methods for generating WS-Security headers.
 #'
-
+#' @importFrom xml2 xml_new_root xml_add_child xml_set_attr xml_set_text
 #' @export
 WSSecurity <- R6::R6Class(
   "WSSecurity",

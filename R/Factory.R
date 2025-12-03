@@ -2,7 +2,7 @@
 #'
 #' Creates objects for SOAP requests.
 #'
-
+#' @importFrom R6 R6Class
 #' @export
 Factory <- R6::R6Class(
   "Factory",
