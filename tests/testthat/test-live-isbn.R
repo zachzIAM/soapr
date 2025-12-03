@@ -7,23 +7,15 @@ test_that("ISBN Service Integration", {
 
   service <- Service$new(wsdl_path)
 
-  # Test IsValidISBN13
-  # Valid ISBN: 9780596520687 (Learning Python)
+  # Test Valid ISBN
   res_valid <- service$client$IsValidISBN13(sISBN = "9780596520687")
-
-  # Expect TRUE (boolean)
-  # Depending on deserialization, it might be "true", TRUE, or a list containing it.
-  # Our Factory converts "true"/"false" to logical if type is boolean.
-
-  # Let's check what we get
-  expect_true(
-    isTRUE(res_valid) ||
-      res_valid == "true" ||
-      (is.list(res_valid) &&
-        (isTRUE(res_valid[[1]]) || res_valid[[1]] == "true"))
-  )
+  expect_s3_class(res_valid, "soap_object")
+  expect_equal(attr(res_valid, "soap_type"), "IsValidISBN13Response")
+  expect_true(res_valid$IsValidISBN13Result)
 
   # Test Invalid ISBN
   res_invalid <- service$client$IsValidISBN13(sISBN = "1234567890123")
-  expect_false(isTRUE(res_invalid) || res_invalid == "true")
+  expect_s3_class(res_invalid, "soap_object")
+  expect_equal(attr(res_invalid, "soap_type"), "IsValidISBN13Response")
+  expect_false(res_invalid$IsValidISBN13Result)
 })

@@ -1,5 +1,5 @@
 library(testthat)
-testthat::skip_on_ci()
+skip_on_ci()
 
 test_that("NumberConversion service works", {
   wsdl_url <- "http://www.dataaccess.com/webservicesserver/NumberConversion.wso?WSDL"

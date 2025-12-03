@@ -1,5 +1,5 @@
 library(testthat)
-testthat::skip_on_ci()
+skip_on_ci()
 
 test_that("Calculator service works", {
   wsdl_url <- "http://www.dneonline.com/calculator.asmx?WSDL"

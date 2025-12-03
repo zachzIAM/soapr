@@ -1,5 +1,5 @@
 test_that("WSDLParser parses BDTInteractive.xml correctly", {
-  wsdl_path <- testthat::test_path("testdata/valid_wsdls/BDTInteractive.xml")
+  wsdl_path <- test_path("testdata/valid_wsdls/BDTInteractive.xml")
   wsdl <- WSDLParser$new(wsdl_path)
 
   expect_s3_class(wsdl, "WSDLParser")
