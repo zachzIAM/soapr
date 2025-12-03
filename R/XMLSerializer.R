@@ -2,8 +2,6 @@
 #'
 #' Handles serialization of R objects to XML nodes.
 #'
-#' @importFrom R6 R6Class
-#' @importFrom xml2 xml_add_child xml_attr<- xml_set_text
 #' @export
 XMLSerializer <- R6::R6Class(
   "XMLSerializer",

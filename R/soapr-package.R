@@ -2,10 +2,8 @@
 "_PACKAGE"
 
 ## usethis namespace: start
-#' @import R6
-#' @import checkmate
-#' @import httr
-#' @import xml2
-#' @import desc
+#' @importFrom R6 R6Class
+#' @importFrom desc description
+#' @importFrom httr POST
 ## usethis namespace: end
 NULL

@@ -2,7 +2,6 @@
 #'
 #' Represents a SOAP service.
 #'
-#' @importFrom R6 R6Class
 #' @export
 Service <- R6::R6Class(
   "Service",

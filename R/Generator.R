@@ -2,7 +2,6 @@
 #'
 #' Generates a static R package from a WSDL.
 #'
-#' @importFrom R6 R6Class
 #' @export
 Generator <- R6::R6Class(
   "Generator",

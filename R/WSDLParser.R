@@ -2,8 +2,6 @@
 #'
 #' Parses a WSDL file to extract services, ports, operations, and types.
 #'
-#' @importFrom xml2 read_xml xml_ns xml_find_all xml_attr xml_name xml_children xml_text
-#' @importFrom R6 R6Class
 #' @export
 WSDLParser <- R6::R6Class(
   "WSDLParser",
