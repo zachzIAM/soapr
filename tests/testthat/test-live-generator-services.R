@@ -74,9 +74,15 @@ test_that("Static Client Generator works with Live Services", {
         expect_true("config" %in% args)
         expect_true("transport" %in% args)
 
-        # Verify add_header exists
+        # Verify Client R6 class exists
         expect_true(exists(
-          "add_header",
+          "Client",
+          where = as.environment(paste0("package:", service$name))
+        ))
+
+        # Verify TypeFactory R6 class exists
+        expect_true(exists(
+          "TypeFactory",
           where = as.environment(paste0("package:", service$name))
         ))
       },
