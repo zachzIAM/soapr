@@ -23,6 +23,7 @@ Generates a static R package from a WSDL.
 \itemize{
 \item \href{#method-Generator-new}{\code{Generator$new()}}
 \item \href{#method-Generator-generate_package}{\code{Generator$generate_package()}}
+\item \href{#method-Generator-write_documentation}{\code{Generator$write_documentation()}}
 \item \href{#method-Generator-write_description}{\code{Generator$write_description()}}
 \item \href{#method-Generator-write_readme}{\code{Generator$write_readme()}}
 \item \href{#method-Generator-write_utils}{\code{Generator$write_utils()}}
@@ -69,12 +70,26 @@ Generate the R package.
 }
 }
 \if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-Generator-write_documentation"></a>}}
+\if{latex}{\out{\hypertarget{method-Generator-write_documentation}{}}}
+\subsection{Method \code{write_documentation()}}{
+Generate package documentation.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Generator$write_documentation(path)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{path}}{The package directory path.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Generator-write_description"></a>}}
 \if{latex}{\out{\hypertarget{method-Generator-write_description}{}}}
 \subsection{Method \code{write_description()}}{
-Write the DESCRIPTION file.
-
-
 Write the DESCRIPTION file.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{Generator$write_description(path, name)}\if{html}{\out{</div>}}
@@ -84,10 +99,6 @@ Write the DESCRIPTION file.
 \if{html}{\out{<div class="arguments">}}
 \describe{
 \item{\code{path}}{The package directory path.}
-
-\item{\code{path}}{The package directory path.}
-
-\item{\code{name}}{The package name.}
 
 \item{\code{name}}{The package name.}
 }

@@ -109,7 +109,6 @@ Generator <- R6::R6Class(
     write_schema = function(path) {
       types <- self$wsdl$get_type_definitions()
       types_code <- capture.output(dput(types))
-
       view <- list(types_code = paste(types_code, collapse = "\n"))
       template <- private$read_template("schema.mustache")
       content <- whisker::whisker.render(template, view)
@@ -248,100 +247,160 @@ Generator <- R6::R6Class(
     get_client_view_model = function() {
       # We need to find a service and port
       services <- self$wsdl$get_services()
-      if (length(services) == 0) {
-        return(NULL)
-      }
-      service <- services[[1]]
-      if (length(service$ports) == 0) {
-        return(NULL)
-      }
-      port <- service$ports[[1]]
+      service <- services[[1]]                    # TODO handle cases with multiple services
+      port <- service$ports[[1]]                  # TODO handle cases with multiple ports, e.g. CountryInfoService
 
       ops <- self$wsdl$get_operations(port$binding)
       tns <- self$wsdl$get_target_namespace()
 
-      detached_docs <- c()
-      operations <- list()
+      detached_docs <- private$create_client_view_model_detatched_docs(ops)
+      operations <- private$create_client_view_model_operations(ops)
 
-      op_names <- names(ops)
-      for (i in seq_along(op_names)) {
-        op_name <- op_names[i]
-        op <- ops[[op_name]]
-        type_def <- self$wsdl$get_type_definitions()[[op_name]]
+      list(
+        service_url = port$location,
+        tns = tns,
+        detached_docs = detached_docs,
+        operations = operations
+      )
+    },
 
-        # --- Detached Documentation ---
-        doc_str <- if (!is.null(op$documentation)) {
-          op$documentation
-        } else {
-          paste("Operation", op_name)
-        }
+    create_client_view_model_detatched_docs = function(port_binding_ops) {
+      purrr::map_chr(purrr::set_names(port_binding_ops, NULL), ~{
+        type_def <- self$wsdl$get_type_definitions()[[.x$name]]
 
-        args_doc <- c()
-        if (!is.null(type_def)) {
-          for (elem_name in names(type_def$elements)) {
-            elem <- type_def$elements[[elem_name]]
-            elem_doc <- elem$documentation
-            doc_text <- if (!is.null(elem_doc)) {
-              elem_doc
-            } else {
-              paste("Parameter", elem_name)
-            }
-            args_doc <- c(
-              args_doc,
-              paste0("#' @param ", elem_name, " ", doc_text)
-            )
-          }
-        }
+        doc_str <- .x$documentation %||% paste("Operation", .x$name)
+
+        args_doc <- purrr::map_chr(type_def$elements, ~{
+          doc_text <- .x$documentation %||% paste(.x$type, .x$name)
+          paste("#'", "@param", .x$name, doc_text)
+        })
+
+        usage_args <- paste(names(type_def$elements), collapse = ", ")
+        usage_doc <- paste("#'", "@usage", paste0("client$", .x$name, "(", usage_args, ")"))
 
         detached_doc <- c(
-          paste0("#' ", doc_str),
-          "#' @description",
-          paste0("#' Call the ", op_name, " operation."),
+          paste("#'", doc_str),
+          paste("#'", "@description"),
+          paste("#'", "Call the", .x$name, "operation."),
           args_doc,
-          paste0("#' @usage client$", op_name, "(...)"),
-          paste0("#' @name ", op_name),
-          paste0("#' @aliases ", op_name),
+          usage_doc,
+          paste("#'", "@name", .x$name),
+          paste("#'", "@aliases", .x$name),
           "NULL",
           ""
         )
-        detached_docs <- c(detached_docs, paste(detached_doc, collapse = "\n"))
+        paste(detached_doc, collapse = "\n")
+      })
+    },
 
-        # --- Method Definition ---
+    create_client_view_model_operations = function(port_binding_ops) {
+
+      # tns <- self$wsdl$get_target_namespace()
+      # operations <- purrr::map(port_binding_ops, ~{
+      #   type_def <- self$wsdl$get_type_definitions()[[.x$name]]
+      #
+      #   args_handling <- purrr::map(type_def$elements, ~{
+      #
+      #     doc_text <- .x$documentation %||% paste(.x$type, .x$name)
+      #     arg_doc <- paste("#'", "@param", .x$name, doc_text)
+      #
+      #     type_info <- self$wsdl$get_type_definitions()[[.x$type]]
+      #
+      #     if (!is.null(type_info) && type_info$kind == "simple" && !is.null(type_info$values)) {
+      #       default_vals_str <- paste(capture.output(dput(type_info$values)), collapse = "")
+      #       arg_signature <- paste(.x$name, "=", default_vals_str)
+      #       arg_validation <- paste0("      ", .x$name, " <- match.arg(", .x$name, ")")
+      #     } else {
+      #       arg_signature <- paste(.x$name, "=", NA)
+      #       arg_validation <- NULL
+      #     }
+      #
+      #     arg_assignment <- paste0("      args[['", .x$name, "']] <- ", .x$name)
+      #
+      #     list(
+      #       doc = arg_doc,
+      #       signature = arg_signature,
+      #       validation = arg_validation,
+      #       assignment = arg_assignment
+      #     )
+      #   })
+      #
+      #   args_doc <- purrr::map_chr(args_handling, ~.x$doc)
+      #   args_signature <- paste(purrr::map_chr(args_handling, ~.x$signature), collapse = ", ")
+      #   arg_validations <- purrr::map_chr(args_handling, ~.x$validation %||% NA)
+      #   arg_validations <- arg_validations[!is.na(arg_validations)]
+      #   arg_assignments <- purrr::map_chr(args_handling, ~.x$assignment)
+      #
+      #   list(
+      #     name = .x$name,
+      #     action = .x$action,
+      #     args_doc = purrr::set_names(args_doc, NULL),
+      #     args = purrr::set_names(args_signature, NULL),
+      #     arg_validations = purrr::set_names(arg_validations, NULL),
+      #     arg_assignments = purrr::set_names(arg_assignments, NULL),
+      #     tns = tns,
+      #     last = FALSE
+      #   )
+      #
+      # })
+      #
+      # if (length(operations) > 0) {
+      #   operations[[length(operations)]]$last <- TRUE
+      # }
+      #
+      # list(
+      #   service_url = port$location,
+      #   tns = tns,
+      #   detached_docs = detached_docs,
+      #   operations = operations
+      # )
+
+      tns <- self$wsdl$get_target_namespace()
+      operations <- list()
+      op_names <- names(port_binding_ops)
+      for (i in seq_along(op_names)) {
+        op_name <- op_names[i]
+        op <- port_binding_ops[[op_name]]
+        type_def <- self$wsdl$get_type_definitions()[[op_name]]
+
+        args_doc <- purrr::map_chr(type_def$elements, ~{
+          doc_text <- .x$documentation %||% paste(.x$type, .x$name)
+          paste("#'", "@param", .x$name, doc_text)
+        })
+
         args <- c()
         arg_assignments <- c()
         arg_validations <- c()
 
-        if (!is.null(type_def)) {
-          for (elem_name in names(type_def$elements)) {
-            elem <- type_def$elements[[elem_name]]
+        for (elem_name in names(type_def$elements)) {
+          elem <- type_def$elements[[elem_name]]
 
-            # Check if type is an enum
-            type_info <- self$wsdl$get_type_definitions()[[elem$type]]
-            if (
-              !is.null(type_info) &&
-                type_info$kind == "simple" &&
-                !is.null(type_info$values)
-            ) {
-              # It's an enum!
-              default_val <- paste0(
-                "c(",
-                paste(paste0('"', type_info$values, '"'), collapse = ", "),
-                ")"
-              )
-              args <- c(args, paste0(elem_name, " = ", default_val))
-              arg_validations <- c(
-                arg_validations,
-                paste0("      ", elem_name, " <- match.arg(", elem_name, ")")
-              )
-            } else {
-              args <- c(args, paste0(elem_name, " = NA"))
-            }
-
-            arg_assignments <- c(
-              arg_assignments,
-              paste0("      args[['", elem_name, "']] <- ", elem_name)
+          # Check if type is an enum
+          type_info <- self$wsdl$get_type_definitions()[[elem$type]]
+          if (
+            !is.null(type_info) &&
+            type_info$kind == "simple" &&
+            !is.null(type_info$values)
+          ) {
+            # It's an enum!
+            default_val <- paste0(
+              "c(",
+              paste(paste0('"', type_info$values, '"'), collapse = ", "),
+              ")"
             )
+            args <- c(args, paste0(elem_name, " = ", default_val))
+            arg_validations <- c(
+              arg_validations,
+              paste0("      ", elem_name, " <- match.arg(", elem_name, ")")
+            )
+          } else {
+            args <- c(args, paste0(elem_name, " = NA"))
           }
+
+          arg_assignments <- c(
+            arg_assignments,
+            paste0("      args[['", elem_name, "']] <- ", elem_name)
+          )
         }
 
         operations[[length(operations) + 1]] <- list(
@@ -360,12 +419,7 @@ Generator <- R6::R6Class(
         operations[[length(operations)]]$last <- TRUE
       }
 
-      list(
-        service_url = port$location,
-        tns = tns,
-        detached_docs = detached_docs,
-        operations = operations
-      )
+      return(operations)
     },
 
     get_readme_view_model = function(name) {
