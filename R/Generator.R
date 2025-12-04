@@ -59,17 +59,7 @@ Generator <- R6::R6Class(
     #' Generate package documentation.
     #' @param path The package directory path.
     write_documentation = function(path) {
-      message("Running roxygen2::roxygenize...")
-      tryCatch({
-        roxygen2::roxygenize(
-          path,
-          roclets = c("rd", "namespace", "collate")
-        )
-        message("Documentation generated.")
-      }, error = function(e) {
-        message("Could not run roxygenize: ", e$message)
-        message("Please run roxygen2::roxygenize() manually on the generated package.")
-      })
+      roxygen2::roxygenize(path, roclets = c("rd", "namespace", "collate"))
     },
 
     #' @description
@@ -78,7 +68,7 @@ Generator <- R6::R6Class(
     #' @param name The package name.
     write_description = function(path, name) {
       view <- list(package_name = name)
-      template <- private$get_template("DESCRIPTION.mustache")
+      template <- private$read_template("DESCRIPTION.mustache")
       content <- whisker::whisker.render(template, view)
       writeLines(content, file.path(path, "DESCRIPTION"))
     },
@@ -89,7 +79,7 @@ Generator <- R6::R6Class(
     #' @param name The package name.
     write_readme = function(path, name) {
       view <- private$get_readme_view_model(name)
-      template <- private$get_template("README.mustache")
+      template <- private$read_template("README.mustache")
       readme <- whisker::whisker.render(template, view)
       writeLines(readme, file.path(path, "README.md"))
     },
@@ -98,16 +88,9 @@ Generator <- R6::R6Class(
     #' Write the utils.R file.
     #' @param path The package directory path.
     write_utils = function(path) {
-      template_path <- system.file("templates/utils.R", package = "soapr")
-      if (template_path == "") {
-        # Fallback for dev mode
-        template_path <- file.path(getwd(), "inst/templates/utils.R")
-      }
-      file.copy(
-        template_path,
-        file.path(path, "R", "utils.R"),
-        overwrite = TRUE
-      )
+      template_path <- private$get_template_path("utils.R")
+      dest_path <- file.path(path, "R", "utils.R")
+      file.copy(template_path, dest_path, overwrite = TRUE)
     },
 
     #' @description
@@ -115,7 +98,7 @@ Generator <- R6::R6Class(
     #' @param path The package directory path.
     write_types = function(path) {
       view <- private$get_types_view_model()
-      template <- private$get_template("types.mustache")
+      template <- private$read_template("types.mustache")
       content <- whisker::whisker.render(template, view)
       writeLines(content, file.path(path, "R", "types.R"))
     },
@@ -128,7 +111,7 @@ Generator <- R6::R6Class(
       types_code <- capture.output(dput(types))
 
       view <- list(types_code = paste(types_code, collapse = "\n"))
-      template <- private$get_template("schema.mustache")
+      template <- private$read_template("schema.mustache")
       content <- whisker::whisker.render(template, view)
       writeLines(content, file.path(path, "R", "schema.R"))
     },
@@ -142,13 +125,14 @@ Generator <- R6::R6Class(
         return()
       }
 
-      template <- private$get_template("client.mustache")
+      template <- private$read_template("client.mustache")
       content <- whisker::whisker.render(template, view)
       writeLines(content, file.path(path, "R", "client.R"))
     }
   ),
+
   private = list(
-    get_template = function(name) {
+    get_template_path = function(name) {
       template_path <- system.file(
         file.path("templates", name),
         package = "soapr"
@@ -156,7 +140,13 @@ Generator <- R6::R6Class(
       if (template_path == "") {
         template_path <- file.path(getwd(), "inst", "templates", name)
       }
-      paste(readLines(template_path, warn = FALSE), collapse = "\n")
+      return(template_path)
+    },
+
+    read_template = function(name) {
+      template_path <- private$get_template_path(name)
+      content <- readLines(template_path, warn = FALSE)
+      return(paste(content, collapse = "\n"))
     },
 
     get_types_view_model = function() {

@@ -16,7 +16,8 @@ Imports:
     R6,
     xml2,
     bit64,
-    whisker
+    whisker,
+    roxygen2
 Suggests: 
     testthat (>= 3.0.0),
     knitr,
