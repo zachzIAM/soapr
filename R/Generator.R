@@ -49,36 +49,29 @@ Generator <- R6::R6Class(
       self$write_client(pkg_path)
 
       # Document package
-      message("Running roxygen2::roxygenize...")
-      tryCatch(
-        {
-          if (requireNamespace("roxygen2", quietly = TRUE)) {
-            roxygen2::roxygenize(
-              pkg_path,
-              roclets = c("rd", "namespace", "collate")
-            )
-            message("Documentation generated.")
-          } else {
-            message(
-              "roxygen2 not installed. Skipping documentation."
-            )
-          }
-        },
-        error = function(e) {
-          message("Could not run roxygenize: ", e$message)
-          message(
-            "Please run roxygen2::roxygenize() manually on the generated package."
-          )
-        }
-      )
+      self$write_documentation(pkg_path)
 
+      # Inform user
       message(paste("Package generated at:", pkg_path))
     },
 
     #' @description
-    #' Write the DESCRIPTION file.
+    #' Generate package documentation.
     #' @param path The package directory path.
-    #' @param name The package name.
+    write_documentation = function(path) {
+      message("Running roxygen2::roxygenize...")
+      tryCatch({
+        roxygen2::roxygenize(
+          path,
+          roclets = c("rd", "namespace", "collate")
+        )
+        message("Documentation generated.")
+      }, error = function(e) {
+        message("Could not run roxygenize: ", e$message)
+        message("Please run roxygen2::roxygenize() manually on the generated package.")
+      })
+    },
+
     #' @description
     #' Write the DESCRIPTION file.
     #' @param path The package directory path.

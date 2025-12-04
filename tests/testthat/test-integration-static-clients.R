@@ -16,33 +16,23 @@ test_that("Static Client Generator works for Calculator service", {
 
   # Generate
   wsdl_url <- "http://www.dneonline.com/calculator.asmx?WSDL"
-  # We need to handle potential network issues or WSDL unavailability
-  tryCatch(
-    {
-      wsdl <- WSDLParser$new(wsdl_url)
-      gen <- Generator$new(wsdl)
-      gen$generate_package(temp_dir, pkg_name)
+  wsdl <- WSDLParser$new(wsdl_url)
+  gen <- Generator$new(wsdl)
+  gen$generate_package(temp_dir, pkg_name)
 
-      # Install and Load
-      # We can't easily install to the main library during tests,
-      # but we can load it using devtools::load_all or pkgload::load_all
-      pkgload::load_all(pkg_path, quiet = TRUE)
+  # Install and Load
+  pkgload::load_all(pkg_path, quiet = TRUE)
 
-      # Create Client
-      client <- calculator::new_client()
+  # Create Client
+  client <- calculator::new_client()
 
-      # Test Add
-      res <- client$Add(intA = 10, intB = 20)
-      expect_equal(res$AddResult, 30)
+  # Test Add
+  res <- client$Add(intA = 10, intB = 20)
+  expect_equal(res$AddResult, 30)
 
-      # Test Subtract
-      res <- client$Subtract(intA = 50, intB = 20)
-      expect_equal(res$SubtractResult, 30)
-    },
-    error = function(e) {
-      skip(paste("Skipping Calculator test due to error:", e$message))
-    }
-  )
+  # Test Subtract
+  res <- client$Subtract(intA = 50, intB = 20)
+  expect_equal(res$SubtractResult, 30)
 })
 
 test_that("Static Client Generator works for NumberConversion service", {
@@ -58,28 +48,19 @@ test_that("Static Client Generator works for NumberConversion service", {
 
   wsdl_url <- "http://www.dataaccess.com/webservicesserver/NumberConversion.wso?WSDL"
 
-  tryCatch(
-    {
-      wsdl <- WSDLParser$new(wsdl_url)
-      gen <- Generator$new(wsdl)
-      gen$generate_package(temp_dir, pkg_name)
+  wsdl <- WSDLParser$new(wsdl_url)
+  gen <- Generator$new(wsdl)
+  gen$generate_package(temp_dir, pkg_name)
 
-      pkgload::load_all(pkg_path, quiet = TRUE)
+  pkgload::load_all(pkg_path, quiet = TRUE)
 
-      client <- numberconversion::new_client()
+  client <- numberconversion::new_client()
 
-      # Test NumberToWords
-      res <- client$NumberToWords(ubiNum = 123)
-      expect_equal(
-        trimws(res$NumberToWordsResult),
-        "one hundred and twenty three"
-      )
-    },
-    error = function(e) {
-      skip(paste(
-        "Skipping NumberConversion test due to error:",
-        e$message
-      ))
-    }
+  # Test NumberToWords
+  res <- client$NumberToWords(ubiNum = 123)
+  expect_match(
+    res$NumberToWordsResult,
+    regexp = "(?i)one hundred and twenty three"
   )
+
 })

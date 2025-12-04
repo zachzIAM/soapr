@@ -1,6 +1,5 @@
 library(testthat)
 library(xml2)
-library(httr)
 
 test_that("SOAP Fault Handling", {
   # Mock WSDL (minimal)
