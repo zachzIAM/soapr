@@ -250,11 +250,10 @@ Generator <- R6::R6Class(
       service <- services[[1]]                    # TODO handle cases with multiple services
       port <- service$ports[[1]]                  # TODO handle cases with multiple ports, e.g. CountryInfoService
 
-      ops <- self$wsdl$get_operations(port$binding)
       tns <- self$wsdl$get_target_namespace()
 
-      detached_docs <- private$create_client_view_model_detatched_docs(ops)
-      operations <- private$create_client_view_model_operations(ops)
+      detached_docs <- private$create_client_view_model_detatched_docs(port)
+      operations <- private$create_client_view_model_operations(port)
 
       list(
         service_url = port$location,
@@ -264,8 +263,11 @@ Generator <- R6::R6Class(
       )
     },
 
-    create_client_view_model_detatched_docs = function(port_binding_ops) {
-      purrr::map_chr(purrr::set_names(port_binding_ops, NULL), ~{
+    create_client_view_model_detatched_docs = function(port) {
+
+      port_binding_ops <- purrr::set_names(self$wsdl$get_operations(port$binding), NULL)
+
+      purrr::map_chr(port_binding_ops, ~{
         type_def <- self$wsdl$get_type_definitions()[[.x$name]]
 
         doc_str <- .x$documentation %||% paste("Operation", .x$name)
@@ -293,127 +295,59 @@ Generator <- R6::R6Class(
       })
     },
 
-    create_client_view_model_operations = function(port_binding_ops) {
-
-      # tns <- self$wsdl$get_target_namespace()
-      # operations <- purrr::map(port_binding_ops, ~{
-      #   type_def <- self$wsdl$get_type_definitions()[[.x$name]]
-      #
-      #   args_handling <- purrr::map(type_def$elements, ~{
-      #
-      #     doc_text <- .x$documentation %||% paste(.x$type, .x$name)
-      #     arg_doc <- paste("#'", "@param", .x$name, doc_text)
-      #
-      #     type_info <- self$wsdl$get_type_definitions()[[.x$type]]
-      #
-      #     if (!is.null(type_info) && type_info$kind == "simple" && !is.null(type_info$values)) {
-      #       default_vals_str <- paste(capture.output(dput(type_info$values)), collapse = "")
-      #       arg_signature <- paste(.x$name, "=", default_vals_str)
-      #       arg_validation <- paste0("      ", .x$name, " <- match.arg(", .x$name, ")")
-      #     } else {
-      #       arg_signature <- paste(.x$name, "=", NA)
-      #       arg_validation <- NULL
-      #     }
-      #
-      #     arg_assignment <- paste0("      args[['", .x$name, "']] <- ", .x$name)
-      #
-      #     list(
-      #       doc = arg_doc,
-      #       signature = arg_signature,
-      #       validation = arg_validation,
-      #       assignment = arg_assignment
-      #     )
-      #   })
-      #
-      #   args_doc <- purrr::map_chr(args_handling, ~.x$doc)
-      #   args_signature <- paste(purrr::map_chr(args_handling, ~.x$signature), collapse = ", ")
-      #   arg_validations <- purrr::map_chr(args_handling, ~.x$validation %||% NA)
-      #   arg_validations <- arg_validations[!is.na(arg_validations)]
-      #   arg_assignments <- purrr::map_chr(args_handling, ~.x$assignment)
-      #
-      #   list(
-      #     name = .x$name,
-      #     action = .x$action,
-      #     args_doc = purrr::set_names(args_doc, NULL),
-      #     args = purrr::set_names(args_signature, NULL),
-      #     arg_validations = purrr::set_names(arg_validations, NULL),
-      #     arg_assignments = purrr::set_names(arg_assignments, NULL),
-      #     tns = tns,
-      #     last = FALSE
-      #   )
-      #
-      # })
-      #
-      # if (length(operations) > 0) {
-      #   operations[[length(operations)]]$last <- TRUE
-      # }
-      #
-      # list(
-      #   service_url = port$location,
-      #   tns = tns,
-      #   detached_docs = detached_docs,
-      #   operations = operations
-      # )
+    create_client_view_model_operations = function(port) {
 
       tns <- self$wsdl$get_target_namespace()
-      operations <- list()
-      op_names <- names(port_binding_ops)
-      for (i in seq_along(op_names)) {
-        op_name <- op_names[i]
-        op <- port_binding_ops[[op_name]]
-        type_def <- self$wsdl$get_type_definitions()[[op_name]]
 
-        args_doc <- purrr::map_chr(type_def$elements, ~{
+      port_binding_ops <- purrr::set_names(self$wsdl$get_operations(port$binding), NULL)
+
+      operations <- purrr::map(port_binding_ops, ~{
+        type_def <- self$wsdl$get_type_definitions()[[.x$name]]
+
+        args_handling <- purrr::map(type_def$elements, ~{
+
           doc_text <- .x$documentation %||% paste(.x$type, .x$name)
-          paste("#'", "@param", .x$name, doc_text)
-        })
+          arg_doc <- paste("#'", "@param", .x$name, doc_text)
 
-        args <- c()
-        arg_assignments <- c()
-        arg_validations <- c()
+          type_info <- self$wsdl$get_type_definitions()[[.x$type]]
 
-        for (elem_name in names(type_def$elements)) {
-          elem <- type_def$elements[[elem_name]]
-
-          # Check if type is an enum
-          type_info <- self$wsdl$get_type_definitions()[[elem$type]]
-          if (
-            !is.null(type_info) &&
-            type_info$kind == "simple" &&
-            !is.null(type_info$values)
-          ) {
-            # It's an enum!
-            default_val <- paste0(
-              "c(",
-              paste(paste0('"', type_info$values, '"'), collapse = ", "),
-              ")"
-            )
-            args <- c(args, paste0(elem_name, " = ", default_val))
-            arg_validations <- c(
-              arg_validations,
-              paste0("      ", elem_name, " <- match.arg(", elem_name, ")")
-            )
+          if (!is.null(type_info) && type_info$kind == "simple" && !is.null(type_info$values)) {
+            default_vals_str <- paste(capture.output(dput(type_info$values)), collapse = "")
+            arg_signature <- paste(.x$name, "=", default_vals_str)
+            arg_validation <- paste0("      ", .x$name, " <- match.arg(", .x$name, ")")
           } else {
-            args <- c(args, paste0(elem_name, " = NA"))
+            arg_signature <- paste(.x$name, "=", NA)
+            arg_validation <- NULL
           }
 
-          arg_assignments <- c(
-            arg_assignments,
-            paste0("      args[['", elem_name, "']] <- ", elem_name)
-          )
-        }
+          arg_assignment <- paste0("      args[['", .x$name, "']] <- ", .x$name)
 
-        operations[[length(operations) + 1]] <- list(
-          name = op_name,
-          action = op$action,
+          list(
+            doc = arg_doc,
+            signature = arg_signature,
+            validation = arg_validation,
+            assignment = arg_assignment
+          )
+        })
+
+        args_doc <- purrr::map_chr(args_handling, ~.x$doc)
+        args_signature <- paste(purrr::map_chr(args_handling, ~.x$signature), collapse = ", ")
+        arg_validations <- purrr::map_chr(args_handling, ~.x$validation %||% NA)
+        arg_validations <- arg_validations[!is.na(arg_validations)]
+        arg_assignments <- purrr::map_chr(purrr::set_names(args_handling, NULL), ~.x$assignment)
+
+        list(
+          name = .x$name,
+          action = .x$action,
           args_doc = args_doc,
-          args = paste(args, collapse = ", "),
+          args = args_signature,
           arg_validations = arg_validations,
           arg_assignments = arg_assignments,
           tns = tns,
           last = FALSE
         )
-      }
+
+      })
 
       if (length(operations) > 0) {
         operations[[length(operations)]]$last <- TRUE
