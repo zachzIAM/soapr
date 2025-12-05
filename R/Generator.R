@@ -158,7 +158,7 @@ Generator <- R6::R6Class(
         attr_type <- type_attribute$type
         attr_use <- paste0("(", type_attribute$use, ")")
         doc_text <- attr_doc %||% paste(attr_type, attr_use)
-        param_doc <- paste("#' @param", attr_name, doc_text)
+        param_doc <- paste(attr_name, doc_text)
 
         list(
           arg = paste(attr_name, "=", NA),
@@ -179,7 +179,7 @@ Generator <- R6::R6Class(
         )
         default_val <- if (is_unbounded) "list()" else "NA" # TODO should it be a list if > 1?
         doc_text <- el_doc %||% paste(el_type)
-        param_doc <- paste("#' @param", el_name, doc_text)
+        param_doc <- paste(el_name, doc_text)
 
         list(
           arg = paste(el_name, "=", default_val),
@@ -216,7 +216,7 @@ Generator <- R6::R6Class(
           param_docs <- if (length(param_docs) > 0) param_docs
 
           attr_names <- if (length(.x$attributes) > 0) {
-            paste(paste0('"', names(.x$attributes), '"'), collapse = ", ")
+            paste(trimws(capture.output(dput(.x$attributes))), collapse = " ")
           }
 
           doc_str <- .x$documentation %||% paste("Constructor for", .y)

@@ -9,14 +9,14 @@ TypeFactory <- R6::R6Class(
     {{#types}}
     #' @description {{{doc}}}
     {{#param_docs}}
-    {{{.}}}
+    #' @param {{{.}}}
     {{/param_docs}}
     {{{name}}} = function({{{args}}}) {
       obj <- {{{body}}}
       class(obj) <- c("soap_object", "list")
       attr(obj, "soap_type") <- "{{{name}}}"
       {{#has_attrs}}
-      attr(obj, "soap_attrs") <- c({{{attr_names}}})
+      attr(obj, "soap_attrs") <- {{{attr_names}}}
       {{/has_attrs}}
       return(obj)
     }{{^last}},{{/last}}
