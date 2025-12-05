@@ -149,99 +149,106 @@ Generator <- R6::R6Class(
     },
 
     get_types_view_model = function() {
+
       types <- self$wsdl$get_type_definitions()
-      type_list <- list()
 
-      type_names <- names(types)
-      for (i in seq_along(type_names)) {
-        name <- type_names[i]
-        def <- types[[name]]
+      process_attribute <- function(type_attribute) {
+        attr_name <- type_attribute$name
+        attr_doc <- type_attribute$documentation
+        attr_type <- type_attribute$type
+        attr_use <- paste0("(", type_attribute$use, ")")
+        doc_text <- attr_doc %||% paste(attr_type, attr_name, attr_use)
+        param_doc <- paste("    #' @param", attr_name, doc_text)
 
-        if (def$kind == "complex") {
-          # Generate constructor method
-          args <- c()
-          body <- c()
-          param_docs <- c()
+        list(
+          arg = paste(attr_name, "=", NA),
+          body = paste0("        ", attr_name, " = ", attr_name, ","),
+          param_doc = param_doc
+        )
+      }
 
-          # Attributes
-          attr_names <- names(def$attributes)
-          for (attr_name in attr_names) {
-            args <- c(args, paste0(attr_name, " = NA"))
-            body <- c(
-              body,
-              paste0("        ", attr_name, " = ", attr_name, ",")
-            )
+      process_element <- function(type_element) {
+        el_name <- type_element$name
+        el_doc <- type_element$documentation
+        el_type <- type_element$type
+        is_unbounded <- (
+          !is.null(type_element$maxOccurs) &&
+            !is.na(type_element$maxOccurs) &&
+            type_element$maxOccurs == "unbounded"
+        )
+        default_val <- if (is_unbounded) "list()" else "NA" # TODO should it be a list if > 1?
+        arg <- paste(el_name, "=", default_val)
+        body <- paste0("        ", el_name, " = ", el_name, ",")
 
-            attr_doc <- def$attributes[[attr_name]]$documentation
-            doc_text <- if (!is.null(attr_doc)) {
-              attr_doc
-            } else {
-              paste("Attribute", attr_name)
-            }
-            param_docs <- c(
-              param_docs,
-              paste0("    #' @param ", attr_name, " ", doc_text)
-            )
-          }
+        doc_text <- el_doc %||% paste(el_type, el_name)
+        param_doc <- paste("    #' @param", el_name, doc_text)
 
-          # Elements
-          for (elem_name in names(def$elements)) {
-            elem <- def$elements[[elem_name]]
-            is_unbounded <- !is.null(elem$maxOccurs) &&
-              !is.na(elem$maxOccurs) &&
-              elem$maxOccurs == "unbounded"
-            default_val <- if (is_unbounded) "list()" else "NA"
-            args <- c(args, paste0(elem_name, " = ", default_val))
-            body <- c(
-              body,
-              paste0("        ", elem_name, " = ", elem_name, ",")
-            )
+        list(
+          arg = arg,
+          body = body,
+          param_doc = param_doc
+        )
+      }
 
-            elem_doc <- elem$documentation
-            doc_text <- if (!is.null(elem_doc)) {
-              elem_doc
-            } else {
-              paste("Element", elem_name)
-            }
-            param_docs <- c(
-              param_docs,
-              paste0("    #' @param ", elem_name, " ", doc_text)
-            )
-          }
+      type_list <- purrr::imap(types, ~{
+        if (.x$kind == "complex") {
 
-          # Remove trailing comma from last body item
+          attributes_handling <- purrr::map(.x$attributes, process_attribute)
+          elements_handling <- purrr::map(.x$elements, process_element)
+
+          # build return elements
+          args <- paste(c(
+            purrr::map_chr(attributes_handling, ~.x$arg),
+            purrr::map_chr(elements_handling, ~.x$arg)
+          ), collapse = ", ")
+
+          # TODO make body work differently than having to delete that comma at the last element
+          body <- c(
+            purrr::map_chr(attributes_handling, ~.x$body),
+            purrr::map_chr(elements_handling, ~.x$body)
+          )
           if (length(body) > 0) {
             body[length(body)] <- sub(",$", "", body[length(body)])
           }
+          body <- purrr::set_names(body, NULL)
+          body <- if (length(body) > 0) body
 
-          doc_str <- if (!is.null(def$documentation)) {
-            def$documentation
-          } else {
-            paste("Constructor for", name)
+          param_docs <- c(
+            purrr::map_chr(attributes_handling, ~.x$param_doc),
+            purrr::map_chr(elements_handling, ~.x$param_doc)
+          )
+          param_docs <- purrr::set_names(param_docs, NULL)
+          param_docs <- if (length(param_docs) > 0) param_docs
+
+          attr_names <- if (length(.x$attributes) > 0) {
+            paste(paste0('"', names(.x$attributes), '"'), collapse = ", ")
           }
 
-          type_list[[length(type_list) + 1]] <- list(
-            name = name,
+          doc_str <- .x$documentation %||% paste("Constructor for", .y)
+
+          list(
+            name = .y,
             doc = doc_str,
             param_docs = param_docs,
-            args = paste(args, collapse = ", "),
+            args = args,
             body = body,
-            has_attrs = length(attr_names) > 0,
-            attr_names = if (length(attr_names) > 0) {
-              paste(paste0('"', attr_names, '"'), collapse = ", ")
-            } else {
-              NULL
-            },
+            has_attrs = !is.null(attr_names),
+            attr_names = attr_names,
             last = FALSE
           )
         }
-      }
+      })
 
+      # drop nulls and names
+      type_list <- purrr::set_names(type_list[!purrr::map_lgl(type_list, is.null)], NULL)
+
+      # set last element flag for whisker
       if (length(type_list) > 0) {
         type_list[[length(type_list)]]$last <- TRUE
       }
 
-      list(types = type_list)
+      return(list(types = type_list))
+
     },
 
     get_client_view_model = function() {
