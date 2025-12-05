@@ -157,12 +157,12 @@ Generator <- R6::R6Class(
         attr_doc <- type_attribute$documentation
         attr_type <- type_attribute$type
         attr_use <- paste0("(", type_attribute$use, ")")
-        doc_text <- attr_doc %||% paste(attr_type, attr_name, attr_use)
-        param_doc <- paste("    #' @param", attr_name, doc_text)
+        doc_text <- attr_doc %||% paste(attr_type, attr_use)
+        param_doc <- paste("#' @param", attr_name, doc_text)
 
         list(
           arg = paste(attr_name, "=", NA),
-          body = paste0("        ", attr_name, " = ", attr_name, ","),
+          body = as.name(attr_name),
           param_doc = param_doc
         )
       }
@@ -171,21 +171,19 @@ Generator <- R6::R6Class(
         el_name <- type_element$name
         el_doc <- type_element$documentation
         el_type <- type_element$type
+
         is_unbounded <- (
           !is.null(type_element$maxOccurs) &&
             !is.na(type_element$maxOccurs) &&
             type_element$maxOccurs == "unbounded"
         )
         default_val <- if (is_unbounded) "list()" else "NA" # TODO should it be a list if > 1?
-        arg <- paste(el_name, "=", default_val)
-        body <- paste0("        ", el_name, " = ", el_name, ",")
-
-        doc_text <- el_doc %||% paste(el_type, el_name)
-        param_doc <- paste("    #' @param", el_name, doc_text)
+        doc_text <- el_doc %||% paste(el_type)
+        param_doc <- paste("#' @param", el_name, doc_text)
 
         list(
-          arg = arg,
-          body = body,
+          arg = paste(el_name, "=", default_val),
+          body = as.name(el_name),
           param_doc = param_doc
         )
       }
@@ -202,16 +200,13 @@ Generator <- R6::R6Class(
             purrr::map_chr(elements_handling, ~.x$arg)
           ), collapse = ", ")
 
-          # TODO make body work differently than having to delete that comma at the last element
           body <- c(
-            purrr::map_chr(attributes_handling, ~.x$body),
-            purrr::map_chr(elements_handling, ~.x$body)
+            purrr::map(attributes_handling, ~.x$body),
+            purrr::map(elements_handling, ~.x$body)
           )
-          if (length(body) > 0) {
-            body[length(body)] <- sub(",$", "", body[length(body)])
+          body <- if (length(body) > 0) {
+            paste(trimws(capture.output(dput(body))), collapse = " ")
           }
-          body <- purrr::set_names(body, NULL)
-          body <- if (length(body) > 0) body
 
           param_docs <- c(
             purrr::map_chr(attributes_handling, ~.x$param_doc),
