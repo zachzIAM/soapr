@@ -123,7 +123,6 @@ Generator <- R6::R6Class(
       if (is.null(view)) {
         return()
       }
-
       template <- private$read_template("client.mustache")
       content <- whisker::whisker.render(template, view)
       writeLines(content, file.path(path, "R", "client.R"))
@@ -310,19 +309,20 @@ Generator <- R6::R6Class(
 
           doc_text <- .x$documentation %||% paste(.x$type, .x$name)
           arg_doc <- paste("#'", "@param", .x$name, doc_text)
+          # arg_doc <- paste(.x$name, doc_text)
 
           type_info <- self$wsdl$get_type_definitions()[[.x$type]]
 
           if (!is.null(type_info) && type_info$kind == "simple" && !is.null(type_info$values)) {
             default_vals_str <- paste(capture.output(dput(type_info$values)), collapse = "")
-            arg_signature <- paste(.x$name, "=", default_vals_str)
-            arg_validation <- paste0("      ", .x$name, " <- match.arg(", .x$name, ")")
+            arg_signature <- sprintf("%s = %s", .x$name, default_vals_str)
+            arg_validation <- sprintf("%s <- match.arg(%s)", .x$name, .x$name)
           } else {
-            arg_signature <- paste(.x$name, "=", NA)
+            arg_signature <- sprintf("%s = NA", .x$name)
             arg_validation <- NULL
           }
 
-          arg_assignment <- paste0("      args[['", .x$name, "']] <- ", .x$name)
+          arg_assignment <- sprintf("args[['%s']] <- %s", .x$name, .x$name)
 
           list(
             doc = arg_doc,
