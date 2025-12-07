@@ -308,8 +308,7 @@ Generator <- R6::R6Class(
         args_handling <- purrr::map(type_def$elements, ~{
 
           doc_text <- .x$documentation %||% paste(.x$type, .x$name)
-          arg_doc <- paste("#'", "@param", .x$name, doc_text)
-          # arg_doc <- paste(.x$name, doc_text, "\n")
+          arg_doc <- paste(.x$name, doc_text)
 
           type_info <- self$wsdl$get_type_definitions()[[.x$type]]
 
@@ -332,8 +331,7 @@ Generator <- R6::R6Class(
           )
         })
 
-        # args_doc <- purrr::map_chr(args_handling, ~.x$doc) |> paste(collapse = "\n")
-        args_doc <- paste0("\t\t", purrr::map_chr(args_handling, ~.x$doc), collapse = "\n")
+        args_doc <- purrr::map(purrr::set_names(args_handling, NULL), ~.x$doc)
         args_signature <- paste(purrr::map_chr(args_handling, ~.x$signature), collapse = ", ")
         arg_validations <- purrr::map_chr(args_handling, ~.x$validation %||% NA)
         arg_validations <- arg_validations[!is.na(arg_validations)]

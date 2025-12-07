@@ -46,7 +46,10 @@ Client <- R6::R6Class(
 
     {{#operations}}
     #' @description Call the {{{name}}} operation.
-{{{args_doc}}}
+
+{{#args_doc}}
+    #' @param {{{.}}}
+{{/args_doc}}
     {{{name}}} = function({{{args}}}) {
       op_name <- "{{{name}}}"
       action <- "{{{action}}}"
