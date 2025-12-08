@@ -6,19 +6,19 @@
 
 Auto-generated SOAP client for **{{{package_name}}}**.
 
-## ℹ️ Service Information
+## Service Information
 
 - **WSDL Location**: `{{{wsdl_location}}}`
 - **Target Namespace**: `{{{target_namespace}}}`
 
-## 📦 Installation
+## Installation
 
 ```r
 # Install from local directory
 devtools::install(".", build_vignettes = TRUE)
 ```
 
-## 🚀 Usage
+## Usage
 
 ### Initialization
 
@@ -29,12 +29,23 @@ library({{{package_name}}})
 client <- new_client()
 ```
 
-{{{example_code}}}
-### 📋 Available Operations
+{{#example}}
+### Example: {{{op_name}}}
 
-{{{op_list}}}
+```r
+# Call the {{{op_name}}} operation
+{{{op_code}}}
+```
+{{/example}}
 
-### ⚙️ Configuration
+### Available Operations
+
+{{#operations}}
+- `{{{.}}}`
+{{/operations}}
+
+
+### Configuration
 
 You can pass `httr` configuration options to `new_client` via the `config` argument.
 
@@ -45,16 +56,16 @@ client <- new_client(
 )
 ```
 
-### 🔒 WS-Security
+### WS-Security
 
 Add WS-Security headers using `add_header`.
 
 ```r
-header <- xml2::read_xml('<wsse:Security>...</wsse:Security>')
+header <- xml2::read_xml("<wsse:Security>...</wsse:Security>")
 client$add_header(header)
 ```
 
-### 🧪 Mocking
+### Mocking
 
 Inject a custom transport function for testing.
 

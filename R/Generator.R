@@ -380,85 +380,80 @@ Generator <- R6::R6Class(
     },
 
     get_readme_view_model = function(name) {
+      # We need to find a service and port
+      services <- self$wsdl$get_services()
+      service <- services[[1]]                    # TODO handle cases with multiple services
+      port <- service$ports[[1]]                  # TODO handle cases with multiple ports, e.g. CountryInfoService
+
       # Get operations list
-      ops <- self$wsdl$get_operations(
-        self$wsdl$get_services()[[1]]$ports[[1]]$binding
-      )
-      op_list <- paste0("- `", names(ops), "`", collapse = "\n")
+      ops <- self$wsdl$get_operations(port$binding)
+      operations <- sort(names(ops))
 
       # Generate Example for First Operation
-      example_code <- ""
+
       if (length(ops) > 0) {
-        op_name <- names(ops)[1]
         op <- ops[[1]]
+        op_name <- op$name
+
 
         # Get arguments
         type_def <- self$wsdl$get_type_definitions()[[op_name]]
-        args_str <- ""
 
         if (!is.null(type_def)) {
-          arg_parts <- c()
-          for (elem_name in names(type_def$elements)) {
-            elem <- type_def$elements[[elem_name]]
 
-            # Determine dummy value based on type
-            dummy_val <- "NULL"
-            type_info <- self$wsdl$get_type_definitions()[[elem$type]]
+          arg_parts <- purrr::map_chr(type_def$elements, ~{
+            type_info <- self$wsdl$get_type_definitions()[[.x$type]]
 
-            if (
+            # determine type
+            is_enum <- (
               !is.null(type_info) &&
-                type_info$kind == "simple" &&
-                !is.null(type_info$values)
-            ) {
-              # Enum
-              dummy_val <- paste0('"', type_info$values[1], '"')
-            } else if (
-              grepl(
-                "int|long|short|byte|decimal|float|double",
-                elem$type,
-                ignore.case = TRUE
-              )
-            ) {
-              dummy_val <- "0"
-            } else if (grepl("boolean", elem$type, ignore.case = TRUE)) {
-              dummy_val <- "TRUE"
-            } else if (
-              grepl("dateTime|date|time", elem$type, ignore.case = TRUE)
-            ) {
-              dummy_val <- paste0('"', Sys.Date(), '"')
+                !is.null(type_info$values) &&
+                type_info$kind == "simple"
+            )
+            is_numeric <- grepl(
+              "int|long|short|byte|decimal|float|double",
+              .x$type,
+              ignore.case = TRUE
+            )
+            is_bool <- grepl("boolean", .x$type, ignore.case = TRUE)
+            is_date <- grepl("dateTime|date|time", .x$type, ignore.case = TRUE)
+
+            # set default value
+            dummy_val <- if (is_enum) {
+              sprintf('"%s"', type_info$values[1])
+            } else if (is_numeric) {
+              0
+            } else if (is_bool) {
+              TRUE
+            } else if (is_date) {
+              sprintf('"%s"', Sys.Date())
             } else {
-              dummy_val <- '"string"'
+              '"string"'
             }
 
-            arg_parts <- c(arg_parts, paste0(elem_name, " = ", dummy_val))
-          }
+            paste(.x$name, "=", dummy_val)
+
+          })
+
           args_str <- paste(arg_parts, collapse = ", ")
+        } else {
+          args_str <- ""
         }
 
-        example_code <- paste0(
-          "### \U1F4A1 Example: ",
-          op_name,
-          "\n\n",
-          "```r\n",
-          "# Call the ",
-          op_name,
-          " operation\n",
-          "result <- client$",
-          op_name,
-          "(",
-          args_str,
-          ")\n",
-          "print(result)\n",
-          "```\n\n"
+        example <- list(
+          op_name = op_name,
+          op_code = sprintf("result <- client$%s(%s)\nprint(result)\n", op_name, args_str)
         )
+      } else {
+        example = NULL
       }
 
       list(
         package_name = name,
-        wsdl_location = self$wsdl$get_services()[[1]]$ports[[1]]$location,
+        wsdl_location = port$location,
         target_namespace = self$wsdl$get_target_namespace(),
-        example_code = example_code,
-        op_list = op_list
+        example = example,
+        operations = operations
       )
     }
   )

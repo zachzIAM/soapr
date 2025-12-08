@@ -30,6 +30,7 @@ Generates a static R package from a WSDL.
 \item \href{#method-Generator-write_types}{\code{Generator$write_types()}}
 \item \href{#method-Generator-write_schema}{\code{Generator$write_schema()}}
 \item \href{#method-Generator-write_client}{\code{Generator$write_client()}}
+\item \href{#method-Generator-write_detached_documentation}{\code{Generator$write_detached_documentation()}}
 \item \href{#method-Generator-clone}{\code{Generator$clone()}}
 }
 }
@@ -182,6 +183,23 @@ Write the schema.R file.
 Write the client.R file.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{Generator$write_client(path)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{path}}{The package directory path.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-Generator-write_detached_documentation"></a>}}
+\if{latex}{\out{\hypertarget{method-Generator-write_detached_documentation}{}}}
+\subsection{Method \code{write_detached_documentation()}}{
+Write the detached_docs.R file.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Generator$write_detached_documentation(path)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
