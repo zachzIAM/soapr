@@ -299,12 +299,11 @@ Generator <- R6::R6Class(
           is_required <- !is.null(.x$minOccurs) && as.integer(.x$minOccurs) > 0
           use <- if (is_required) "required" else "optional"
           doc_text <- .x$documentation %||% sprintf("%s %s (%s)", .x$type, .x$name, use)
-          doc_text <- .x$documentation %||% paste(.x$type, .x$name)
           paste(.x$name, doc_text)
         })
 
         usage_args <- paste(names(type_def$elements), collapse = ", ")
-        usage_doc <- paste0("client$", .x$name, "(", usage_args, ")")
+        usage_doc <- sprintf("client$%s(%s)", .x$name, usage_args)
 
         list(
           title = doc_str,
@@ -326,7 +325,7 @@ Generator <- R6::R6Class(
       operations <- purrr::map(port_binding_ops, ~{
         type_def <- self$wsdl$get_type_definitions()[[.x$name]]
 
-        args_handling <- purrr::map(type_def$elements, ~{
+        args_handling <- purrr::map(purrr::set_names(type_def$elements, NULL), ~{
 
           is_required <- !is.null(.x$minOccurs) && as.integer(.x$minOccurs) > 0
           use <- if (is_required) "required" else "optional"
@@ -354,11 +353,11 @@ Generator <- R6::R6Class(
           )
         })
 
-        args_doc <- purrr::map(purrr::set_names(args_handling, NULL), ~.x$doc)
+        args_doc <- purrr::map(args_handling, ~.x$doc)
         args_signature <- paste(purrr::map_chr(args_handling, ~.x$signature), collapse = ", ")
-        arg_validations <- purrr::map_chr(args_handling, ~.x$validation %||% NA)
-        arg_validations <- arg_validations[!is.na(arg_validations)]
-        arg_assignments <- purrr::map_chr(purrr::set_names(args_handling, NULL), ~.x$assignment)
+        arg_validations <- purrr::map(args_handling, ~.x$validation)
+        arg_validations <- arg_validations[!purrr::map_lgl(arg_validations, is.null)]
+        arg_assignments <- purrr::map(args_handling, ~.x$assignment)
 
         list(
           name = .x$name,
