@@ -48,6 +48,9 @@ Generator <- R6::R6Class(
       # Create R/client.R (operations)
       self$write_client(pkg_path)
 
+      # Create R/detached_docs.R (operations)
+      self$write_detached_documentation(pkg_path)
+
       # Document package
       self$write_documentation(pkg_path)
 
@@ -126,6 +129,16 @@ Generator <- R6::R6Class(
       template <- private$read_template("client.mustache")
       content <- whisker::whisker.render(template, view)
       writeLines(content, file.path(path, "R", "client.R"))
+    },
+
+    #' @description
+    #' Write the detached_docs.R file.
+    #' @param path The package directory path.
+    write_detached_documentation = function(path) {
+      view <- private$get_detached_docs_view_model()
+      template <- private$read_template("detached_docs.mustache")
+      content <- whisker::whisker.render(template, view)
+      writeLines(content, file.path(path, "R", "detached_docs.R"))
     }
   ),
 
@@ -155,7 +168,7 @@ Generator <- R6::R6Class(
         attr_name <- type_attribute$name
         attr_doc <- type_attribute$documentation
         attr_type <- type_attribute$type
-        attr_use <- paste0("(", type_attribute$use, ")")
+        attr_use <- sprintf("(%s)", type_attribute$use)
         doc_text <- attr_doc %||% paste(attr_type, attr_use)
         param_doc <- paste(attr_name, doc_text)
 
@@ -245,6 +258,17 @@ Generator <- R6::R6Class(
 
     },
 
+    get_detached_docs_view_model = function() {
+      # We need to find a service and port
+      services <- self$wsdl$get_services()
+      service <- services[[1]]                    # TODO handle cases with multiple services
+      port <- service$ports[[1]]                  # TODO handle cases with multiple ports, e.g. CountryInfoService
+
+      detached_docs <- private$create_client_view_model_detatched_docs(port)
+
+      list(detached_docs = detached_docs)
+    },
+
     get_client_view_model = function() {
       # We need to find a service and port
       services <- self$wsdl$get_services()
@@ -253,13 +277,11 @@ Generator <- R6::R6Class(
 
       tns <- self$wsdl$get_target_namespace()
 
-      detached_docs <- private$create_client_view_model_detatched_docs(port)
       operations <- private$create_client_view_model_operations(port)
 
       list(
         service_url = port$location,
         tns = tns,
-        detached_docs = detached_docs,
         operations = operations
       )
     },
@@ -268,31 +290,30 @@ Generator <- R6::R6Class(
 
       port_binding_ops <- purrr::set_names(self$wsdl$get_operations(port$binding), NULL)
 
-      purrr::map_chr(port_binding_ops, ~{
+      purrr::map(port_binding_ops, ~{
         type_def <- self$wsdl$get_type_definitions()[[.x$name]]
 
         doc_str <- .x$documentation %||% paste("Operation", .x$name)
 
-        args_doc <- purrr::map_chr(type_def$elements, ~{
+        args_doc <- purrr::map(purrr::set_names(type_def$elements, NULL), ~{
+          is_required <- !is.null(.x$minOccurs) && as.integer(.x$minOccurs) > 0
+          use <- if (is_required) "required" else "optional"
+          doc_text <- .x$documentation %||% sprintf("%s %s (%s)", .x$type, .x$name, use)
           doc_text <- .x$documentation %||% paste(.x$type, .x$name)
-          paste("#'", "@param", .x$name, doc_text)
+          paste(.x$name, doc_text)
         })
 
         usage_args <- paste(names(type_def$elements), collapse = ", ")
-        usage_doc <- paste("#'", "@usage", paste0("client$", .x$name, "(", usage_args, ")"))
+        usage_doc <- paste0("client$", .x$name, "(", usage_args, ")")
 
-        detached_doc <- c(
-          paste("#'", doc_str),
-          paste("#'", "@description"),
-          paste("#'", "Call the", .x$name, "operation."),
-          args_doc,
-          usage_doc,
-          paste("#'", "@name", .x$name),
-          paste("#'", "@aliases", .x$name),
-          "NULL",
-          ""
+        list(
+          title = doc_str,
+          args_doc = args_doc,
+          usage_doc = usage_doc,
+          name = .x$name,
+          alias = .x$name
         )
-        paste(detached_doc, collapse = "\n")
+
       })
     },
 
@@ -307,7 +328,9 @@ Generator <- R6::R6Class(
 
         args_handling <- purrr::map(type_def$elements, ~{
 
-          doc_text <- .x$documentation %||% paste(.x$type, .x$name)
+          is_required <- !is.null(.x$minOccurs) && as.integer(.x$minOccurs) > 0
+          use <- if (is_required) "required" else "optional"
+          doc_text <- .x$documentation %||% sprintf("%s %s (%s)", .x$type, .x$name, use)
           arg_doc <- paste(.x$name, doc_text)
 
           type_info <- self$wsdl$get_type_definitions()[[.x$type]]

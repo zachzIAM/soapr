@@ -1,6 +1,3 @@
-{{#detached_docs}}
-{{{.}}}
-{{/detached_docs}}
 #' SOAP Client Class
 #' @description
 #' R6 class for interacting with the SOAP service.
@@ -43,10 +40,9 @@ Client <- R6::R6Class(
       self$headers <- c(self$headers, list(header))
       invisible(self)
     },
-
     {{#operations}}
-    #' @description Call the {{{name}}} operation.
 
+    #' @description Call the {{{name}}} operation.
 {{#args_doc}}
     #' @param {{{.}}}
 {{/args_doc}}
