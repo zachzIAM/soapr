@@ -92,7 +92,11 @@ WSDLParser <- R6::R6Class(
     #' @param port_node The port xml_node.
     #' @return A list of ports.
     get_port_location = function(port_node) {
-      address_node <- xml2::xml_find_first(port_node, ".//soap:address", self$ns)
+      address_node <- xml2::xml_find_first(
+        port_node,
+        ".//soap:address",
+        self$ns
+      )
       if (is_xml_missing(address_node)) {
         address_node <- xml2::xml_find_first(
           port_node,
@@ -101,7 +105,11 @@ WSDLParser <- R6::R6Class(
         )
       }
       if (is_xml_missing(address_node)) {
-        address_node <- xml2::xml_find_first(port_node, ".//http:address", self$ns)
+        address_node <- xml2::xml_find_first(
+          port_node,
+          ".//http:address",
+          self$ns
+        )
       }
       location <- if (!is.na(address_node)) {
         xml2::xml_attr(address_node, "location")
@@ -233,7 +241,7 @@ WSDLParser <- R6::R6Class(
         }
       }
 
-      # Parse elements that define types directly (like GetPositionsReport)
+      # Parse elements that define types directly
       elements <- xml2::xml_find_all(schema, "./xsd:element", self$ns)
       for (el in elements) {
         name <- xml2::xml_attr(el, "name")
@@ -282,12 +290,41 @@ WSDLParser <- R6::R6Class(
           ref <- self$strip_ns(xml2::xml_attr(e, "ref"))
           if (!is.na(ref)) {
             name <- ref
-            # If ref is used, type is usually implied by the referenced element,
-            # but for now we might not have it resolved.
-            # We'll assume the ref name is the type name or similar.
-            # Actually, if ref is used, we should look up the element definition.
-            # For simplicity, we'll use the ref name as the name.
-            if (is.na(type)) type <- ref
+            # Resolve ref: look up the global element definition
+            global_elem_xpath <- sprintf("//xsd:element[@name='%s']", ref)
+            global_elem <- xml2::xml_find_first(
+              self$doc,
+              global_elem_xpath,
+              self$ns
+            )
+
+            if (!is_xml_missing(global_elem)) {
+              # Check for type attribute on global element
+              ref_type <- self$strip_ns(xml2::xml_attr(global_elem, "type"))
+              if (!is.na(ref_type)) {
+                type <- ref_type
+              } else {
+                # If no type attribute, check if it has an inline complexType
+                # In that case, the type name effectively becomes the element name
+                # (which our get_type_definitions() handles by creating a type with that name)
+                if (
+                  !is_xml_missing(xml2::xml_find_first(
+                    global_elem,
+                    "./xsd:complexType",
+                    self$ns
+                  ))
+                ) {
+                  type <- ref
+                }
+              }
+            }
+
+            if (is.na(type)) {
+              # Fallback: assume the type name matches the ref name if we couldn't resolve it clearly
+              # or if it's a simple type defined inline (which we don't fully support parsing inline yet,
+              # but often the ref name is used as the type name in generated code anyway).
+              type <- ref
+            }
           }
         }
 
