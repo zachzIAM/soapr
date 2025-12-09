@@ -156,8 +156,7 @@ WSDLParser <- R6::R6Class(
       }
 
       pt_ops <- xml2::xml_find_all(port_type, "./wsdl:operation", self$ns)
-      ops <- list() # Initialize ops as a list
-      lapply(pt_ops, function(op_node) {
+      ops <- lapply(pt_ops, function(op_node) {
         op_name <- xml2::xml_attr(op_node, "name")
         input <- xml2::xml_find_first(op_node, "./wsdl:input", self$ns)
         output <- xml2::xml_find_first(op_node, "./wsdl:output", self$ns)
@@ -192,7 +191,7 @@ WSDLParser <- R6::R6Class(
         # Get documentation
         doc <- self$parse_documentation(op_node)
 
-        ops[[op_name]] <<- list(
+        list(
           # Use <<- to assign to ops in the parent environment
           name = op_name,
           action = ops_meta[[op_name]]$action,
@@ -201,9 +200,12 @@ WSDLParser <- R6::R6Class(
           documentation = doc
         )
       })
+
       if (length(ops) == 0) {
         stop(sprintf("No operations found for PortType '%s'", port_type_name))
       }
+
+      names(ops) <- vapply(ops, "[[", character(1), "name")
 
       return(ops)
     },
