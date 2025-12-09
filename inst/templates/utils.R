@@ -72,19 +72,19 @@ handle_fault <- function(response) {
   )
 
   # Check for SOAP 1.2 Fault
-  if (inherits(fault_node, "xml_missing")) {
+  if (is_xml_missing(fault_node)) {
     fault_node <- tryCatch(
       xml2::xml_find_first(doc, ".//env:Fault", ns),
       warning = function(w) xml2::xml_missing()
     )
   }
 
-  if (inherits(fault_node, "xml_missing")) {
+  if (is_xml_missing(fault_node)) {
     # Fallback for when prefix is different but local name is Fault
     fault_node <- xml2::xml_find_first(doc, ".//*[local-name()='Fault']")
   }
 
-  if (!inherits(fault_node, "xml_missing")) {
+  if (!is_xml_missing(fault_node)) {
     # Extract Fault Code
     fault_code <- xml2::xml_text(xml2::xml_find_first(
       fault_node,
@@ -212,4 +212,8 @@ deserialize <- function(node, type_name, schema) {
   attr(obj, "soap_attrs") <- names(type_def$attributes)
 
   return(obj)
+}
+
+is_xml_missing <- function(node) {
+  return(inherits(node, "xml_missing"))
 }

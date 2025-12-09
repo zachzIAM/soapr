@@ -86,14 +86,14 @@ WSDLParser <- R6::R6Class(
         binding_name <- self$strip_ns(xml2::xml_attr(port, "binding"))
 
         address_node <- xml2::xml_find_first(port, ".//soap:address", self$ns)
-        if (inherits(address_node, "xml_missing")) {
+        if (is_xml_missing(address_node)) {
           address_node <- xml2::xml_find_first(
             port,
             ".//soap12:address",
             self$ns
           )
         }
-        if (inherits(address_node, "xml_missing")) {
+        if (is_xml_missing(address_node)) {
           address_node <- xml2::xml_find_first(port, ".//http:address", self$ns)
         }
         location <- if (!is.na(address_node)) {
@@ -127,7 +127,7 @@ WSDLParser <- R6::R6Class(
       xpath <- sprintf("//wsdl:binding[@name='%s']", binding_name)
       binding <- xml2::xml_find_first(self$doc, xpath, self$ns)
 
-      if (inherits(binding, "xml_missing")) {
+      if (is_xml_missing(binding)) {
         stop(sprintf("Binding '%s' not found in WSDL", binding_name))
       }
 
@@ -151,7 +151,7 @@ WSDLParser <- R6::R6Class(
       pt_xpath <- sprintf("//wsdl:portType[@name='%s']", port_type_name)
       port_type <- xml2::xml_find_first(self$doc, pt_xpath, self$ns)
 
-      if (inherits(port_type, "xml_missing")) {
+      if (is_xml_missing(port_type)) {
         stop(sprintf("PortType '%s' not found in WSDL", port_type_name))
       }
 
@@ -167,23 +167,15 @@ WSDLParser <- R6::R6Class(
         # Validate messages exist
         if (!is.na(input_msg)) {
           msg_xpath <- sprintf("//wsdl:message[@name='%s']", input_msg)
-          if (
-            inherits(
-              xml2::xml_find_first(self$doc, msg_xpath, self$ns),
-              "xml_missing"
-            )
-          ) {
+          msg_node <- xml2::xml_find_first(self$doc, msg_xpath, self$ns)
+          if (is_xml_missing(msg_node)) {
             stop(sprintf("Message '%s' not found in WSDL", input_msg))
           }
         }
         if (!is.na(output_msg)) {
           msg_xpath <- sprintf("//wsdl:message[@name='%s']", output_msg)
-          if (
-            inherits(
-              xml2::xml_find_first(self$doc, msg_xpath, self$ns),
-              "xml_missing"
-            )
-          ) {
+          msg_node <- xml2::xml_find_first(self$doc, msg_xpath, self$ns)
+          if (is_xml_missing(msg_node)) {
             stop(sprintf("Message '%s' not found in WSDL", output_msg))
           }
         }
@@ -216,7 +208,7 @@ WSDLParser <- R6::R6Class(
     get_type_definitions = function() {
       # Find schema node
       schema <- xml2::xml_find_first(self$doc, "//xsd:schema", self$ns)
-      if (inherits(schema, "xml_missing")) {
+      if (is_xml_missing(schema)) {
         return(list())
       }
 
@@ -245,7 +237,7 @@ WSDLParser <- R6::R6Class(
       for (el in elements) {
         name <- xml2::xml_attr(el, "name")
         ct <- xml2::xml_find_first(el, "./xsd:complexType", self$ns)
-        if (!inherits(ct, "xml_missing")) {
+        if (!is_xml_missing(ct)) {
           types[[name]] <- self$parse_complex_type(ct)
         }
       }
@@ -359,7 +351,7 @@ WSDLParser <- R6::R6Class(
     #' @return The documentation text, or NULL.
     parse_documentation = function(node) {
       doc_node <- xml2::xml_find_first(node, "./wsdl:documentation", self$ns)
-      if (inherits(doc_node, "xml_missing")) {
+      if (is_xml_missing(doc_node)) {
         # Try xsd:annotation/xsd:documentation for types
         doc_node <- xml2::xml_find_first(
           node,
@@ -368,7 +360,7 @@ WSDLParser <- R6::R6Class(
         )
       }
 
-      if (!inherits(doc_node, "xml_missing")) {
+      if (!is_xml_missing(doc_node)) {
         return(trimws(xml2::xml_text(doc_node)))
       }
       return(NULL)
