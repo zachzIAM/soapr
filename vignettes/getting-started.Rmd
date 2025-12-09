@@ -110,7 +110,7 @@ Many enterprise SOAP services require WS-Security. `soapr` provides a helper for
 
 ```r
 # Create the header
-wsse_header <- WSSecurity$new(
+wsse_header <- wss_username_token(
   username = "myuser",
   password = "mypassword",
   password_type = "PasswordText" # or "PasswordDigest"

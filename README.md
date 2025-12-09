@@ -1,0 +1,142 @@
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+# soapr
+
+<!-- badges: start -->
+
+[![Lifecycle:
+experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
+[![R-CMD-check](https://github.com/zachzIAM/soapr/actions/workflows/check.yaml/badge.svg)](https://github.com/zachzIAM/soapr/actions/workflows/check.yaml)
+<!-- badges: end -->
+
+**soapr** is a modern, robust SOAP client generator for R. It bridges
+the gap between legacy SOAP services and modern R workflows by
+generating type-safe, object-oriented R packages from WSDL files.
+
+## ✨ Features
+
+- 📦 **Static Client Generation**: Generate full-fledged R packages with
+  R6 classes, documentation, and dependencies.
+- 🚀 **Dynamic Client**: Interact with services on-the-fly for quick
+  exploration.
+- 🛡️ **Type Safety**:
+  - **Complex Types**: Auto-generated factories for complex objects.
+  - **Enums**: `match.arg` validation and autocomplete for enumerated
+    types.
+- 🔒 **WS-Security**: Built-in support for UsernameToken authentication.
+- 🧪 **Testing Ready**: Easily mock network transports for robust
+  testing.
+
+## 📦 Installation
+
+You can install the development version of soapr from
+[GitHub](https://github.com/) with:
+
+``` r
+# install.packages("devtools")
+devtools::install_github("zachzIAM/soapr", build_vignettes = TRUE)
+```
+
+> **Note**: `build_vignettes = TRUE` is required to view the vignettes
+> locally.
+
+## 🚀 Quick Start
+
+### 1. Generate a Client Package
+
+The recommended way to use `soapr` is to generate a dedicated package
+for your service.
+
+``` r
+library(soapr)
+
+# 1. Parse the WSDL
+wsdl_url <- "http://www.dneonline.com/calculator.asmx?WSDL"
+wsdl <- WSDLParser$new(wsdl_url)
+
+# 2. Initialize the Generator
+gen <- Generator$new(wsdl)
+
+# 3. Generate the Package
+# This creates a 'calculator' directory with a complete R package
+gen$generate_package(".", "calculator")
+```
+
+### 2. Use the Generated Client
+
+Once installed, your client provides a clean, object-oriented API.
+
+``` r
+# Install and load your new package
+devtools::install("calculator")
+library(calculator)
+
+# Initialize the client
+client <- calculator::new_client()
+
+# Call operations with autocomplete!
+# client$Add(...)
+result <- client$Add(intA = 5, intB = 10)
+print(result$AddResult)
+#> [1] 15
+```
+
+## 🛠️ Advanced Usage
+
+### Complex Types (Type Factory)
+
+Forget about manually constructing nested lists. Use the **Type
+Factory** to create complex objects with validation.
+
+``` r
+# Create a complex object using the factory
+# client$types$Column(...)
+col <- client$types$Column(
+  Name = "ISIN", 
+  Owner = "SYSTEM"
+)
+
+# Pass it to an operation
+client$GetPositionsReport(Column = col)
+```
+
+### Enumerations
+
+Arguments with enumerated types are automatically validated and provide
+autocomplete.
+
+``` r
+# 'ReportName' must be one of the allowed values
+client$GetReportColumnName(ReportName = "Positions")
+```
+
+### Authentication (WS-Security)
+
+Add WS-Security headers easily.
+
+``` r
+header <- wss_username_token(username = "myuser", password = "mypassword")
+client$add_header(header)
+```
+
+### Mocking & Testing
+
+Inject a mock transport to test your code without hitting the real
+service.
+
+``` r
+mock_transport <- function(url, action, body, config, handle) {
+  list(
+    status_code = 200, 
+    content = charToRaw("<response>...</response>"),
+    headers = list("Content-Type" = "text/xml")
+  )
+}
+
+client <- calculator::new_client(transport = mock_transport)
+```
+
+## 📄 License
+
+MIT
