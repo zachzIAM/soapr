@@ -1,0 +1,141 @@
+---
+title: "Getting Started with soapr"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Getting Started with soapr}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+`soapr` makes it easy to consume SOAP web services in R. This guide will walk you through the two main ways to use the package: generating a static client (recommended) and using the dynamic client.
+
+## 1. Static Client Generator
+
+The most robust way to use `soapr` is to generate a dedicated R package for your SOAP service. This approach provides:
+
+*   **Auto-completion**: All operations and types are available as R functions and objects.
+*   **Documentation**: Help pages are generated for all operations.
+*   **Portability**: You can share the generated package with others.
+
+### Generating a Package
+
+```r
+library(soapr)
+
+# Define the WSDL URL
+wsdl_url <- "http://www.dneonline.com/calculator.asmx?WSDL"
+
+# Parse the WSDL
+wsdl <- WSDLParser$new(wsdl_url)
+
+# Initialize the Generator
+gen <- Generator$new(wsdl)
+
+# Generate the package in the current directory
+# The package name will be 'calculator'
+gen$generate_package(".", "calculator")
+```
+
+### Using the Generated Package
+
+Once generated, you can install the package using `devtools::install("calculator")`.
+
+```r
+library(calculator)
+
+# Initialize the client
+client <- new_client()
+
+# Call an operation
+# Arguments are named parameters
+result <- client$Add(intA = 10, intB = 20)
+
+# The result is a list
+print(result$AddResult)
+```
+
+### Complex Types (Type Factory)
+
+For operations that require complex objects, use the **Type Factory**. This ensures your objects have the correct structure and attributes.
+
+```r
+# Create a complex object using the factory
+# client$types$TypeName(...)
+col <- client$types$Column(
+  Name = "ISIN", 
+  Owner = "SYSTEM"
+)
+
+# Pass it to an operation
+client$GetPositionsReport(Column = col)
+```
+
+### Enumerations
+
+Arguments that are enumerated types are automatically validated and provide autocomplete support.
+
+```r
+# 'ReportName' must be one of the allowed values
+client$GetReportColumnName(ReportName = "Positions")
+```
+
+## 2. Dynamic Client
+
+If you don't want to generate a package, you can use the `Client` class directly. This is useful for quick testing or when the WSDL changes frequently.
+
+```r
+library(soapr)
+
+# Initialize the client directly from WSDL
+client <- Client$new("http://www.dneonline.com/calculator.asmx?WSDL")
+
+# Call operations as methods on the client object
+result <- client$Add(intA = 10, intB = 20)
+
+print(result$AddResult)
+```
+
+## 3. Advanced Features
+
+### WS-Security
+
+Many enterprise SOAP services require WS-Security. `soapr` provides a helper for UsernameToken authentication.
+
+```r
+# Create the header
+wsse_header <- WSSecurity$new(
+  username = "myuser",
+  password = "mypassword",
+  password_type = "PasswordText" # or "PasswordDigest"
+)
+
+# Add to client
+client$add_header(wsse_header)
+```
+
+### Custom Transports (Mocking)
+
+You can intercept requests for testing or debugging by providing a custom transport function.
+
+```r
+mock_transport <- function(url, action, body, config, handle) {
+  # Inspect the request
+  print(body)
+  
+  # Return a mocked response
+  list(
+    status_code = 200,
+    headers = list(`Content-Type` = "text/xml"),
+    content = charToRaw("<soap:Envelope>...</soap:Envelope>")
+  )
+}
+
+client <- new_client(transport = mock_transport)
+```

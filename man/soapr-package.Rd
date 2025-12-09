@@ -6,7 +6,7 @@
 \alias{soapr-package}
 \title{soapr: SOAP API Client Generator}
 \description{
-Client interface to SOAP services in R.
+A robust SOAP client generator for R. Generates static R packages from WSDL files, supporting WS-Security, custom transports, and type-safe deserialization.
 }
 \seealso{
 Useful links:
