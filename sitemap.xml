@@ -1,0 +1,20 @@
+<urlset xmlns = 'http://www.sitemaps.org/schemas/sitemap/0.9'>
+<url><loc>/404.html</loc></url>
+<url><loc>/LICENSE-text.html</loc></url>
+<url><loc>/LICENSE.html</loc></url>
+<url><loc>/articles/getting-started.html</loc></url>
+<url><loc>/articles/index.html</loc></url>
+<url><loc>/authors.html</loc></url>
+<url><loc>/index.html</loc></url>
+<url><loc>/reference/Client.html</loc></url>
+<url><loc>/reference/Factory.html</loc></url>
+<url><loc>/reference/Generator.html</loc></url>
+<url><loc>/reference/Service.html</loc></url>
+<url><loc>/reference/WSDLParser.html</loc></url>
+<url><loc>/reference/WSSecurity.html</loc></url>
+<url><loc>/reference/XMLSerializer.html</loc></url>
+<url><loc>/reference/index.html</loc></url>
+<url><loc>/reference/soapr-package.html</loc></url>
+<url><loc>/reference/wss_username_token.html</loc></url>
+</urlset>
+
