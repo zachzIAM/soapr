@@ -183,9 +183,11 @@ Generator <- R6::R6Class(
         el_doc <- type_element$documentation
         el_type <- type_element$type
 
-        is_unbounded <- (!is.null(type_element$maxOccurs) &&
-          !is.na(type_element$maxOccurs) &&
-          type_element$maxOccurs == "unbounded")
+        is_unbounded <- (
+          !is.null(type_element$maxOccurs) &&
+            !is.na(type_element$maxOccurs) &&
+            type_element$maxOccurs == "unbounded"
+        )
         default_val <- if (is_unbounded) "list()" else "NA"
         doc_text <- el_doc %||% paste(el_type)
         param_doc <- paste(el_name, doc_text)
@@ -503,9 +505,11 @@ Generator <- R6::R6Class(
               type_info <- self$wsdl$get_type_definitions()[[.x$type]]
 
               # determine type
-              is_enum <- (!is.null(type_info) &&
-                !is.null(type_info$values) &&
-                type_info$kind == "simple")
+              is_enum <- (
+                !is.null(type_info) &&
+                  !is.null(type_info$values) &&
+                  type_info$kind == "simple"
+              )
               is_numeric <- grepl(
                 "int|long|short|byte|decimal|float|double",
                 .x$type,
