@@ -125,7 +125,7 @@ convert_builtin_type <- function(val, type_name) {
   switch(local_type,
     "int" = as.integer(val),
     "integer" = as.integer(val),
-    "long" = as.numeric(val),
+    "long" = bit64::as.integer64(val),
     "short" = as.integer(val),
     "byte" = as.integer(val),
     "decimal" = as.numeric(val),
