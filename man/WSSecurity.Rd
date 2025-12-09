@@ -14,17 +14,31 @@ Provides methods for generating WS-Security headers.
 \section{Methods}{
 \subsection{Public methods}{
 \itemize{
-\item \href{#method-WSSecurity-new}{\code{WSSecurity$new()}}
+\item \href{#method-WSSecurity-username_token}{\code{WSSecurity$username_token()}}
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-WSSecurity-new"></a>}}
-\if{latex}{\out{\hypertarget{method-WSSecurity-new}{}}}
-\subsection{Method \code{new()}}{
-Initialize the WSSecurity helper.
+\if{html}{\out{<a id="method-WSSecurity-username_token"></a>}}
+\if{latex}{\out{\hypertarget{method-WSSecurity-username_token}{}}}
+\subsection{Method \code{username_token()}}{
+Generate a WS-Security UsernameToken Header
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{WSSecurity$new()}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{WSSecurity$username_token(username, password, password_type = "PasswordText")}\if{html}{\out{</div>}}
 }
 
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{username}}{The username.}
+
+\item{\code{password}}{The password.}
+
+\item{\code{password_type}}{The password type (default: PasswordText).}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+An xml_node representing the Security header.
+}
 }
 }
