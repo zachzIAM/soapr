@@ -281,13 +281,10 @@ Client <- R6::R6Class(
           self$serializer$deserialize_response(response)
         },
         error = function(e) {
-          cat(
-            "Deserialization error:",
-            e$message,
-            "\n",
-            file = "/tmp/soapr_debug.log",
-            append = TRUE
-          )
+          logfile <- file.path(tempdir(), "soap_debug.log")
+          msg <- sprintf("Deserialization error: %s\n", e$message)
+          cat(msg, file = logfile, append = TRUE)
+          warning(sprintf("%sSee log %s", msg, logfile))
           # If not XML, let httr handle the status
           return(NULL)
         }
