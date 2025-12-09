@@ -3,7 +3,6 @@ library(soapr)
 skip_on_ci()
 
 test_that("Static Client Generator (BDTInteractive)", {
-
   wsdl_path <- test_path("testdata/valid_wsdls/BDTInteractive.xml")
 
   output_path <- tempfile("generated_packages")
@@ -65,4 +64,5 @@ test_that("Static Client Generator (BDTInteractive)", {
   # But we don't know the operation names easily here without parsing WSDL again.
   # However, we know the generated code uses it.
 
+  pkgload::unload(package_name)
 })
