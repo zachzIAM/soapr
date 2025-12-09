@@ -19,6 +19,10 @@ Represents a SOAP service.
 \item{\code{client}}{The Client instance.}
 
 \item{\code{factory}}{The Factory instance.}
+
+\item{\code{service_name}}{The name of the selected service.}
+
+\item{\code{port_name}}{The name of the selected port.}
 }
 \if{html}{\out{</div>}}
 }
@@ -26,6 +30,8 @@ Represents a SOAP service.
 \subsection{Public methods}{
 \itemize{
 \item \href{#method-Service-new}{\code{Service$new()}}
+\item \href{#method-Service-list_services}{\code{Service$list_services()}}
+\item \href{#method-Service-list_ports}{\code{Service$list_ports()}}
 \item \href{#method-Service-clone}{\code{Service$clone()}}
 }
 }
@@ -35,7 +41,7 @@ Represents a SOAP service.
 \subsection{Method \code{new()}}{
 Initialize the Service.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Service$new(wsdl_path, verbose = FALSE)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{Service$new(wsdl_path, service_name = NULL, port_name = NULL, verbose = FALSE)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
@@ -43,9 +49,39 @@ Initialize the Service.
 \describe{
 \item{\code{wsdl_path}}{Path or URL to the WSDL file.}
 
+\item{\code{service_name}}{Name of the service to use (optional).}
+
+\item{\code{port_name}}{Name of the port to use (optional).}
+
 \item{\code{verbose}}{Logical, whether to print debug info.}
 }
 \if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-Service-list_services"></a>}}
+\if{latex}{\out{\hypertarget{method-Service-list_services}{}}}
+\subsection{Method \code{list_services()}}{
+List all available services.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Service$list_services()}\if{html}{\out{</div>}}
+}
+
+\subsection{Returns}{
+A character vector of service names.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-Service-list_ports"></a>}}
+\if{latex}{\out{\hypertarget{method-Service-list_ports}{}}}
+\subsection{Method \code{list_ports()}}{
+List all available ports for the current service.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Service$list_ports()}\if{html}{\out{</div>}}
+}
+
+\subsection{Returns}{
+A character vector of port names.
 }
 }
 \if{html}{\out{<hr>}}

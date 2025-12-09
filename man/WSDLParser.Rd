@@ -24,9 +24,11 @@ Parses a WSDL file to extract services, ports, operations, and types.
 \subsection{Public methods}{
 \itemize{
 \item \href{#method-WSDLParser-new}{\code{WSDLParser$new()}}
+\item \href{#method-WSDLParser-extend_namespace}{\code{WSDLParser$extend_namespace()}}
 \item \href{#method-WSDLParser-get_target_namespace}{\code{WSDLParser$get_target_namespace()}}
 \item \href{#method-WSDLParser-get_services}{\code{WSDLParser$get_services()}}
 \item \href{#method-WSDLParser-get_ports}{\code{WSDLParser$get_ports()}}
+\item \href{#method-WSDLParser-get_port_location}{\code{WSDLParser$get_port_location()}}
 \item \href{#method-WSDLParser-get_operations}{\code{WSDLParser$get_operations()}}
 \item \href{#method-WSDLParser-get_type_definitions}{\code{WSDLParser$get_type_definitions()}}
 \item \href{#method-WSDLParser-parse_complex_type}{\code{WSDLParser$parse_complex_type()}}
@@ -49,6 +51,24 @@ Initialize the WSDLParser.
 \if{html}{\out{<div class="arguments">}}
 \describe{
 \item{\code{path_or_url}}{Path or URL to the WSDL file.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-WSDLParser-extend_namespace"></a>}}
+\if{latex}{\out{\hypertarget{method-WSDLParser-extend_namespace}{}}}
+\subsection{Method \code{extend_namespace()}}{
+Add standard namespaces if not present. We create a new vector combining document namespace
+and standard ones, prioritizing the document's namespace but ensure standard prefixes exist.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{WSDLParser$extend_namespace(ns)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{ns}}{namespace node of WSDL document (e.g. obtained with \code{xml2::xml_ns})}
 }
 \if{html}{\out{</div>}}
 }
@@ -92,6 +112,26 @@ Get a list of ports for a service.
 \if{html}{\out{<div class="arguments">}}
 \describe{
 \item{\code{service_node}}{The service xml_node.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+A list of ports.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-WSDLParser-get_port_location"></a>}}
+\if{latex}{\out{\hypertarget{method-WSDLParser-get_port_location}{}}}
+\subsection{Method \code{get_port_location()}}{
+Get the location of a service port.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{WSDLParser$get_port_location(port_node)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{port_node}}{The port xml_node.}
 }
 \if{html}{\out{</div>}}
 }

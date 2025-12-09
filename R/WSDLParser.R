@@ -16,13 +16,15 @@ WSDLParser <- R6::R6Class(
     #' @param path_or_url Path or URL to the WSDL file.
     initialize = function(path_or_url) {
       self$doc <- xml2::read_xml(path_or_url)
-      self$ns <- xml2::xml_ns(self$doc)
+      self$ns <- self$extend_namespace(xml2::xml_ns(self$doc))
+      self$get_target_namespace()
+    },
 
-      # Add standard namespaces if not present
-      # We create a new vector combining doc ns and standard ones
-      # Note: xml_find_all expects a named character vector or xml_ns object
-      # We can convert xml_ns to character and append
-
+    #' @description
+    #' Add standard namespaces if not present. We create a new vector combining document namespace
+    #' and standard ones, prioritizing the document's namespace but ensure standard prefixes exist.
+    #' @param ns namespace node of WSDL document (e.g. obtained with `xml2::xml_ns`)
+    extend_namespace = function(ns) {
       std_ns <- c(
         xsd = "http://www.w3.org/2001/XMLSchema",
         wsdl = "http://schemas.xmlsoap.org/wsdl/",
@@ -31,24 +33,18 @@ WSDLParser <- R6::R6Class(
         http = "http://schemas.xmlsoap.org/wsdl/http/"
       )
 
-      # We prioritize the document's namespaces but ensure our prefixes exist.
-      # So we should override or append.
-      # If we use "xsd:element", we want "xsd" to map to the schema URI.
-
-      current_ns <- as.character(self$ns)
+      current_ns <- as.character(ns)
 
       # Merge
       combined <- c(current_ns, std_ns)
+
       # Remove duplicates by name
       combined <- combined[!duplicated(names(combined))]
 
       # Remove empty names
       combined <- combined[names(combined) != ""]
 
-      self$ns <- combined
-
-      # Validate targetNamespace exists
-      self$get_target_namespace()
+      return(combined)
     },
 
     #' @description
@@ -83,41 +79,47 @@ WSDLParser <- R6::R6Class(
     get_ports = function(service_node) {
       ports <- xml2::xml_find_all(service_node, "./wsdl:port", self$ns)
       lapply(ports, function(port) {
-        binding_name <- self$strip_ns(xml2::xml_attr(port, "binding"))
-
-        address_node <- xml2::xml_find_first(port, ".//soap:address", self$ns)
-        if (is_xml_missing(address_node)) {
-          address_node <- xml2::xml_find_first(
-            port,
-            ".//soap12:address",
-            self$ns
-          )
-        }
-        if (is_xml_missing(address_node)) {
-          address_node <- xml2::xml_find_first(port, ".//http:address", self$ns)
-        }
-        location <- if (!is.na(address_node)) {
-          xml2::xml_attr(address_node, "location")
-        } else {
-          NULL
-        }
-
-        # Fix for WSDLs that specify http but use port 443
-        if (
-          !is.null(location) &&
-            grepl(":443", location) &&
-            grepl("^http:", location)
-        ) {
-          location <- sub("^http:", "https:", location)
-        }
-
         list(
           name = xml2::xml_attr(port, "name"),
-          binding = binding_name,
-          location = location
+          binding = self$strip_ns(xml2::xml_attr(port, "binding")),
+          location = self$get_port_location(port)
         )
       })
     },
+
+    #' @description
+    #' Get the location of a service port.
+    #' @param port_node The port xml_node.
+    #' @return A list of ports.
+    get_port_location = function(port_node) {
+      address_node <- xml2::xml_find_first(port_node, ".//soap:address", self$ns)
+      if (is_xml_missing(address_node)) {
+        address_node <- xml2::xml_find_first(
+          port_node,
+          ".//soap12:address",
+          self$ns
+        )
+      }
+      if (is_xml_missing(address_node)) {
+        address_node <- xml2::xml_find_first(port_node, ".//http:address", self$ns)
+      }
+      location <- if (!is.na(address_node)) {
+        xml2::xml_attr(address_node, "location")
+      } else {
+        NULL
+      }
+
+      # Fix for WSDLs that specify http but use port 443
+      if (
+        !is.null(location) &&
+          grepl(":443", location) &&
+          grepl("^http:", location)
+      ) {
+        location <- sub("^http:", "https:", location)
+      }
+      return(location)
+    },
+
     #' @description
     #' Get a list of operations for a binding.
     #' @param binding_name The name of the binding.
@@ -184,7 +186,6 @@ WSDLParser <- R6::R6Class(
         doc <- self$parse_documentation(op_node)
 
         list(
-          # Use <<- to assign to ops in the parent environment
           name = op_name,
           action = ops_meta[[op_name]]$action,
           input_message = input_msg,
