@@ -50,6 +50,7 @@ XMLSerializer <- R6::R6Class(
       # To prevent inheritance for unqualified elements, we must explicitly set xmlns=""
 
       node_ns <- ns
+
       if (is.null(node_ns)) {
         if (self$element_form_default == "qualified") {
           # Inherit from parent (which usually has target namespace)
@@ -96,6 +97,7 @@ XMLSerializer <- R6::R6Class(
 
         # Add elements
         soap_attrs <- attr(value, "soap_attrs")
+
         for (elem_name in names(value)) {
           if (!elem_name %in% soap_attrs) {
             self$serialize(node, elem_name, value[[elem_name]])

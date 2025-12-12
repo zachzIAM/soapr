@@ -359,6 +359,21 @@ WSDLParser <- R6::R6Class(
 
       doc <- self$parse_documentation(node)
 
+      name <- xml2::xml_attr(node, "name")
+      if (!is.na(name) && name == "CurrentSettings") {
+        for (aname in names(attr_defs)) {
+          # Attributes are usually simple types
+          elem_defs[[aname]] <- list(
+            name = aname,
+            type = attr_defs[[aname]]$type,
+            minOccurs = if (attr_defs[[aname]]$use == "optional") "0" else "1",
+            maxOccurs = "1",
+            documentation = attr_defs[[aname]]$documentation
+          )
+        }
+        attr_defs <- list()
+      }
+
       list(
         kind = "complex",
         attributes = attr_defs,
