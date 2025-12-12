@@ -11,7 +11,27 @@ XMLSerializer <- R6::R6Class(
     #' @param parent The parent xml_node.
     #' @param name The name of the element.
     #' @param value The value to serialize.
-    serialize = function(parent, name, value) {
+    #' @field element_form_default The elementFormDefault value.
+    element_form_default = "unqualified",
+    #' @field target_namespace The target namespace.
+    target_namespace = NULL,
+
+    #' @description
+    #' Initialize the XMLSerializer.
+    #' @param element_form_default The elementFormDefault value.
+    #' @param target_namespace The target namespace.
+    initialize = function(element_form_default = "unqualified", target_namespace = NULL) {
+      self$element_form_default <- element_form_default
+      self$target_namespace <- target_namespace
+    },
+
+    #' @description
+    #' Serialize an R object to an XML node.
+    #' @param parent The parent xml_node.
+    #' @param name The name of the element.
+    #' @param value The value to serialize.
+    #' @param ns The namespace to use (optional).
+    serialize = function(parent, name, value, ns = NULL) {
       if (is.null(value)) {
         return()
       }
@@ -21,11 +41,36 @@ XMLSerializer <- R6::R6Class(
         return()
       }
 
+      # Determine namespace for this element
+      # If elementFormDefault is qualified, we use the target namespace (or passed ns)
+      # If unqualified, we use no namespace (empty) unless it's a top-level element (handled by caller usually)
+
+      # However, xml2 inherits namespaces from parent.
+      # If parent has xmlns="target_ns", child will inherit it.
+      # To prevent inheritance for unqualified elements, we must explicitly set xmlns=""
+
+      node_ns <- ns
+      if (is.null(node_ns)) {
+        if (self$element_form_default == "qualified") {
+          # Inherit from parent (which usually has target namespace)
+          # or explicitly set if needed.
+          # For now, let's assume parent has correct NS.
+          node_ns <- NULL
+        } else {
+          # Unqualified: Must not be in target namespace.
+          # If parent is in target namespace, we need to reset it.
+          # But we can't easily check parent's default NS here without querying it.
+          # Safest is to set xmlns="" for the node if we want it unqualified.
+          node_ns <- ""
+        }
+      }
+
       if (inherits(value, "soap_object")) {
         # Complex Type
-        # Create element node
-        # Since we set the default namespace on the operation node, we don't need prefixes here
         node <- xml2::xml_add_child(parent, name)
+        if (!is.null(node_ns) && node_ns == "") {
+          xml2::xml_attr(node, "xmlns") <- ""
+        }
 
         # Add attributes
         if (!is.null(attr(value, "soap_attrs"))) {
@@ -40,7 +85,6 @@ XMLSerializer <- R6::R6Class(
         }
 
         # Add elements
-        # We need to iterate over names in the object that are NOT attributes
         soap_attrs <- attr(value, "soap_attrs")
         for (elem_name in names(value)) {
           if (!elem_name %in% soap_attrs) {
@@ -50,12 +94,14 @@ XMLSerializer <- R6::R6Class(
       } else if (is.list(value) && !inherits(value, "soap_object")) {
         # List of items (unbounded)
         for (item in value) {
-          self$serialize(parent, name, item)
+          self$serialize(parent, name, item, ns)
         }
       } else {
         # Simple Type
-        # Since we set the default namespace on the operation node, we don't need prefixes here
-        xml2::xml_add_child(parent, name, as.character(value))
+        node <- xml2::xml_add_child(parent, name, as.character(value))
+        if (!is.null(node_ns) && node_ns == "") {
+          xml2::xml_attr(node, "xmlns") <- ""
+        }
       }
     },
 

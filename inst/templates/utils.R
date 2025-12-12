@@ -15,9 +15,26 @@ build_xml_node <- function(parent, name, value) {
   }
 
   # Create node
-  # Check if name is namespaced
-  node_name <- if (grepl(":", name)) name else paste0("tns:", name)
-  child <- xml2::xml_add_child(parent, node_name)
+  # Create node
+  # Handle namespaces based on elementFormDefault
+  element_form_default <- "{{{element_form_default}}}"
+
+  if (element_form_default == "qualified") {
+    node_name <- if (grepl(":", name)) name else paste0("tns:", name)
+    child <- xml2::xml_add_child(parent, node_name)
+  } else {
+    # Unqualified
+    # If parent has a default namespace, we must explicitly unset it for the child
+    # to ensure it is in no namespace.
+    node_name <- name
+    child <- xml2::xml_add_child(parent, node_name)
+
+    # Check if parent has default namespace
+    parent_ns <- xml2::xml_attr(parent, "xmlns")
+    if (!is.na(parent_ns) && parent_ns != "") {
+      xml2::xml_attr(child, "xmlns") <- ""
+    }
+  }
 
   if (is.list(value)) {
     soap_attrs <- attr(value, "soap_attrs")

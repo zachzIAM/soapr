@@ -10,6 +10,8 @@ WSDLParser <- R6::R6Class(
     doc = NULL,
     #' @field ns The namespace definitions.
     ns = NULL,
+    #' @field element_form_default The elementFormDefault value (qualified/unqualified).
+    element_form_default = "unqualified",
 
     #' @description
     #' Initialize the WSDLParser.
@@ -220,6 +222,13 @@ WSDLParser <- R6::R6Class(
       if (is_xml_missing(schema)) {
         return(list())
       }
+
+      # Get elementFormDefault
+      element_form_default <- xml2::xml_attr(schema, "elementFormDefault")
+      if (is.na(element_form_default)) {
+        element_form_default <- "unqualified" # Default per XSD spec
+      }
+      self$element_form_default <- element_form_default
 
       types <- list()
 

@@ -35,13 +35,11 @@ Client <- R6::R6Class(
     #' @param factory A TypeFactory instance (optional).
     #' @param transport A function to handle the HTTP request (default: httr::POST).
     #' @param verbose Logical, whether to print debug info (default: FALSE).
-    initialize = function(
-      wsdl,
-      port_def = NULL,
-      factory = NULL,
-      transport = httr::POST,
-      verbose = FALSE
-    ) {
+    initialize = function(wsdl,
+                          port_def = NULL,
+                          factory = NULL,
+                          transport = httr::POST,
+                          verbose = FALSE) {
       self$wsdl <- wsdl
       if (is.null(port_def)) {
         # Default to first port of first service
@@ -58,7 +56,10 @@ Client <- R6::R6Class(
       self$verbose <- verbose
       self$handle <- httr::handle(self$port_def$location)
       self$operations <- self$wsdl$get_operations(self$port_def$binding)
-      self$serializer <- XMLSerializer$new()
+      self$serializer <- XMLSerializer$new(
+        element_form_default = self$wsdl$element_form_default,
+        target_namespace = self$target_namespace
+      )
       self$transport <- transport
       self$headers <- list()
 

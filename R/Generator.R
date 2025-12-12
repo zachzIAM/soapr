@@ -91,9 +91,10 @@ Generator <- R6::R6Class(
     #' Write the utils.R file.
     #' @param path The package directory path.
     write_utils = function(path) {
-      template_path <- private$get_template_path("utils.R")
-      dest_path <- file.path(path, "R", "utils.R")
-      file.copy(template_path, dest_path, overwrite = TRUE)
+      view <- list(element_form_default = self$wsdl$element_form_default)
+      template <- private$read_template("utils.R")
+      content <- whisker::whisker.render(template, view)
+      writeLines(content, file.path(path, "R", "utils.R"))
     },
 
     #' @description
@@ -141,7 +142,6 @@ Generator <- R6::R6Class(
       writeLines(content, file.path(path, "R", "detached_docs.R"))
     }
   ),
-
   private = list(
     get_template_path = function(name) {
       template_path <- system.file(
@@ -153,13 +153,11 @@ Generator <- R6::R6Class(
       }
       return(template_path)
     },
-
     read_template = function(name) {
       template_path <- private$get_template_path(name)
       content <- readLines(template_path, warn = FALSE)
       return(paste(content, collapse = "\n"))
     },
-
     get_types_view_model = function() {
       types <- self$wsdl$get_type_definitions()
 
@@ -174,7 +172,8 @@ Generator <- R6::R6Class(
         list(
           arg = paste(attr_name, "=", NA),
           body = as.name(attr_name),
-          param_doc = param_doc
+          param_doc = param_doc,
+          name = attr_name
         )
       }
 
@@ -195,7 +194,8 @@ Generator <- R6::R6Class(
         list(
           arg = paste(el_name, "=", default_val),
           body = as.name(el_name),
-          param_doc = param_doc
+          param_doc = param_doc,
+          name = el_name
         )
       }
 
@@ -230,11 +230,53 @@ Generator <- R6::R6Class(
             param_docs <- purrr::set_names(param_docs, NULL)
             param_docs <- if (length(param_docs) > 0) param_docs
 
+            # Fix attribute names: we want the names of the attributes, not the list of definitions
             attr_names <- if (length(.x$attributes) > 0) {
-              paste(trimws(capture.output(dput(.x$attributes))), collapse = " ")
+              paste(trimws(capture.output(dput(names(.x$attributes)))), collapse = " ")
             }
 
             doc_str <- .x$documentation %||% paste("Constructor for", .y)
+
+            # Generate validation code
+            validations <- c()
+
+            # Validate attributes
+            for (attr in attributes_handling) {
+              attr_def <- .x$attributes[[attr$name]]
+              if (!is.null(attr_def)) {
+                attr_type_name <- attr_def$type
+                attr_type_def <- types[[attr_type_name]]
+                if (!is.null(attr_type_def) && attr_type_def$kind == "simple" && !is.null(attr_type_def$values)) {
+                  vals <- paste(sprintf('"%s"', attr_type_def$values), collapse = ", ")
+                  validations <- c(validations, sprintf(
+                    "if (!is.na(%s) && !%s %%in%% c(%s)) stop('Invalid value for %s')",
+                    attr$name, attr$name, vals, attr$name
+                  ))
+                }
+              }
+            }
+
+            # Validate elements
+            for (elem in elements_handling) {
+              elem_def <- .x$elements[[elem$name]]
+              if (!is.null(elem_def)) {
+                elem_type_name <- elem_def$type
+                elem_type_def <- types[[elem_type_name]]
+                if (!is.null(elem_type_def) && elem_type_def$kind == "simple" && !is.null(elem_type_def$values)) {
+                  vals <- paste(sprintf('"%s"', elem_type_def$values), collapse = ", ")
+                  validations <- c(validations, sprintf(
+                    "if (!is.null(%s) && !all(is.na(%s)) && !all(%s %%in%% c(%s))) stop('Invalid value for %s')",
+                    elem$name, elem$name, elem$name, vals, elem$name
+                  ))
+                }
+              }
+            }
+
+            validation_code <- if (length(validations) > 0) {
+              paste(validations, collapse = "\n      ")
+            } else {
+              NULL
+            }
 
             list(
               name = .y,
@@ -244,6 +286,7 @@ Generator <- R6::R6Class(
               body = body,
               has_attrs = !is.null(attr_names),
               attr_names = attr_names,
+              validation = validation_code,
               last = FALSE
             )
           }
@@ -263,7 +306,6 @@ Generator <- R6::R6Class(
 
       return(list(types = type_list))
     },
-
     get_detached_docs_view_model = function() {
       # We need to find a service and port
       services <- self$wsdl$get_services()
@@ -274,7 +316,6 @@ Generator <- R6::R6Class(
 
       list(detached_docs = detached_docs)
     },
-
     get_client_view_model = function() {
       services <- self$wsdl$get_services()
       tns <- self$wsdl$get_target_namespace()
@@ -409,7 +450,6 @@ Generator <- R6::R6Class(
         operations = operations
       )
     },
-
     create_client_view_model_detatched_docs = function(port) {
       # This needs to be updated to support all operations too, but for simplicity
       # let's just use the first port of first service to generate docs for now,
@@ -473,12 +513,10 @@ Generator <- R6::R6Class(
 
       unname(detached_docs)
     },
-
     create_client_view_model_operations = function(port) {
       # Deprecated / Unused now as logic moved to get_client_view_model
       NULL
     },
-
     get_readme_view_model = function(name) {
       # We need to find a service and port
       services <- self$wsdl$get_services()
@@ -553,7 +591,7 @@ Generator <- R6::R6Class(
           )
         )
       } else {
-        example = NULL
+        example <- NULL
       }
 
       list(
