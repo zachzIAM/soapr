@@ -12,6 +12,8 @@ WSDLParser <- R6::R6Class(
     ns = NULL,
     #' @field element_form_default The elementFormDefault value (qualified/unqualified).
     element_form_default = "unqualified",
+    #' @field attribute_form_default The attributeFormDefault value (qualified/unqualified).
+    attribute_form_default = "unqualified",
 
     #' @description
     #' Initialize the WSDLParser.
@@ -229,6 +231,13 @@ WSDLParser <- R6::R6Class(
         element_form_default <- "unqualified" # Default per XSD spec
       }
       self$element_form_default <- element_form_default
+
+      # Get attributeFormDefault
+      attribute_form_default <- xml2::xml_attr(schema, "attributeFormDefault")
+      if (is.na(attribute_form_default)) {
+        attribute_form_default <- "unqualified" # Default per XSD spec
+      }
+      self$attribute_form_default <- attribute_form_default
 
       types <- list()
 

@@ -237,40 +237,62 @@ Generator <- R6::R6Class(
 
             doc_str <- .x$documentation %||% paste("Constructor for", .y)
 
-            # Generate validation code
+            # Generate validation code (match.arg)
             validations <- c()
 
-            # Validate attributes
-            for (attr in attributes_handling) {
-              attr_def <- .x$attributes[[attr$name]]
-              if (!is.null(attr_def)) {
-                attr_type_name <- attr_def$type
-                attr_type_def <- types[[attr_type_name]]
-                if (!is.null(attr_type_def) && attr_type_def$kind == "simple" && !is.null(attr_type_def$values)) {
-                  vals <- paste(sprintf('"%s"', attr_type_def$values), collapse = ", ")
-                  validations <- c(validations, sprintf(
-                    "if (!is.na(%s) && !%s %%in%% c(%s)) stop('Invalid value for %s')",
-                    attr$name, attr$name, vals, attr$name
-                  ))
+            # Helper to check for enum and update arg/validation
+            process_enum <- function(item, item_def) {
+              if (!is.null(item_def)) {
+                type_name <- item_def$type
+                type_def <- types[[type_name]]
+                if (!is.null(type_def) && type_def$kind == "simple" && !is.null(type_def$values)) {
+                  # It is an Enum
+                  vals_str <- paste(sprintf('"%s"', type_def$values), collapse = ", ")
+                  choices_vec <- sprintf("c(%s)", vals_str)
+
+                  # Check if optional
+                  is_optional <- TRUE # Default to optional
+                  if (!is.null(item_def$use) && item_def$use == "required") {
+                    is_optional <- FALSE
+                  }
+                  if (!is.null(item_def$minOccurs) && as.integer(item_def$minOccurs) > 0) {
+                    is_optional <- FALSE
+                  }
+
+                  if (is_optional) {
+                    # Optional: default to NA, validate only if not NA
+                    item$arg <- sprintf("%s = NA", item$name)
+                    validations <<- c(validations, sprintf("if (!is.na(%s)) %s <- match.arg(%s, %s)", item$name, item$name, item$name, choices_vec))
+                  } else {
+                    # Required: default to first value (standard R behavior)
+                    item$arg <- sprintf("%s = %s", item$name, choices_vec)
+                    validations <<- c(validations, sprintf("%s <- match.arg(%s)", item$name, item$name))
+                  }
                 }
               }
+              return(item)
             }
 
-            # Validate elements
-            for (elem in elements_handling) {
+            # Process attributes for Enums
+            attributes_handling <- purrr::map(attributes_handling, function(attr) {
+              attr_def <- .x$attributes[[attr$name]]
+              process_enum(attr, attr_def)
+            })
+
+            # Process elements for Enums
+            elements_handling <- purrr::map(elements_handling, function(elem) {
               elem_def <- .x$elements[[elem$name]]
-              if (!is.null(elem_def)) {
-                elem_type_name <- elem_def$type
-                elem_type_def <- types[[elem_type_name]]
-                if (!is.null(elem_type_def) && elem_type_def$kind == "simple" && !is.null(elem_type_def$values)) {
-                  vals <- paste(sprintf('"%s"', elem_type_def$values), collapse = ", ")
-                  validations <- c(validations, sprintf(
-                    "if (!is.null(%s) && !all(is.na(%s)) && !all(%s %%in%% c(%s))) stop('Invalid value for %s')",
-                    elem$name, elem$name, elem$name, vals, elem$name
-                  ))
-                }
-              }
-            }
+              process_enum(elem, elem_def)
+            })
+
+            # Re-build args string with updated signatures
+            args <- paste(
+              c(
+                purrr::map_chr(attributes_handling, ~ .x$arg),
+                purrr::map_chr(elements_handling, ~ .x$arg)
+              ),
+              collapse = ", "
+            )
 
             validation_code <- if (length(validations) > 0) {
               paste(validations, collapse = "\n      ")

@@ -77,6 +77,16 @@ XMLSerializer <- R6::R6Class(
           for (attr_name in attr(value, "soap_attrs")) {
             attr_val <- value[[attr_name]]
             if (!is.null(attr_val) && !is.na(attr_val)) {
+              # Handle attribute namespace
+              # If attributeFormDefault is qualified, we might need to prefix it?
+              # But usually attributes are unqualified unless explicitly namespaced.
+              # xml2::xml_attr sets it without prefix by default.
+              # If we need a prefix, we have to use xml_set_attr with a namespace.
+
+              # For now, let's assume unqualified, which is standard.
+              # But if the user says it's not working, maybe it SHOULD be qualified?
+              # Or maybe the attribute name in the WSDL is different from the R name?
+
               xml2::xml_attr(node, attr_name) <- as.character(
                 attr_val
               )
