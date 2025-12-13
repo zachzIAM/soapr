@@ -14,11 +14,15 @@ WSDLParser <- R6::R6Class(
     element_form_default = "unqualified",
     #' @field attribute_form_default The attributeFormDefault value (qualified/unqualified).
     attribute_form_default = "unqualified",
+    #' @field customizations List of customization options.
+    customizations = NULL,
 
     #' @description
     #' Initialize the WSDLParser.
     #' @param path_or_url Path or URL to the WSDL file.
-    initialize = function(path_or_url) {
+    #' @param customizations List of customization options.
+    initialize = function(path_or_url, customizations = list()) {
+      self$customizations <- customizations
       self$doc <- xml2::read_xml(path_or_url)
       self$ns <- self$extend_namespace(xml2::xml_ns(self$doc))
       self$get_target_namespace()
@@ -226,9 +230,13 @@ WSDLParser <- R6::R6Class(
       }
 
       # Get elementFormDefault
-      element_form_default <- xml2::xml_attr(schema, "elementFormDefault")
-      if (is.na(element_form_default)) {
-        element_form_default <- "unqualified" # Default per XSD spec
+      if (!is.null(self$customizations$force_qualified) && self$customizations$force_qualified) {
+        element_form_default <- "qualified"
+      } else {
+        element_form_default <- xml2::xml_attr(schema, "elementFormDefault")
+        if (is.na(element_form_default)) {
+          element_form_default <- "unqualified" # Default per XSD spec
+        }
       }
       self$element_form_default <- element_form_default
 
@@ -358,11 +366,11 @@ WSDLParser <- R6::R6Class(
       }
 
       doc <- self$parse_documentation(node)
+      type_name <- xml2::xml_attr(node, "name")
 
-      name <- xml2::xml_attr(node, "name")
-      if (!is.na(name) && name == "CurrentSettings") {
+      # Customization: Convert all attributes to elements for specific types
+      if (!is.null(self$customizations$convert_types) && !is.na(type_name) && type_name %in% self$customizations$convert_types) {
         for (aname in names(attr_defs)) {
-          # Attributes are usually simple types
           elem_defs[[aname]] <- list(
             name = aname,
             type = attr_defs[[aname]]$type,
@@ -371,7 +379,29 @@ WSDLParser <- R6::R6Class(
             documentation = attr_defs[[aname]]$documentation
           )
         }
-        attr_defs <- list()
+        attr_defs <- list() # Clear all attributes
+      }
+
+      # Check for customization to force attributes to elements
+      # customizations$force_elements can be a list of attribute names OR type names to apply to
+      # For now, simplistic: if an attribute name matches 'force_elements', move it.
+      # Or if type name matches?
+      # Let's support: customizations$force_elements = c("BaseCurrency")
+
+      if (!is.null(self$customizations$force_elements)) {
+        targets <- self$customizations$force_elements
+        for (aname in targets) {
+          if (aname %in% names(attr_defs)) {
+            elem_defs[[aname]] <- list(
+              name = aname,
+              type = attr_defs[[aname]]$type,
+              minOccurs = if (attr_defs[[aname]]$use == "optional") "0" else "1",
+              maxOccurs = "1",
+              documentation = attr_defs[[aname]]$documentation
+            )
+            attr_defs[[aname]] <- NULL
+          }
+        }
       }
 
       list(

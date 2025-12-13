@@ -11,12 +11,53 @@ XML Serializer Class
 \details{
 Handles serialization of R objects to XML nodes.
 }
+\section{Public fields}{
+\if{html}{\out{<div class="r6-fields">}}
+\describe{
+\item{\code{element_form_default}}{The elementFormDefault value.}
+
+\item{\code{target_namespace}}{The target namespace.}
+}
+\if{html}{\out{</div>}}
+}
 \section{Methods}{
 \subsection{Public methods}{
 \itemize{
+\item \href{#method-XMLSerializer-new}{\code{XMLSerializer$new()}}
 \item \href{#method-XMLSerializer-serialize}{\code{XMLSerializer$serialize()}}
 \item \href{#method-XMLSerializer-deserialize_response}{\code{XMLSerializer$deserialize_response()}}
 \item \href{#method-XMLSerializer-clone}{\code{XMLSerializer$clone()}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-XMLSerializer-new"></a>}}
+\if{latex}{\out{\hypertarget{method-XMLSerializer-new}{}}}
+\subsection{Method \code{new()}}{
+Serialize an R object to an XML node.
+
+
+Initialize the XMLSerializer.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{XMLSerializer$new(
+  element_form_default = "unqualified",
+  target_namespace = NULL
+)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{element_form_default}}{The elementFormDefault value.}
+
+\item{\code{target_namespace}}{The target namespace.}
+
+\item{\code{parent}}{The parent xml_node.}
+
+\item{\code{name}}{The name of the element.}
+
+\item{\code{value}}{The value to serialize.}
+}
+\if{html}{\out{</div>}}
 }
 }
 \if{html}{\out{<hr>}}
@@ -25,7 +66,7 @@ Handles serialization of R objects to XML nodes.
 \subsection{Method \code{serialize()}}{
 Serialize an R object to an XML node.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{XMLSerializer$serialize(parent, name, value)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{XMLSerializer$serialize(parent, name, value, ns = NULL)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
@@ -36,6 +77,8 @@ Serialize an R object to an XML node.
 \item{\code{name}}{The name of the element.}
 
 \item{\code{value}}{The value to serialize.}
+
+\item{\code{ns}}{The namespace to use (optional).}
 }
 \if{html}{\out{</div>}}
 }

@@ -17,6 +17,10 @@ Parses a WSDL file to extract services, ports, operations, and types.
 \item{\code{doc}}{The parsed XML document.}
 
 \item{\code{ns}}{The namespace definitions.}
+
+\item{\code{element_form_default}}{The elementFormDefault value (qualified/unqualified).}
+
+\item{\code{attribute_form_default}}{The attributeFormDefault value (qualified/unqualified).}
 }
 \if{html}{\out{</div>}}
 }

@@ -59,11 +59,18 @@ XMLSerializer <- R6::R6Class(
           node_ns <- NULL
         } else {
           # Unqualified: Must not be in target namespace.
-          # If parent is in target namespace, we need to reset it.
-          # But we can't easily check parent's default NS here without querying it.
-          # Safest is to set xmlns="" for the node if we want it unqualified.
           node_ns <- ""
+
+          # Force CurrentSettings to be explicitly unqualified (xmlns="") if needed
+          if (name == "CurrentSettings") {
+            node_ns <- ""
+          }
         }
+      }
+
+      # Hack override for CurrentSettings regardless of default
+      if (name == "CurrentSettings") {
+        node_ns <- ""
       }
 
       if (inherits(value, "soap_object")) {
