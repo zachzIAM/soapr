@@ -199,9 +199,16 @@ Generator <- R6::R6Class(
         )
       }
 
+      cat("DEBUG: Types count:", length(types), "\n")
+      cat("DEBUG: JobExportSettings present:", "JobExportSettings" %in% names(types), "\n")
+      print(names(types))
+
       type_list <- purrr::imap(
         types,
-        ~ {
+        function(.x, .y) {
+          if (.y == "JobExportSettings") {
+            cat("DEBUG: Start processing type: JobExportSettings\n")
+          }
           if (.x$kind == "complex") {
             attributes_handling <- purrr::map(.x$attributes, process_attribute)
             elements_handling <- purrr::map(.x$elements, process_element)
@@ -252,10 +259,10 @@ Generator <- R6::R6Class(
 
                   # Check if optional
                   is_optional <- TRUE # Default to optional
-                  if (!is.null(item_def$use) && item_def$use == "required") {
+                  if (!is.null(item_def$use) && !is.na(item_def$use) && item_def$use == "required") {
                     is_optional <- FALSE
                   }
-                  if (!is.null(item_def$minOccurs) && as.integer(item_def$minOccurs) > 0) {
+                  if (!is.null(item_def$minOccurs) && !is.na(item_def$minOccurs) && as.integer(item_def$minOccurs) > 0) {
                     is_optional <- FALSE
                   }
 
@@ -264,9 +271,9 @@ Generator <- R6::R6Class(
                     item$arg <- sprintf("%s = NA", item$name)
                     validations <<- c(validations, sprintf("if (!is.na(%s)) %s <- match.arg(%s, %s)", item$name, item$name, item$name, choices_vec))
                   } else {
-                    # Required: default to first value (standard R behavior)
-                    item$arg <- sprintf("%s = %s", item$name, choices_vec)
-                    validations <<- c(validations, sprintf("%s <- match.arg(%s)", item$name, item$name))
+                    # Required: STRICT - No default, explicit choices in match.arg
+                    item$arg <- item$name
+                    validations <<- c(validations, sprintf("%s <- match.arg(%s, %s)", item$name, item$name, choices_vec))
                   }
                 }
               }
@@ -282,7 +289,14 @@ Generator <- R6::R6Class(
             # Process elements for Enums
             elements_handling <- purrr::map(elements_handling, function(elem) {
               elem_def <- .x$elements[[elem$name]]
-              process_enum(elem, elem_def)
+              if (.y == "JobExportSettings") {
+                cat(sprintf("Processing element %s for JobExportSettings\n", elem$name))
+              }
+              res <- process_enum(elem, elem_def)
+              if (.y == "JobExportSettings") {
+                cat(sprintf("Processed element %s for JobExportSettings. Arg: %s\n", elem$name, res$arg))
+              }
+              res
             })
 
             # Re-build args string with updated signatures
@@ -410,18 +424,42 @@ Generator <- R6::R6Class(
                   type_info$kind == "simple" &&
                   !is.null(type_info$values)
               ) {
+                # ENUM
                 default_vals_str <- paste(
                   capture.output(dput(type_info$values)),
                   collapse = ""
                 )
-                arg_signature <- sprintf("%s = %s", .x$name, default_vals_str)
-                arg_validation <- sprintf(
-                  "%s <- match.arg(%s)",
-                  .x$name,
-                  .x$name
-                )
+
+                if (is_required) {
+                  # Required Enum: Strict - No default
+                  arg_signature <- .x$name
+
+                  # Must construct choices vector for match.arg
+                  vals_str <- paste(sprintf('"%s"', type_info$values), collapse = ", ")
+                  choices_vec <- sprintf("c(%s)", vals_str)
+
+                  arg_validation <- sprintf(
+                    "%s <- match.arg(%s, %s)",
+                    .x$name,
+                    .x$name,
+                    choices_vec
+                  )
+                } else {
+                  # Optional Enum -> Default to NA
+                  arg_signature <- sprintf("%s = NA", .x$name)
+                  vals_str <- paste(sprintf('"%s"', type_info$values), collapse = ", ")
+                  choices_vec <- sprintf("c(%s)", vals_str)
+                  arg_validation <- sprintf("if (!is.na(%s)) %s <- match.arg(%s, %s)", .x$name, .x$name, .x$name, choices_vec)
+                }
               } else {
-                arg_signature <- sprintf("%s = NA", .x$name)
+                # NON-ENUM
+                if (is_required) {
+                  # Required: No default value
+                  arg_signature <- .x$name
+                } else {
+                  # Optional: Default to NA
+                  arg_signature <- sprintf("%s = NA", .x$name)
+                }
                 arg_validation <- NULL
               }
 
