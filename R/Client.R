@@ -181,9 +181,6 @@ Client <- R6::R6Class(
         } else {
           # It might be an element that refers to a simpleType
           # In our parser, elements that define types are in the types list.
-          # If the element has a 'type' attribute, we need to look that up.
-          # Our parser structure for elements in `get_type_definitions` is:
-          # types[[name]] <- parse_complex_type(ct)
           # This only covers elements that have INLINE complexTypes.
 
           # If an element refers to a named simpleType, it might not be in the top-level types list as an element.

@@ -258,7 +258,7 @@ Generator <- R6::R6Class(
                   choices_vec <- sprintf("c(%s)", vals_str)
 
                   # Check if optional
-                  is_optional <- TRUE # Default to optional
+                  is_optional <- TRUE
                   if (!is.null(item_def$use) && !is.na(item_def$use) && item_def$use == "required") {
                     is_optional <- FALSE
                   }

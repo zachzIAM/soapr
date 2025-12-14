@@ -14,15 +14,11 @@ WSDLParser <- R6::R6Class(
     element_form_default = "unqualified",
     #' @field attribute_form_default The attributeFormDefault value (qualified/unqualified).
     attribute_form_default = "unqualified",
-    #' @field customizations List of customization options.
-    customizations = NULL,
 
     #' @description
     #' Initialize the WSDLParser.
     #' @param path_or_url Path or URL to the WSDL file.
-    #' @param customizations List of customization options.
-    initialize = function(path_or_url, customizations = list()) {
-      self$customizations <- customizations
+    initialize = function(path_or_url) {
       self$doc <- xml2::read_xml(path_or_url)
       self$ns <- self$extend_namespace(xml2::xml_ns(self$doc))
       self$get_target_namespace()
@@ -149,7 +145,6 @@ WSDLParser <- R6::R6Class(
         NULL
       }
 
-      # Fix for WSDLs that specify http but use port 443
       if (
         !is.null(location) &&
           grepl(":443", location) &&
@@ -254,13 +249,9 @@ WSDLParser <- R6::R6Class(
       }
 
       # Get elementFormDefault
-      if (!is.null(self$customizations$force_qualified) && self$customizations$force_qualified) {
-        element_form_default <- "qualified"
-      } else {
-        element_form_default <- xml2::xml_attr(schema, "elementFormDefault")
-        if (is.na(element_form_default)) {
-          element_form_default <- "unqualified" # Default per XSD spec
-        }
+      element_form_default <- xml2::xml_attr(schema, "elementFormDefault")
+      if (is.na(element_form_default)) {
+        element_form_default <- "unqualified" # Default per XSD spec
       }
       self$element_form_default <- element_form_default
 
@@ -355,8 +346,6 @@ WSDLParser <- R6::R6Class(
                 type <- ref_type
               } else {
                 # If no type attribute, check if it has an inline complexType
-                # In that case, the type name effectively becomes the element name
-                # (which our get_type_definitions() handles by creating a type with that name)
                 if (
                   !is_xml_missing(xml2::xml_find_first(
                     global_elem,
@@ -370,9 +359,6 @@ WSDLParser <- R6::R6Class(
             }
 
             if (is.na(type)) {
-              # Fallback: assume the type name matches the ref name if we couldn't resolve it clearly
-              # or if it's a simple type defined inline (which we don't fully support parsing inline yet,
-              # but often the ref name is used as the type name in generated code anyway).
               type <- ref
             }
           }
@@ -391,42 +377,6 @@ WSDLParser <- R6::R6Class(
 
       doc <- self$parse_documentation(node)
       type_name <- xml2::xml_attr(node, "name")
-
-      # Customization: Convert all attributes to elements for specific types
-      if (!is.null(self$customizations$convert_types) && !is.na(type_name) && type_name %in% self$customizations$convert_types) {
-        for (aname in names(attr_defs)) {
-          elem_defs[[aname]] <- list(
-            name = aname,
-            type = attr_defs[[aname]]$type,
-            minOccurs = if (attr_defs[[aname]]$use == "optional") "0" else "1",
-            maxOccurs = "1",
-            documentation = attr_defs[[aname]]$documentation
-          )
-        }
-        attr_defs <- list() # Clear all attributes
-      }
-
-      # Check for customization to force attributes to elements
-      # customizations$force_elements can be a list of attribute names OR type names to apply to
-      # For now, simplistic: if an attribute name matches 'force_elements', move it.
-      # Or if type name matches?
-      # Let's support: customizations$force_elements = c("BaseCurrency")
-
-      if (!is.null(self$customizations$force_elements)) {
-        targets <- self$customizations$force_elements
-        for (aname in targets) {
-          if (aname %in% names(attr_defs)) {
-            elem_defs[[aname]] <- list(
-              name = aname,
-              type = attr_defs[[aname]]$type,
-              minOccurs = if (attr_defs[[aname]]$use == "optional") "0" else "1",
-              maxOccurs = "1",
-              documentation = attr_defs[[aname]]$documentation
-            )
-            attr_defs[[aname]] <- NULL
-          }
-        }
-      }
 
       list(
         kind = "complex",
