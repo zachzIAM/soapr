@@ -1,0 +1,26 @@
+Initializing Client (No Customizations)...
+1. Logging in...
+list()
+attr(,"class")
+[1] "soap_object" "list"       
+attr(,"soap_type")
+[1] "LoginResponse"
+Logged in.
+2. Setting Analysis Date...
+list()
+attr(,"class")
+[1] "soap_object" "list"       
+attr(,"soap_type")
+[1] "SetAnalysisDateResponse"
+3. Setting Portfolio (FOGGEQUI)...
+Waiting for ReqID: yagiPN2HRnafHvQIWJfqWQca ... Done.
+4. Setting LossTarget to 88.88 ...
+Operation Result Names:  
+5. Verifying...
+Current LossTarget: 
+FAILURE: Expected 88.88 got 
+list()
+attr(,"class")
+[1] "soap_object" "list"       
+attr(,"soap_type")
+[1] "LogoutResponse"

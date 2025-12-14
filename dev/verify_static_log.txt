@@ -1,0 +1,26 @@
+Creating TypeFactory...
+Creating CurrentSettings...
+Inspecting SOAP Attributes of CurrentSettings object...
+NULL
+SUCCESS: BaseCurrency is NOT an attribute (Element).
+
+--- Testing Operation ---
+list()
+attr(,"class")
+[1] "soap_object" "list"       
+attr(,"soap_type")
+[1] "LoginResponse"
+$RejectedAsset
+list()
+
+attr(,"class")
+[1] "soap_object" "list"       
+attr(,"soap_type")
+[1] "SetAdHocPortfolioResponse"
+Calling SetCurrentSettings...
+SetCurrentSettings returned SUCCESS (No Crash).
+list()
+attr(,"class")
+[1] "soap_object" "list"       
+attr(,"soap_type")
+[1] "LogoutResponse"

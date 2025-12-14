@@ -1,0 +1,86 @@
+Element Form Default:  unqualified 
+Request XML:
+{xml_document}
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+[1] <soap:Body>\n  <Login xmlns="http://barra.com/cp/bdti">\n    <User>iamqua ...
+Response XML:
+{xml_document}
+<Envelope xmlns:S="http://schemas.xmlsoap.org/soap/envelope/">
+[1] <S:Body xmlns="http://barra.com/cp/bdti">\n  <LoginResponse xmlns="http:/ ...
+list()
+attr(,"class")
+[1] "soap_object" "list"       
+attr(,"soap_type")
+[1] "LoginResponse"
+Request XML:
+{xml_document}
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+[1] <soap:Body>\n  <SetAdHocPortfolio xmlns="http://barra.com/cp/bdti">\n     ...
+Response XML:
+{xml_document}
+<Envelope xmlns:S="http://schemas.xmlsoap.org/soap/envelope/">
+[1] <S:Body xmlns="http://barra.com/cp/bdti">\n  <SetAdHocPortfolioResponse x ...
+$RejectedAsset
+list()
+
+attr(,"class")
+[1] "soap_object" "list"       
+attr(,"soap_type")
+[1] "SetAdHocPortfolioResponse"
+
+--- Testing SetCurrentSettings (Standard) ---
+Request XML:
+{xml_document}
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+[1] <soap:Body>\n  <SetCurrentSettings xmlns="http://barra.com/cp/bdti">\n    ...
+Response XML:
+{xml_document}
+<Envelope xmlns:S="http://schemas.xmlsoap.org/soap/envelope/">
+[1] <S:Body xmlns="http://barra.com/cp/bdti">\n  <SetCurrentSettingsResponse  ...
+SetCurrentSettings SUCCESS.
+Checking Values:
+Request XML:
+{xml_document}
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+[1] <soap:Body>\n  <GetCurrentSettings xmlns="http://barra.com/cp/bdti"/>\n</ ...
+Response XML:
+{xml_document}
+<Envelope xmlns:S="http://schemas.xmlsoap.org/soap/envelope/">
+[1] <S:Body xmlns="http://barra.com/cp/bdti">\n  <GetCurrentSettingsResponse  ...
+Benchmark: CASH 
+BaseCurrency: USD 
+
+--- Testing SetCurrentSettings (Qualified Forced) ---
+Request XML:
+{xml_document}
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+[1] <soap:Body>\n  <SetCurrentSettings xmlns="http://barra.com/cp/bdti">\n    ...
+Response XML:
+{xml_document}
+<Envelope xmlns:S="http://schemas.xmlsoap.org/soap/envelope/">
+[1] <S:Body xmlns="http://barra.com/cp/bdti">\n  <SetCurrentSettingsResponse  ...
+SetCurrentSettings Qualified SUCCESS.
+Checking Values Qualified:
+Request XML:
+{xml_document}
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+[1] <soap:Body>\n  <GetCurrentSettings xmlns="http://barra.com/cp/bdti"/>\n</ ...
+Response XML:
+{xml_document}
+<Envelope xmlns:S="http://schemas.xmlsoap.org/soap/envelope/">
+[1] <S:Body xmlns="http://barra.com/cp/bdti">\n  <GetCurrentSettingsResponse  ...
+Benchmark: CASH 
+BaseCurrency: USD 
+Request XML:
+{xml_document}
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+[1] <soap:Body>\n  <Logout xmlns="http://barra.com/cp/bdti"/>\n</soap:Body>
+Response XML:
+{xml_document}
+<Envelope xmlns:S="http://schemas.xmlsoap.org/soap/envelope/">
+[1] <S:Body xmlns="http://barra.com/cp/bdti">\n  <LogoutResponse xmlns="http: ...
+list()
+attr(,"class")
+[1] "soap_object" "list"       
+attr(,"soap_type")
+[1] "LogoutResponse"
