@@ -21,6 +21,8 @@ Parses a WSDL file to extract services, ports, operations, and types.
 \item{\code{element_form_default}}{The elementFormDefault value (qualified/unqualified).}
 
 \item{\code{attribute_form_default}}{The attributeFormDefault value (qualified/unqualified).}
+
+\item{\code{customizations}}{List of customization options.}
 }
 \if{html}{\out{</div>}}
 }
@@ -30,6 +32,7 @@ Parses a WSDL file to extract services, ports, operations, and types.
 \item \href{#method-WSDLParser-new}{\code{WSDLParser$new()}}
 \item \href{#method-WSDLParser-extend_namespace}{\code{WSDLParser$extend_namespace()}}
 \item \href{#method-WSDLParser-get_target_namespace}{\code{WSDLParser$get_target_namespace()}}
+\item \href{#method-WSDLParser-parse_schema_defaults}{\code{WSDLParser$parse_schema_defaults()}}
 \item \href{#method-WSDLParser-get_services}{\code{WSDLParser$get_services()}}
 \item \href{#method-WSDLParser-get_ports}{\code{WSDLParser$get_ports()}}
 \item \href{#method-WSDLParser-get_port_location}{\code{WSDLParser$get_port_location()}}
@@ -48,13 +51,15 @@ Parses a WSDL file to extract services, ports, operations, and types.
 \subsection{Method \code{new()}}{
 Initialize the WSDLParser.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{WSDLParser$new(path_or_url)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{WSDLParser$new(path_or_url, customizations = list())}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
 \item{\code{path_or_url}}{Path or URL to the WSDL file.}
+
+\item{\code{customizations}}{List of customization options.}
 }
 \if{html}{\out{</div>}}
 }
@@ -89,6 +94,16 @@ Get the target namespace of the WSDL.
 \subsection{Returns}{
 The target namespace URI.
 }
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-WSDLParser-parse_schema_defaults"></a>}}
+\if{latex}{\out{\hypertarget{method-WSDLParser-parse_schema_defaults}{}}}
+\subsection{Method \code{parse_schema_defaults()}}{
+Parse schema defaults (elementFormDefault, attributeFormDefault) from the WSDL.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{WSDLParser$parse_schema_defaults()}\if{html}{\out{</div>}}
+}
+
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-WSDLParser-get_services"></a>}}

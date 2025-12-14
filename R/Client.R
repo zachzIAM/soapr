@@ -58,6 +58,7 @@ Client <- R6::R6Class(
       self$operations <- self$wsdl$get_operations(self$port_def$binding)
       self$serializer <- XMLSerializer$new(
         element_form_default = self$wsdl$element_form_default,
+        attribute_form_default = self$wsdl$attribute_form_default,
         target_namespace = self$target_namespace
       )
       self$transport <- transport
@@ -120,7 +121,24 @@ Client <- R6::R6Class(
 
       # For now, we assume args match the expected structure
       for (arg_name in names(args)) {
-        # Validate Enums
+        if (
+          is.list(args[[arg_name]]) &&
+            !inherits(args[[arg_name]], "soap_object") &&
+            !is.null(self$factory$types[[arg_name]])
+        ) {
+          # Attempt coercion to soap_object
+          obj <- self$factory$create(arg_name)
+          input_list <- args[[arg_name]]
+
+          # Copy values
+          for (n in names(input_list)) {
+            obj[[n]] <- input_list[[n]]
+          }
+          # Replace argument with coerced object
+          args[[arg_name]] <- obj
+        }
+
+        # Validate Enums (Existing logic...)
         # Find the element definition for this argument
         # The operation input message name is op$input_message
         # We need to find the message part, then the element, then the type.

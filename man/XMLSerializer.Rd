@@ -16,6 +16,8 @@ Handles serialization of R objects to XML nodes.
 \describe{
 \item{\code{element_form_default}}{The elementFormDefault value.}
 
+\item{\code{attribute_form_default}}{The attributeFormDefault value.}
+
 \item{\code{target_namespace}}{The target namespace.}
 }
 \if{html}{\out{</div>}}
@@ -40,6 +42,7 @@ Initialize the XMLSerializer.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{XMLSerializer$new(
   element_form_default = "unqualified",
+  attribute_form_default = "unqualified",
   target_namespace = NULL
 )}\if{html}{\out{</div>}}
 }
@@ -48,6 +51,8 @@ Initialize the XMLSerializer.
 \if{html}{\out{<div class="arguments">}}
 \describe{
 \item{\code{element_form_default}}{The elementFormDefault value.}
+
+\item{\code{attribute_form_default}}{The attributeFormDefault value.}
 
 \item{\code{target_namespace}}{The target namespace.}
 

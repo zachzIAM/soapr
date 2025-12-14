@@ -26,6 +26,7 @@ WSDLParser <- R6::R6Class(
       self$doc <- xml2::read_xml(path_or_url)
       self$ns <- self$extend_namespace(xml2::xml_ns(self$doc))
       self$get_target_namespace()
+      self$parse_schema_defaults()
     },
 
     #' @description
@@ -64,6 +65,29 @@ WSDLParser <- R6::R6Class(
         stop("targetNamespace attribute missing from WSDL definitions")
       }
       return(tns)
+    },
+
+    #' @description
+    #' Parse schema defaults (elementFormDefault, attributeFormDefault) from the WSDL.
+    parse_schema_defaults = function() {
+      schema <- xml2::xml_find_first(self$doc, ".//xsd:schema", self$ns)
+
+      if (inherits(schema, "xml_node")) {
+        efd <- xml2::xml_attr(schema, "elementFormDefault")
+        afd <- xml2::xml_attr(schema, "attributeFormDefault")
+
+        if (!is.na(efd)) {
+          self$element_form_default <- efd
+        }
+
+        # attributeFormDefault defaults to "unqualified" if missing,
+        # but if present we assume it overrides.
+        if (!is.na(afd)) {
+          self$attribute_form_default <- afd
+        } else {
+          self$attribute_form_default <- "unqualified"
+        }
+      }
     },
 
     #' @description

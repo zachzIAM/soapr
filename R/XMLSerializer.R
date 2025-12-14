@@ -13,15 +13,19 @@ XMLSerializer <- R6::R6Class(
     #' @param value The value to serialize.
     #' @field element_form_default The elementFormDefault value.
     element_form_default = "unqualified",
+    #' @field attribute_form_default The attributeFormDefault value.
+    attribute_form_default = "unqualified",
     #' @field target_namespace The target namespace.
     target_namespace = NULL,
 
     #' @description
     #' Initialize the XMLSerializer.
     #' @param element_form_default The elementFormDefault value.
+    #' @param attribute_form_default The attributeFormDefault value.
     #' @param target_namespace The target namespace.
-    initialize = function(element_form_default = "unqualified", target_namespace = NULL) {
+    initialize = function(element_form_default = "unqualified", attribute_form_default = "unqualified", target_namespace = NULL) {
       self$element_form_default <- element_form_default
+      self$attribute_form_default <- attribute_form_default
       self$target_namespace <- target_namespace
     },
 
@@ -42,40 +46,35 @@ XMLSerializer <- R6::R6Class(
       }
 
       # Determine namespace for this element
-      # If elementFormDefault is qualified, we use the target namespace (or passed ns)
-      # If unqualified, we use no namespace (empty) unless it's a top-level element (handled by caller usually)
-
-      # However, xml2 inherits namespaces from parent.
-      # If parent has xmlns="target_ns", child will inherit it.
-      # To prevent inheritance for unqualified elements, we must explicitly set xmlns=""
-
       node_ns <- ns
 
       if (is.null(node_ns)) {
         if (self$element_form_default == "qualified") {
-          # Inherit from parent (which usually has target namespace)
-          # or explicitly set if needed.
-          # For now, let's assume parent has correct NS.
-          node_ns <- NULL
-        } else {
-          # Unqualified: Must not be in target namespace.
-          node_ns <- ""
-
-          # Force CurrentSettings to be explicitly unqualified (xmlns="") if needed
-          if (name == "CurrentSettings") {
-            node_ns <- ""
+          # If qualified, we must ensure the namespace is used.
+          # Typically we rely on the prefix derived from xmlns:p="targetNamespace"
+          # If we passed just "name", xml2 creates explicit xmlns="" if parent has xmlns="...".
+          # We need xml2 to reuse the prefix.
+          # Best way: Check if target_namespace is set, if so, use passing xmlns=target_namespace tells xml2 to use the prefix!
+          if (!is.null(self$target_namespace)) {
+            node_ns <- self$target_namespace
+          } else {
+            node_ns <- NULL # Fallback to inherit (might result in unqualified if no default ns)
           }
+        } else {
+          node_ns <- "" # Unqualified - Explicitly remove namespace
         }
-      }
-
-      # Hack override for CurrentSettings regardless of default
-      if (name == "CurrentSettings") {
-        node_ns <- ""
       }
 
       if (inherits(value, "soap_object")) {
         # Complex Type
-        node <- xml2::xml_add_child(parent, name)
+        if (!is.null(node_ns) && node_ns != "") {
+          # Qualified: Use xmlns to force prefix usage
+          node <- xml2::xml_add_child(parent, name, xmlns = node_ns)
+        } else {
+          # Unqualified or Inherit
+          node <- xml2::xml_add_child(parent, name)
+        }
+
         if (!is.null(node_ns) && node_ns == "") {
           xml2::xml_attr(node, "xmlns") <- ""
         }
@@ -85,35 +84,46 @@ XMLSerializer <- R6::R6Class(
           for (attr_name in attr(value, "soap_attrs")) {
             attr_val <- value[[attr_name]]
             if (!is.null(attr_val) && !is.na(attr_val)) {
-              # Handle attribute namespace
-              # If attributeFormDefault is qualified, we might need to prefix it?
-              # But usually attributes are unqualified unless explicitly namespaced.
-              # xml2::xml_attr sets it without prefix by default.
-              # If we need a prefix, we have to use xml_set_attr with a namespace.
-
-              # For now, let's assume unqualified, which is standard.
-              # But if the user says it's not working, maybe it SHOULD be qualified?
-              # Or maybe the attribute name in the WSDL is different from the R name?
-
-              xml2::xml_attr(node, attr_name) <- as.character(
-                attr_val
-              )
+              # Check attribute qualification
+              full_attr_name <- attr_name
+              if (self$attribute_form_default == "qualified") {
+                # We'd need to prefix it, but xml_attr needs qname.
+                # Assuming name doesn't have prefix.
+                # For now, leaving as-is unless we implement prefix lookups.
+                # BUT gSOAP case is "unqualified", so current code works for this task.
+              }
+              xml2::xml_attr(node, full_attr_name) <- as.character(attr_val)
             }
           }
         }
 
         # Add elements
         soap_attrs <- attr(value, "soap_attrs")
-
         for (elem_name in names(value)) {
           if (!elem_name %in% soap_attrs) {
             self$serialize(node, elem_name, value[[elem_name]])
           }
         }
       } else if (is.list(value) && !inherits(value, "soap_object")) {
-        # List of items (unbounded)
-        for (item in value) {
-          self$serialize(parent, name, item, ns)
+        if (!is.null(names(value)) && any(names(value) != "")) {
+          # Named list -> Treat as fields of a complex type (structure)
+          # Create a container node for this complex type
+          node <- xml2::xml_add_child(parent, name)
+          if (!is.null(node_ns) && node_ns == "") {
+            xml2::xml_attr(node, "xmlns") <- ""
+          }
+
+          # Recursively serialize fields
+          # Note: We don't know which are attributes vs elements here without schema.
+          # Defaulting to elements is safer for generic named lists.
+          for (field_name in names(value)) {
+            self$serialize(node, field_name, value[[field_name]])
+          }
+        } else {
+          # Unnamed list -> Repeated items (maxOccurs > 1)
+          for (item in value) {
+            self$serialize(parent, name, item, ns)
+          }
         }
       } else {
         # Simple Type
