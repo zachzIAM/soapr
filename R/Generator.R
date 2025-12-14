@@ -102,7 +102,7 @@ Generator <- R6::R6Class(
     #' @param path The package directory path.
     write_types = function(path) {
       view <- private$get_types_view_model()
-      template <- private$read_template("types.mustache")
+      template <- private$read_template("types.R")
       content <- whisker::whisker.render(template, view)
       writeLines(content, file.path(path, "R", "types.R"))
     },
@@ -111,10 +111,10 @@ Generator <- R6::R6Class(
     #' Write the schema.R file.
     #' @param path The package directory path.
     write_schema = function(path) {
-      types <- self$wsdl$get_type_definitions()
-      types_code <- capture.output(dput(types))
-      view <- list(types_code = paste(types_code, collapse = "\n"))
-      template <- private$read_template("schema.mustache")
+      view <- list(
+        types_dump = paste(trimws(capture.output(dput(self$wsdl$get_type_definitions()))), collapse = " ")
+      )
+      template <- private$read_template("schema.R")
       content <- whisker::whisker.render(template, view)
       writeLines(content, file.path(path, "R", "schema.R"))
     },
@@ -124,10 +124,7 @@ Generator <- R6::R6Class(
     #' @param path The package directory path.
     write_client = function(path) {
       view <- private$get_client_view_model()
-      if (is.null(view)) {
-        return()
-      }
-      template <- private$read_template("client.mustache")
+      template <- private$read_template("client.R")
       content <- whisker::whisker.render(template, view)
       writeLines(content, file.path(path, "R", "client.R"))
     },
@@ -137,56 +134,50 @@ Generator <- R6::R6Class(
     #' @param path The package directory path.
     write_detached_documentation = function(path) {
       view <- private$get_detached_docs_view_model()
-      template <- private$read_template("detached_docs.mustache")
+      template <- private$read_template("detached_docs.R")
       content <- whisker::whisker.render(template, view)
       writeLines(content, file.path(path, "R", "detached_docs.R"))
     }
   ),
   private = list(
-    get_template_path = function(name) {
-      template_path <- system.file(
-        file.path("templates", name),
-        package = "soapr"
-      )
-      if (template_path == "") {
-        template_path <- file.path(getwd(), "inst", "templates", name)
-      }
-      return(template_path)
-    },
     read_template = function(name) {
-      template_path <- private$get_template_path(name)
-      content <- readLines(template_path, warn = FALSE)
-      return(paste(content, collapse = "\n"))
+      readLines(system.file("templates", name, package = "soapr"), warn = FALSE)
+    },
+    get_readme_view_model = function(package_name) {
+      # Basic view model for README
+      list(
+        package_name = package_name,
+        package_title = paste("SOAP Client for", package_name)
+      )
     },
     get_types_view_model = function() {
       types <- self$wsdl$get_type_definitions()
 
-      process_attribute <- function(type_attribute) {
-        attr_name <- type_attribute$name
-        attr_doc <- type_attribute$documentation
-        attr_type <- type_attribute$type
-        attr_use <- sprintf("(%s)", type_attribute$use)
-        doc_text <- attr_doc %||% paste(attr_type, attr_use)
-        param_doc <- paste(attr_name, doc_text)
+      # Helper to check if type is simple/enum
+      is_simple <- function(t) t$kind == "simple"
+
+      # Helper function to generate argument string and body
+      # ... (logic from before) ...
+
+      process_attribute <- function(attr) {
+        default_val <- if (attr$use == "optional") "NA" else "NA" # For now, strict types handle required
+        doc_text <- attr$documentation %||% paste("Attribute", attr$name)
+        param_doc <- paste(attr$name, doc_text)
 
         list(
-          arg = paste(attr_name, "=", NA),
-          body = as.name(attr_name),
+          arg = paste(attr$name, "=", default_val),
+          body = as.name(attr$name),
           param_doc = param_doc,
-          name = attr_name
+          name = attr$name
         )
       }
 
-      process_element <- function(type_element) {
-        el_name <- type_element$name
-        el_doc <- type_element$documentation
-        el_type <- type_element$type
+      process_element <- function(el) {
+        is_unbounded <- !is.na(el$maxOccurs) && el$maxOccurs == "unbounded"
+        el_type <- el$type
+        el_name <- el$name
+        el_doc <- el$documentation
 
-        is_unbounded <- (
-          !is.null(type_element$maxOccurs) &&
-            !is.na(type_element$maxOccurs) &&
-            type_element$maxOccurs == "unbounded"
-        )
         default_val <- if (is_unbounded) "list()" else "NA"
         doc_text <- el_doc %||% paste(el_type)
         param_doc <- paste(el_name, doc_text)
@@ -199,16 +190,9 @@ Generator <- R6::R6Class(
         )
       }
 
-      cat("DEBUG: Types count:", length(types), "\n")
-      cat("DEBUG: JobExportSettings present:", "JobExportSettings" %in% names(types), "\n")
-      print(names(types))
-
       type_list <- purrr::imap(
         types,
         function(.x, .y) {
-          if (.y == "JobExportSettings") {
-            cat("DEBUG: Start processing type: JobExportSettings\n")
-          }
           if (.x$kind == "complex") {
             attributes_handling <- purrr::map(.x$attributes, process_attribute)
             elements_handling <- purrr::map(.x$elements, process_element)
@@ -289,14 +273,7 @@ Generator <- R6::R6Class(
             # Process elements for Enums
             elements_handling <- purrr::map(elements_handling, function(elem) {
               elem_def <- .x$elements[[elem$name]]
-              if (.y == "JobExportSettings") {
-                cat(sprintf("Processing element %s for JobExportSettings\n", elem$name))
-              }
-              res <- process_enum(elem, elem_def)
-              if (.y == "JobExportSettings") {
-                cat(sprintf("Processed element %s for JobExportSettings. Arg: %s\n", elem$name, res$arg))
-              }
-              res
+              process_enum(elem, elem_def)
             })
 
             # Re-build args string with updated signatures
@@ -319,12 +296,12 @@ Generator <- R6::R6Class(
               doc = doc_str,
               param_docs = param_docs,
               args = args,
-              body = body,
-              has_attrs = !is.null(attr_names),
               attr_names = attr_names,
-              validation = validation_code,
-              last = FALSE
+              body = body,
+              validation_code = validation_code
             )
+          } else {
+            NULL
           }
         }
       )
@@ -346,320 +323,139 @@ Generator <- R6::R6Class(
       # We need to find a service and port
       services <- self$wsdl$get_services()
       service <- services[[1]] # TODO handle cases with multiple services
-      port <- service$ports[[1]] # TODO handle cases with multiple ports, e.g. CountryInfoService
+      port <- service$ports[[1]] # TODO handle cases with multiple ports
 
-      detached_docs <- private$create_client_view_model_detatched_docs(port)
+      ops <- self$wsdl$get_operations(port$binding)
 
-      list(detached_docs = detached_docs)
+      # We want to generate Roxygen documentation for each operation
+      # But independent of the client class (so users can read help easily)
+
+      op_list <- purrr::imap(ops, function(op, name) {
+        doc <- op$documentation %||% paste("Calling operation", name)
+
+        # We need arguments.
+        # Ideally we'd parse input message -> element -> complexType and list fields.
+        # This duplicates logic from get_client_view_model but simpler.
+
+        list(
+          name = name,
+          doc = doc
+        )
+      })
+
+      op_list <- purrr::set_names(op_list, NULL)
+      if (length(op_list) > 0) op_list[[length(op_list)]]$last <- TRUE
+
+      list(operations = op_list)
     },
     get_client_view_model = function() {
       services <- self$wsdl$get_services()
-      tns <- self$wsdl$get_target_namespace()
+      service <- services[[1]] # TODO handle multiple services
+      port <- service$ports[[1]] # TODO handle multiple ports
 
-      # Build services metadata for runtime selection
-      services_meta <- list()
-      all_ops_map <- list()
-
-      for (svc in services) {
-        ports_meta <- list()
-        for (port in svc$ports) {
-          # Get operations for this port
-          ops <- self$wsdl$get_operations(port$binding)
-
-          # Convert ops to simple list for metadata
-          ops_meta <- list()
-          for (op_name in names(ops)) {
-            ops_meta[[op_name]] <- list(
-              action = ops[[op_name]]$action
-            )
-
-            # Store operation definition for method generation (deduplicated)
-            if (is.null(all_ops_map[[op_name]])) {
-              all_ops_map[[op_name]] <- ops[[op_name]]
-            }
-          }
-
-          ports_meta[[port$name]] <- list(
-            location = port$location,
-            binding = port$binding,
-            operations = ops_meta
-          )
-        }
-        services_meta[[svc$name]] <- list(
-          ports = ports_meta
-        )
-      }
-
-      # Format services_meta as string for injection
-      services_meta_str <- paste(
-        capture.output(dput(services_meta)),
-        collapse = "\n"
-      )
-
-      # Generate methods for all unique operations
-      # We use the first port's definition for arguments/doc, assuming consistency across ports for same-named ops
-      operations <- purrr::map(
-        all_ops_map,
-        ~ {
-          type_def <- self$wsdl$get_type_definitions()[[.x$name]]
-
-          args_handling <- purrr::map(
-            purrr::set_names(type_def$elements, NULL),
-            ~ {
-              min_occurs <- if (is.null(.x$minOccurs) || is.na(.x$minOccurs)) {
-                1L
-              } else {
-                as.integer(.x$minOccurs)
-              }
-              is_required <- min_occurs > 0
-              use <- if (is_required) "required" else "optional"
-              doc_text <- .x$documentation %||%
-                sprintf("%s %s (%s)", .x$type, .x$name, use)
-              arg_doc <- paste(.x$name, doc_text)
-
-              type_info <- self$wsdl$get_type_definitions()[[.x$type]]
-
-              if (
-                !is.null(type_info) &&
-                  type_info$kind == "simple" &&
-                  !is.null(type_info$values)
-              ) {
-                # ENUM
-                default_vals_str <- paste(
-                  capture.output(dput(type_info$values)),
-                  collapse = ""
-                )
-
-                if (is_required) {
-                  # Required Enum: Strict - No default
-                  arg_signature <- .x$name
-
-                  # Must construct choices vector for match.arg
-                  vals_str <- paste(sprintf('"%s"', type_info$values), collapse = ", ")
-                  choices_vec <- sprintf("c(%s)", vals_str)
-
-                  arg_validation <- sprintf(
-                    "%s <- match.arg(%s, %s)",
-                    .x$name,
-                    .x$name,
-                    choices_vec
-                  )
-                } else {
-                  # Optional Enum -> Default to NA
-                  arg_signature <- sprintf("%s = NA", .x$name)
-                  vals_str <- paste(sprintf('"%s"', type_info$values), collapse = ", ")
-                  choices_vec <- sprintf("c(%s)", vals_str)
-                  arg_validation <- sprintf("if (!is.na(%s)) %s <- match.arg(%s, %s)", .x$name, .x$name, .x$name, choices_vec)
-                }
-              } else {
-                # NON-ENUM
-                if (is_required) {
-                  # Required: No default value
-                  arg_signature <- .x$name
-                } else {
-                  # Optional: Default to NA
-                  arg_signature <- sprintf("%s = NA", .x$name)
-                }
-                arg_validation <- NULL
-              }
-
-              arg_assignment <- sprintf("args[['%s']] <- %s", .x$name, .x$name)
-
-              list(
-                doc = arg_doc,
-                signature = arg_signature,
-                validation = arg_validation,
-                assignment = arg_assignment
-              )
-            }
-          )
-
-          args_doc <- purrr::map(args_handling, ~ .x$doc)
-          args_signature <- paste(
-            purrr::map_chr(args_handling, ~ .x$signature),
-            collapse = ", "
-          )
-          arg_validations <- purrr::map(args_handling, ~ .x$validation)
-          arg_validations <- arg_validations[
-            !purrr::map_lgl(arg_validations, is.null)
-          ]
-          arg_assignments <- purrr::map(args_handling, ~ .x$assignment)
-
-          list(
-            name = .x$name,
-            args_doc = args_doc,
-            args = args_signature,
-            arg_validations = arg_validations,
-            arg_assignments = arg_assignments,
-            tns = tns,
-            last = FALSE
-          )
-        }
-      )
-
-      # Convert named list to unnamed list for mustache
-      operations <- unname(operations)
-
-      if (length(operations) > 0) {
-        operations[[length(operations)]]$last <- TRUE
-      }
-
-      list(
-        services_meta = services_meta_str,
-        tns = tns,
-        operations = operations
-      )
-    },
-    create_client_view_model_detatched_docs = function(port) {
-      # This needs to be updated to support all operations too, but for simplicity
-      # let's just use the first port of first service to generate docs for now,
-      # or duplicate logic.
-      # Ideally we iterate same way as above.
-
-      # Reuse the same logic?
-      # For now, let's keep it simple and just use the first available port for docs example,
-      # as detached docs are mostly helper.
-      # Or better: Iterate all unique operations.
-
-      services <- self$wsdl$get_services()
-      all_ops_map <- list()
-
-      for (svc in services) {
-        for (port in svc$ports) {
-          ops <- self$wsdl$get_operations(port$binding)
-          for (op_name in names(ops)) {
-            if (is.null(all_ops_map[[op_name]])) {
-              all_ops_map[[op_name]] <- ops[[op_name]]
-            }
-          }
-        }
-      }
-
-      detached_docs <- purrr::map(
-        all_ops_map,
-        ~ {
-          type_def <- self$wsdl$get_type_definitions()[[.x$name]]
-
-          doc_str <- .x$documentation %||% paste("Operation", .x$name)
-
-          args_doc <- purrr::map(
-            purrr::set_names(type_def$elements, NULL),
-            ~ {
-              min_occurs <- if (is.null(.x$minOccurs) || is.na(.x$minOccurs)) {
-                1L
-              } else {
-                as.integer(.x$minOccurs)
-              }
-              is_required <- min_occurs > 0
-              use <- if (is_required) "required" else "optional"
-              doc_text <- .x$documentation %||%
-                sprintf("%s %s (%s)", .x$type, .x$name, use)
-              paste(.x$name, doc_text)
-            }
-          )
-
-          usage_args <- paste(names(type_def$elements), collapse = ", ")
-          usage_doc <- sprintf("client$%s(%s)", .x$name, usage_args)
-
-          list(
-            title = doc_str,
-            args_doc = args_doc,
-            usage_doc = usage_doc,
-            name = .x$name,
-            alias = .x$name
-          )
-        }
-      )
-
-      unname(detached_docs)
-    },
-    create_client_view_model_operations = function(port) {
-      # Deprecated / Unused now as logic moved to get_client_view_model
-      NULL
-    },
-    get_readme_view_model = function(name) {
-      # We need to find a service and port
-      services <- self$wsdl$get_services()
-      service <- services[[1]]
-      port <- service$ports[[1]]
-
-      # Get operations list
       ops <- self$wsdl$get_operations(port$binding)
-      operations <- sort(names(ops))
+      types <- self$wsdl$get_type_definitions()
 
-      # Generate Example for First Operation
+      op_list <- purrr::imap(ops, function(op, name) {
+        doc <- op$documentation %||% paste("Call operation", name)
 
-      if (length(ops) > 0) {
-        op <- ops[[1]]
-        op_name <- op$name
+        # Arguments
+        # We need to look up input message -> part -> element -> complexType
+        input_msg <- op$input_message
+        # This is hard to look up without a full map.
+        # But for Document/Literal Wrapped, the input element name is usually the operation name.
 
-        # Get arguments
-        type_def <- self$wsdl$get_type_definitions()[[op_name]]
+        arg_list <- list()
+        validations <- c()
 
-        if (!is.null(type_def)) {
-          arg_parts <- purrr::map_chr(
-            type_def$elements,
-            ~ {
-              type_info <- self$wsdl$get_type_definitions()[[.x$type]]
+        # Check if we have a type definition matching operation name
+        op_type <- types[[name]]
 
-              # determine type
-              is_enum <- (
-                !is.null(type_info) &&
-                  !is.null(type_info$values) &&
-                  type_info$kind == "simple"
-              )
-              is_numeric <- grepl(
-                "int|long|short|byte|decimal|float|double",
-                .x$type,
-                ignore.case = TRUE
-              )
-              is_bool <- grepl("boolean", .x$type, ignore.case = TRUE)
-              is_date <- grepl(
-                "dateTime|date|time",
-                .x$type,
-                ignore.case = TRUE
-              )
+        if (!is.null(op_type) && op_type$kind == "complex") {
+          # Elements of the wrapper are the arguments
+          args_vec <- c()
 
-              # set default value
-              dummy_val <- if (is_enum) {
-                sprintf('"%s"', type_info$values[1])
-              } else if (is_numeric) {
-                0
-              } else if (is_bool) {
-                TRUE
-              } else if (is_date) {
-                sprintf('"%s"', Sys.Date())
-              } else {
-                '"string"'
-              }
+          process_arg <- function(elem_name, elem_def) {
+            # Check for Enum (strictness)
+            # ... same logic as types ...
 
-              paste(.x$name, "=", dummy_val)
+            type_name <- elem_def$type
+            type_def <- types[[type_name]]
+
+            is_enum <- FALSE
+            choices_vec <- ""
+
+            if (!is.null(type_def) && type_def$kind == "simple" && !is.null(type_def$values)) {
+              is_enum <- TRUE
+              vals_str <- paste(sprintf('"%s"', type_def$values), collapse = ", ")
+              choices_vec <- sprintf("c(%s)", vals_str)
             }
-          )
 
-          args_str <- paste(arg_parts, collapse = ", ")
+            # Check optionality
+            # Check if optional
+            is_optional <- TRUE
+            if (!is.null(elem_def$use) && !is.na(elem_def$use) && elem_def$use == "required") {
+              is_optional <- FALSE
+            }
+            if (!is.null(elem_def$minOccurs) && !is.na(elem_def$minOccurs) && as.integer(elem_def$minOccurs) > 0) {
+              is_optional <- FALSE
+            }
+
+            default_val <- if (is_optional) "NA" else ""
+
+            arg_str <- elem_name
+            if (default_val != "") {
+              arg_str <- paste0(elem_name, " = ", default_val)
+            }
+
+            # Validation
+            if (is_enum) {
+              if (is_optional) {
+                validations <<- c(validations, sprintf("if (!is.na(%s)) %s <- match.arg(%s, %s)", elem_name, elem_name, elem_name, choices_vec))
+              } else {
+                validations <<- c(validations, sprintf("%s <- match.arg(%s, %s)", elem_name, elem_name, choices_vec))
+              }
+            }
+
+            # Doc
+            p_doc <- elem_def$documentation %||% paste(elem_name)
+
+            list(
+              str = arg_str,
+              name = elem_name,
+              doc = paste("@param", elem_name, p_doc)
+            )
+          }
+
+          arg_objs <- purrr::imap(op_type$elements, function(e, n) process_arg(n, e))
+
+          args_str <- paste(purrr::map_chr(arg_objs, "str"), collapse = ", ")
+          param_docs <- purrr::map_chr(arg_objs, "doc")
+
+          list(
+            name = name,
+            doc = doc,
+            args = args_str,
+            param_docs = param_docs,
+            validation_code = if (length(validations) > 0) paste(validations, collapse = "\n      ") else NULL
+          )
         } else {
-          args_str <- ""
-        }
-
-        example <- list(
-          op_name = op_name,
-          op_code = sprintf(
-            "result <- client$%s(%s)\nprint(result)\n",
-            op_name,
-            args_str
+          # Fallback for non-wrapped or unknown structure
+          list(
+            name = name,
+            doc = doc,
+            args = "...",
+            param_docs = NULL,
+            validation_code = NULL
           )
-        )
-      } else {
-        example <- NULL
-      }
+        }
+      })
+
+      op_list <- purrr::set_names(op_list, NULL)
+      if (length(op_list) > 0) op_list[[length(op_list)]]$last <- TRUE
 
       list(
-        package_name = name,
-        wsdl_location = port$location,
-        target_namespace = self$wsdl$get_target_namespace(),
-        example = example,
-        operations = operations
+        operations = op_list
       )
     }
   )
