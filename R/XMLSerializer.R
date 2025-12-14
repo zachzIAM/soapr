@@ -127,7 +127,12 @@ XMLSerializer <- R6::R6Class(
         }
       } else {
         # Simple Type
-        node <- xml2::xml_add_child(parent, name, as.character(value))
+        val_str <- if (is.logical(value)) {
+          tolower(as.character(value))
+        } else {
+          as.character(value)
+        }
+        node <- xml2::xml_add_child(parent, name, val_str)
         if (!is.null(node_ns) && node_ns == "") {
           xml2::xml_attr(node, "xmlns") <- ""
         }
