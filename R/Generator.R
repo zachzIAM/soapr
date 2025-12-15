@@ -400,7 +400,7 @@ Generator <- R6::R6Class(
 
       ops <- self$wsdl$get_operations(port$binding)
       types <- self$wsdl$get_type_definitions()
-
+      tns <- self$wsdl$get_target_namespace()
       services_meta <- self$wsdl$get_services()
       services_meta_dump <- paste(
         trimws(capture.output(dput(services_meta))),
@@ -419,7 +419,8 @@ Generator <- R6::R6Class(
           args_doc = args_info$param_docs, # RENAMED from param_docs to match template
           validation_code = args_info$validation_code,
           arg_assignments = args_info$arg_assignments,
-          arg_validations = args_info$arg_validations
+          arg_validations = args_info$arg_validations,
+          tns = tns
         )
       })
 
