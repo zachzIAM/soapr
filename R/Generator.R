@@ -102,7 +102,7 @@ Generator <- R6::R6Class(
     #' @param path The package directory path.
     write_types = function(path) {
       view <- private$get_types_view_model()
-      template <- private$read_template("types.R")
+      template <- private$read_template("types.mustache")
       content <- whisker::whisker.render(template, view)
       writeLines(content, file.path(path, "R", "types.R"))
     },
@@ -112,9 +112,12 @@ Generator <- R6::R6Class(
     #' @param path The package directory path.
     write_schema = function(path) {
       view <- list(
-        types_dump = paste(trimws(capture.output(dput(self$wsdl$get_type_definitions()))), collapse = " ")
+        types_code = paste(
+          trimws(capture.output(dput(self$wsdl$get_type_definitions()))),
+          collapse = " "
+        )
       )
-      template <- private$read_template("schema.R")
+      template <- private$read_template("schema.mustache")
       content <- whisker::whisker.render(template, view)
       writeLines(content, file.path(path, "R", "schema.R"))
     },
@@ -124,7 +127,7 @@ Generator <- R6::R6Class(
     #' @param path The package directory path.
     write_client = function(path) {
       view <- private$get_client_view_model()
-      template <- private$read_template("client.R")
+      template <- private$read_template("client.mustache")
       content <- whisker::whisker.render(template, view)
       writeLines(content, file.path(path, "R", "client.R"))
     },
@@ -134,7 +137,7 @@ Generator <- R6::R6Class(
     #' @param path The package directory path.
     write_detached_documentation = function(path) {
       view <- private$get_detached_docs_view_model()
-      template <- private$read_template("detached_docs.R")
+      template <- private$read_template("detached_docs.mustache")
       content <- whisker::whisker.render(template, view)
       writeLines(content, file.path(path, "R", "detached_docs.R"))
     }
@@ -223,7 +226,10 @@ Generator <- R6::R6Class(
 
             # Fix attribute names: we want the names of the attributes, not the list of definitions
             attr_names <- if (length(.x$attributes) > 0) {
-              paste(trimws(capture.output(dput(names(.x$attributes)))), collapse = " ")
+              paste(
+                trimws(capture.output(dput(names(.x$attributes)))),
+                collapse = " "
+              )
             }
 
             doc_str <- .x$documentation %||% paste("Constructor for", .y)
@@ -236,28 +242,60 @@ Generator <- R6::R6Class(
               if (!is.null(item_def)) {
                 type_name <- item_def$type
                 type_def <- types[[type_name]]
-                if (!is.null(type_def) && type_def$kind == "simple" && !is.null(type_def$values)) {
+                if (
+                  !is.null(type_def) &&
+                    type_def$kind == "simple" &&
+                    !is.null(type_def$values)
+                ) {
                   # It is an Enum
-                  vals_str <- paste(sprintf('"%s"', type_def$values), collapse = ", ")
+                  vals_str <- paste(
+                    sprintf('"%s"', type_def$values),
+                    collapse = ", "
+                  )
                   choices_vec <- sprintf("c(%s)", vals_str)
 
                   # Check if optional
                   is_optional <- TRUE
-                  if (!is.null(item_def$use) && !is.na(item_def$use) && item_def$use == "required") {
+                  if (
+                    !is.null(item_def$use) &&
+                      !is.na(item_def$use) &&
+                      item_def$use == "required"
+                  ) {
                     is_optional <- FALSE
                   }
-                  if (!is.null(item_def$minOccurs) && !is.na(item_def$minOccurs) && as.integer(item_def$minOccurs) > 0) {
+                  if (
+                    !is.null(item_def$minOccurs) &&
+                      !is.na(item_def$minOccurs) &&
+                      as.integer(item_def$minOccurs) > 0
+                  ) {
                     is_optional <- FALSE
                   }
 
                   if (is_optional) {
                     # Optional: default to NA, validate only if not NA
                     item$arg <- sprintf("%s = NA", item$name)
-                    validations <<- c(validations, sprintf("if (!is.na(%s)) %s <- match.arg(%s, %s)", item$name, item$name, item$name, choices_vec))
+                    validations <<- c(
+                      validations,
+                      sprintf(
+                        "if (!is.na(%s)) %s <- match.arg(%s, %s)",
+                        item$name,
+                        item$name,
+                        item$name,
+                        choices_vec
+                      )
+                    )
                   } else {
                     # Required: STRICT - No default, explicit choices in match.arg
                     item$arg <- item$name
-                    validations <<- c(validations, sprintf("%s <- match.arg(%s, %s)", item$name, item$name, choices_vec))
+                    validations <<- c(
+                      validations,
+                      sprintf(
+                        "%s <- match.arg(%s, %s)",
+                        item$name,
+                        item$name,
+                        choices_vec
+                      )
+                    )
                   }
                 }
               }
@@ -265,10 +303,13 @@ Generator <- R6::R6Class(
             }
 
             # Process attributes for Enums
-            attributes_handling <- purrr::map(attributes_handling, function(attr) {
-              attr_def <- .x$attributes[[attr$name]]
-              process_enum(attr, attr_def)
-            })
+            attributes_handling <- purrr::map(
+              attributes_handling,
+              function(attr) {
+                attr_def <- .x$attributes[[attr$name]]
+                process_enum(attr, attr_def)
+              }
+            )
 
             # Process elements for Enums
             elements_handling <- purrr::map(elements_handling, function(elem) {
@@ -333,20 +374,21 @@ Generator <- R6::R6Class(
       op_list <- purrr::imap(ops, function(op, name) {
         doc <- op$documentation %||% paste("Calling operation", name)
 
-        # We need arguments.
-        # Ideally we'd parse input message -> element -> complexType and list fields.
-        # This duplicates logic from get_client_view_model but simpler.
+        # Simple args doc roughly
+        args_doc <- list() # TODO: Extract real args
 
         list(
           name = name,
-          doc = doc
+          title = doc,
+          usage_doc = paste0(name, "(...)"),
+          args_doc = args_doc,
+          alias = name
         )
       })
 
       op_list <- purrr::set_names(op_list, NULL)
-      if (length(op_list) > 0) op_list[[length(op_list)]]$last <- TRUE
 
-      list(operations = op_list)
+      list(detached_docs = op_list)
     },
     get_client_view_model = function() {
       services <- self$wsdl$get_services()
@@ -355,6 +397,12 @@ Generator <- R6::R6Class(
 
       ops <- self$wsdl$get_operations(port$binding)
       types <- self$wsdl$get_type_definitions()
+
+      services_meta <- self$wsdl$get_services()
+      services_meta_dump <- paste(
+        trimws(capture.output(dput(services_meta))),
+        collapse = " "
+      )
 
       op_list <- purrr::imap(ops, function(op, name) {
         doc <- op$documentation %||% paste("Call operation", name)
@@ -385,19 +433,34 @@ Generator <- R6::R6Class(
             is_enum <- FALSE
             choices_vec <- ""
 
-            if (!is.null(type_def) && type_def$kind == "simple" && !is.null(type_def$values)) {
+            if (
+              !is.null(type_def) &&
+                type_def$kind == "simple" &&
+                !is.null(type_def$values)
+            ) {
               is_enum <- TRUE
-              vals_str <- paste(sprintf('"%s"', type_def$values), collapse = ", ")
+              vals_str <- paste(
+                sprintf('"%s"', type_def$values),
+                collapse = ", "
+              )
               choices_vec <- sprintf("c(%s)", vals_str)
             }
 
             # Check optionality
             # Check if optional
             is_optional <- TRUE
-            if (!is.null(elem_def$use) && !is.na(elem_def$use) && elem_def$use == "required") {
+            if (
+              !is.null(elem_def$use) &&
+                !is.na(elem_def$use) &&
+                elem_def$use == "required"
+            ) {
               is_optional <- FALSE
             }
-            if (!is.null(elem_def$minOccurs) && !is.na(elem_def$minOccurs) && as.integer(elem_def$minOccurs) > 0) {
+            if (
+              !is.null(elem_def$minOccurs) &&
+                !is.na(elem_def$minOccurs) &&
+                as.integer(elem_def$minOccurs) > 0
+            ) {
               is_optional <- FALSE
             }
 
@@ -411,9 +474,26 @@ Generator <- R6::R6Class(
             # Validation
             if (is_enum) {
               if (is_optional) {
-                validations <<- c(validations, sprintf("if (!is.na(%s)) %s <- match.arg(%s, %s)", elem_name, elem_name, elem_name, choices_vec))
+                validations <<- c(
+                  validations,
+                  sprintf(
+                    "if (!is.na(%s)) %s <- match.arg(%s, %s)",
+                    elem_name,
+                    elem_name,
+                    elem_name,
+                    choices_vec
+                  )
+                )
               } else {
-                validations <<- c(validations, sprintf("%s <- match.arg(%s, %s)", elem_name, elem_name, choices_vec))
+                validations <<- c(
+                  validations,
+                  sprintf(
+                    "%s <- match.arg(%s, %s)",
+                    elem_name,
+                    elem_name,
+                    choices_vec
+                  )
+                )
               }
             }
 
@@ -427,7 +507,9 @@ Generator <- R6::R6Class(
             )
           }
 
-          arg_objs <- purrr::imap(op_type$elements, function(e, n) process_arg(n, e))
+          arg_objs <- purrr::imap(op_type$elements, function(e, n) {
+            process_arg(n, e)
+          })
 
           args_str <- paste(purrr::map_chr(arg_objs, "str"), collapse = ", ")
           param_docs <- purrr::map_chr(arg_objs, "doc")
@@ -437,7 +519,11 @@ Generator <- R6::R6Class(
             doc = doc,
             args = args_str,
             param_docs = param_docs,
-            validation_code = if (length(validations) > 0) paste(validations, collapse = "\n      ") else NULL
+            validation_code = if (length(validations) > 0) {
+              paste(validations, collapse = "\n      ")
+            } else {
+              NULL
+            }
           )
         } else {
           # Fallback for non-wrapped or unknown structure
@@ -452,10 +538,13 @@ Generator <- R6::R6Class(
       })
 
       op_list <- purrr::set_names(op_list, NULL)
-      if (length(op_list) > 0) op_list[[length(op_list)]]$last <- TRUE
+      if (length(op_list) > 0) {
+        op_list[[length(op_list)]]$last <- TRUE
+      }
 
       list(
-        operations = op_list
+        operations = op_list,
+        services_meta = services_meta_dump
       )
     }
   )
