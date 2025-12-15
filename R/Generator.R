@@ -114,7 +114,7 @@ Generator <- R6::R6Class(
       view <- list(
         types_code = paste(
           trimws(capture.output(dput(self$wsdl$get_type_definitions()))),
-          collapse = " "
+          collapse = "\n"
         )
       )
       template <- private$read_template("schema.mustache")
@@ -367,6 +367,7 @@ Generator <- R6::R6Class(
       port <- service$ports[[1]] # TODO handle cases with multiple ports
 
       ops <- self$wsdl$get_operations(port$binding)
+      types <- self$wsdl$get_type_definitions() # Added to fix missing variable error
 
       # We want to generate Roxygen documentation for each operation
       # But independent of the client class (so users can read help easily)
@@ -374,13 +375,15 @@ Generator <- R6::R6Class(
       op_list <- purrr::imap(ops, function(op, name) {
         doc <- op$documentation %||% paste("Calling operation", name)
 
-        # Simple args doc roughly
-        args_doc <- list() # TODO: Extract real args
+        args_info <- private$process_operation_args(name, op, types)
+
+        args_doc <- args_info$param_docs
+        usage_doc <- paste0(name, "(", args_info$args, ")")
 
         list(
           name = name,
           title = doc,
-          usage_doc = paste0(name, "(...)"),
+          usage_doc = usage_doc,
           args_doc = args_doc,
           alias = name
         )
@@ -407,134 +410,17 @@ Generator <- R6::R6Class(
       op_list <- purrr::imap(ops, function(op, name) {
         doc <- op$documentation %||% paste("Call operation", name)
 
-        # Arguments
-        # We need to look up input message -> part -> element -> complexType
-        input_msg <- op$input_message
-        # This is hard to look up without a full map.
-        # But for Document/Literal Wrapped, the input element name is usually the operation name.
+        args_info <- private$process_operation_args(name, op, types)
 
-        arg_list <- list()
-        validations <- c()
-
-        # Check if we have a type definition matching operation name
-        op_type <- types[[name]]
-
-        if (!is.null(op_type) && op_type$kind == "complex") {
-          # Elements of the wrapper are the arguments
-          args_vec <- c()
-
-          process_arg <- function(elem_name, elem_def) {
-            # Check for Enum (strictness)
-            # ... same logic as types ...
-
-            type_name <- elem_def$type
-            type_def <- types[[type_name]]
-
-            is_enum <- FALSE
-            choices_vec <- ""
-
-            if (
-              !is.null(type_def) &&
-                type_def$kind == "simple" &&
-                !is.null(type_def$values)
-            ) {
-              is_enum <- TRUE
-              vals_str <- paste(
-                sprintf('"%s"', type_def$values),
-                collapse = ", "
-              )
-              choices_vec <- sprintf("c(%s)", vals_str)
-            }
-
-            # Check optionality
-            # Check if optional
-            is_optional <- TRUE
-            if (
-              !is.null(elem_def$use) &&
-                !is.na(elem_def$use) &&
-                elem_def$use == "required"
-            ) {
-              is_optional <- FALSE
-            }
-            if (
-              !is.null(elem_def$minOccurs) &&
-                !is.na(elem_def$minOccurs) &&
-                as.integer(elem_def$minOccurs) > 0
-            ) {
-              is_optional <- FALSE
-            }
-
-            default_val <- if (is_optional) "NA" else ""
-
-            arg_str <- elem_name
-            if (default_val != "") {
-              arg_str <- paste0(elem_name, " = ", default_val)
-            }
-
-            # Validation
-            if (is_enum) {
-              if (is_optional) {
-                validations <<- c(
-                  validations,
-                  sprintf(
-                    "if (!is.na(%s)) %s <- match.arg(%s, %s)",
-                    elem_name,
-                    elem_name,
-                    elem_name,
-                    choices_vec
-                  )
-                )
-              } else {
-                validations <<- c(
-                  validations,
-                  sprintf(
-                    "%s <- match.arg(%s, %s)",
-                    elem_name,
-                    elem_name,
-                    choices_vec
-                  )
-                )
-              }
-            }
-
-            # Doc
-            p_doc <- elem_def$documentation %||% paste(elem_name)
-
-            list(
-              str = arg_str,
-              name = elem_name,
-              doc = paste("@param", elem_name, p_doc)
-            )
-          }
-
-          arg_objs <- purrr::imap(op_type$elements, function(e, n) {
-            process_arg(n, e)
-          })
-
-          args_str <- paste(purrr::map_chr(arg_objs, "str"), collapse = ", ")
-          param_docs <- purrr::map_chr(arg_objs, "doc")
-
-          list(
-            name = name,
-            doc = doc,
-            args = args_str,
-            param_docs = param_docs,
-            validation_code = if (length(validations) > 0) {
-              paste(validations, collapse = "\n      ")
-            } else {
-              NULL
-            }
-          )
-        } else {
-          # Fallback for non-wrapped or unknown structure
-          list(
-            name = name,
-            doc = doc,
-            args = "...",
-            param_docs = NULL,
-            validation_code = NULL
-          )
-        }
+        list(
+          name = name,
+          doc = doc,
+          args = args_info$args,
+          args_doc = args_info$param_docs, # RENAMED from param_docs to match template
+          validation_code = args_info$validation_code,
+          arg_assignments = args_info$arg_assignments,
+          arg_validations = args_info$arg_validations
+        )
       })
 
       op_list <- purrr::set_names(op_list, NULL)
@@ -546,6 +432,129 @@ Generator <- R6::R6Class(
         operations = op_list,
         services_meta = services_meta_dump
       )
+    },
+
+    process_operation_args = function(op_name, op_def, types) {
+      # Arguments
+      # We need to look up input message -> part -> element -> complexType
+      # For Document/Literal Wrapped, the input element name is usually the operation name.
+
+      op_type <- types[[op_name]]
+
+      if (!is.null(op_type) && op_type$kind == "complex") {
+        # Elements of the wrapper are the arguments
+        args_vec <- c()
+        validations <- c()
+
+        process_arg <- function(elem_name, elem_def) {
+          type_name <- elem_def$type
+          type_def <- types[[type_name]]
+
+          is_enum <- FALSE
+          choices_vec <- ""
+
+          if (
+            !is.null(type_def) &&
+              type_def$kind == "simple" &&
+              !is.null(type_def$values)
+          ) {
+            is_enum <- TRUE
+            vals_str <- paste(
+              sprintf('"%s"', type_def$values),
+              collapse = ", "
+            )
+            choices_vec <- sprintf("c(%s)", vals_str)
+          }
+
+          # Check optionality
+          is_optional <- TRUE
+          if (
+            !is.null(elem_def$use) &&
+              !is.na(elem_def$use) &&
+              elem_def$use == "required"
+          ) {
+            is_optional <- FALSE
+          }
+          if (
+            !is.null(elem_def$minOccurs) &&
+              !is.na(elem_def$minOccurs) &&
+              as.integer(elem_def$minOccurs) > 0
+          ) {
+            is_optional <- FALSE
+          }
+
+          default_val <- if (is_optional) "NA" else ""
+
+          arg_str <- elem_name
+          if (default_val != "") {
+            arg_str <- paste0(elem_name, " = ", default_val)
+          }
+
+          # Validation
+          if (is_enum) {
+            if (is_optional) {
+              validations <<- c(
+                validations,
+                sprintf(
+                  "if (!is.na(%s)) %s <- match.arg(%s, %s)",
+                  elem_name,
+                  elem_name,
+                  elem_name,
+                  choices_vec
+                )
+              )
+            } else {
+              validations <<- c(
+                validations,
+                sprintf(
+                  "%s <- match.arg(%s, %s)",
+                  elem_name,
+                  elem_name,
+                  choices_vec
+                )
+              )
+            }
+          }
+
+          p_doc <- elem_def$documentation %||% paste(elem_name)
+
+          list(
+            str = arg_str,
+            name = elem_name,
+            doc = paste0(elem_name, " ", p_doc),
+            assignment = sprintf("args[['%s']] <- %s", elem_name, elem_name)
+          )
+        }
+
+        arg_objs <- purrr::imap(op_type$elements, function(e, n) {
+          process_arg(n, e)
+        })
+
+        args_str <- paste(purrr::map_chr(arg_objs, "str"), collapse = ", ")
+        param_docs <- unname(purrr::map_chr(arg_objs, "doc"))
+        arg_assignments <- unname(purrr::map_chr(arg_objs, "assignment"))
+
+        list(
+          args = args_str,
+          param_docs = param_docs,
+          validation_code = if (length(validations) > 0) {
+            paste(validations, collapse = "\n      ")
+          } else {
+            NULL
+          },
+          arg_assignments = arg_assignments,
+          arg_validations = unname(validations)
+        )
+      } else {
+        # Fallback
+        list(
+          args = "...",
+          param_docs = NULL,
+          validation_code = NULL,
+          arg_assignments = NULL,
+          arg_validations = NULL
+        )
+      }
     }
   )
 )
