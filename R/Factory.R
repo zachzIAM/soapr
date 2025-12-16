@@ -22,8 +22,16 @@ Factory <- R6::R6Class(
     #' @description
     #' Create a new object of a given type.
     #' @param type_name The name of the type to create.
-    #' @return A list representing the object, or NULL if simple type.
-    create = function(type_name) {
+    #' @param ... Named arguments to initialize the object fields.
+    #' @return A list representing the object, or NA/default for simple type.
+    create = function(type_name, ...) {
+      args <- list(...)
+
+      # Handle standard XSD types if requested directly
+      if (grepl("^xsd:", type_name)) {
+        return(self$convert_builtin_type(NA, type_name))
+      }
+
       if (is.null(self$types[[type_name]])) {
         stop(paste("Type not found:", type_name))
       }
@@ -31,34 +39,119 @@ Factory <- R6::R6Class(
       type_def <- self$types[[type_name]]
 
       if (type_def$kind == "simple") {
-        return(NULL) # Or default value from enum?
+        # Check if we have a default value in the definition (rare for simpleType defs themselves, usually on element/attr)
+        # But for Enums (restrictions), we might just return NA or the first allowed value?
+        # Returning NA is safer to indicate "not set".
+        # We can use convert_builtin_type to get the NA of correct type (e.g. integer)
+        base <- type_def$base %||% "xsd:string"
+        return(self$convert_builtin_type(NA, base))
       }
 
       obj <- list()
 
       # Add attributes
       for (attr_name in names(type_def$attributes)) {
-        # We can use a prefix or just document that these are attributes
-        # For now, let's just add them as NA so they show up in the list
-        obj[[attr_name]] <- NA
+        attr_def <- type_def$attributes[[attr_name]]
+
+        # Check initialization args
+        if (!is.null(args[[attr_name]])) {
+          obj[[attr_name]] <- args[[attr_name]]
+        } else {
+          # Check default
+          # Use 'default' or 'fixed' attribute from XSD? WSDLParser might name it 'default'.
+          default_val <- attr_def$default
+          if (!is.null(default_val)) {
+            # Convert default string to proper type
+            obj[[attr_name]] <- self$convert_builtin_type(default_val, attr_def$type)
+          } else {
+            obj[[attr_name]] <- NA
+          }
+        }
       }
 
       # Add elements
       for (elem_name in names(type_def$elements)) {
         elem_def <- type_def$elements[[elem_name]]
 
-        # Check if it's a complex type that needs recursion
-        # Be careful with infinite recursion if types refer to themselves
-        # For now, we'll just set it to NA or a list if maxOccurs > 1
-
-        if (!is.na(elem_def$maxOccurs) && elem_def$maxOccurs == "unbounded") {
-          obj[[elem_name]] <- list()
+        # Check initialization args
+        if (!is.null(args[[elem_name]])) {
+          obj[[elem_name]] <- args[[elem_name]]
         } else {
-          obj[[elem_name]] <- NA
+          # Check default
+          default_val <- elem_def$default
+
+          if (!is.null(default_val)) {
+            obj[[elem_name]] <- self$convert_builtin_type(default_val, elem_def$type)
+          } else if (!is.na(elem_def$maxOccurs) && elem_def$maxOccurs == "unbounded") {
+            obj[[elem_name]] <- list()
+          } else {
+            obj[[elem_name]] <- NA
+          }
         }
       }
 
       # Add class and type attribute
+      class(obj) <- c("soap_object", "list")
+      attr(obj, "soap_type") <- type_name
+      attr(obj, "soap_attrs") <- names(type_def$attributes)
+
+      return(obj)
+    },
+
+    #' @description
+    #' Convert a list to a SOAP object of a given type.
+    #' @param data The list to convert.
+    #' @param type_name The target type name.
+    #' @return The converted soap_object.
+    from_list = function(data, type_name) {
+      if (is.null(self$types[[type_name]])) {
+        stop(paste("Type not found:", type_name))
+      }
+
+      type_def <- self$types[[type_name]]
+
+      if (type_def$kind == "simple") {
+        # Assuming data is a scalar, just convert
+        base <- type_def$base %||% "xsd:string"
+        return(self$convert_builtin_type(data, base))
+      }
+
+      obj <- data
+
+      # Ensure all defined fields exist (fill with defaults/NA if missing)
+      # Or should we trust the input list?
+      # A safe "cast" should probably ensure structure matches.
+
+      # 1. Attributes
+      for (attr_name in names(type_def$attributes)) {
+        if (is.null(obj[[attr_name]])) {
+          # Check default
+          attr_def <- type_def$attributes[[attr_name]]
+          default_val <- attr_def$default
+          if (!is.null(default_val)) {
+            obj[[attr_name]] <- self$convert_builtin_type(default_val, attr_def$type)
+          } else {
+            obj[[attr_name]] <- NA
+          }
+        }
+      }
+
+      # 2. Elements
+      for (elem_name in names(type_def$elements)) {
+        if (is.null(obj[[elem_name]])) {
+          elem_def <- type_def$elements[[elem_name]]
+          default_val <- elem_def$default
+
+          if (!is.null(default_val)) {
+            obj[[elem_name]] <- self$convert_builtin_type(default_val, elem_def$type)
+          } else if (!is.na(elem_def$maxOccurs) && elem_def$maxOccurs == "unbounded") {
+            obj[[elem_name]] <- list()
+          } else {
+            obj[[elem_name]] <- NA
+          }
+        }
+      }
+
       class(obj) <- c("soap_object", "list")
       attr(obj, "soap_type") <- type_name
       attr(obj, "soap_attrs") <- names(type_def$attributes)
@@ -169,17 +262,20 @@ Factory <- R6::R6Class(
     #' @return The converted value.
     convert_builtin_type = function(val, type_name) {
       if (is.list(val)) {
-        # If it's a list, it might be a complex structure that we don't have a definition for.
-        # Or it's a list of values.
-        # For now, just return as is.
-        return(val)
+        # If it's a list and we expect a primitive, try to unlist
+        local_type <- gsub("^.*:", "", type_name)
+        if (local_type %in% c("int", "integer", "long", "short", "byte", "decimal", "float", "double", "boolean", "string")) {
+          val <- unlist(val)
+        } else {
+          # Complex structure or unknown type
+          return(val)
+        }
       }
 
       # Strip namespace prefix if present
       local_type <- gsub("^.*:", "", type_name)
 
-      switch(
-        local_type,
+      switch(local_type,
         "int" = as.integer(val),
         "integer" = as.integer(val),
         "long" = bit64::as.integer64(val),
