@@ -338,6 +338,7 @@ Generator <- R6::R6Class(
               param_docs = param_docs,
               args = args,
               attr_names = attr_names,
+              has_attrs = !is.null(attr_names),
               body = body,
               validation_code = validation_code
             )
@@ -434,7 +435,6 @@ Generator <- R6::R6Class(
         services_meta = services_meta_dump
       )
     },
-
     process_operation_args = function(op_name, op_def, types) {
       # Arguments
       # We need to look up input message -> part -> element -> complexType
