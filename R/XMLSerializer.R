@@ -17,16 +17,20 @@ XMLSerializer <- R6::R6Class(
     attribute_form_default = "unqualified",
     #' @field target_namespace The target namespace.
     target_namespace = NULL,
+    #' @field target_namespace_prefix The prefix for target namespace (default "tns").
+    target_namespace_prefix = "tns",
 
     #' @description
     #' Initialize the XMLSerializer.
     #' @param element_form_default The elementFormDefault value.
     #' @param attribute_form_default The attributeFormDefault value.
     #' @param target_namespace The target namespace.
-    initialize = function(element_form_default = "unqualified", attribute_form_default = "unqualified", target_namespace = NULL) {
+    #' @param target_namespace_prefix The prefix for target namespace.
+    initialize = function(element_form_default = "unqualified", attribute_form_default = "unqualified", target_namespace = NULL, target_namespace_prefix = "tns") {
       self$element_form_default <- element_form_default
       self$attribute_form_default <- attribute_form_default
       self$target_namespace <- target_namespace
+      self$target_namespace_prefix <- target_namespace_prefix
     },
 
     #' @description
@@ -87,10 +91,8 @@ XMLSerializer <- R6::R6Class(
               # Check attribute qualification
               full_attr_name <- attr_name
               if (self$attribute_form_default == "qualified") {
-                # We'd need to prefix it, but xml_attr needs qname.
-                # Assuming name doesn't have prefix.
-                # For now, leaving as-is unless we implement prefix lookups.
-                # BUT gSOAP case is "unqualified", so current code works for this task.
+                # Prefix with target namespace prefix
+                full_attr_name <- paste0(self$target_namespace_prefix, ":", attr_name)
               }
               xml2::xml_attr(node, full_attr_name) <- as.character(attr_val)
             }
