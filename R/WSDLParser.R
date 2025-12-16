@@ -320,6 +320,7 @@ WSDLParser <- R6::R6Class(
             name = name,
             type = self$strip_ns(xml2::xml_attr(a, "type")),
             use = xml2::xml_attr(a, "use"),
+            default = xml2::xml_attr(a, "default"),
             documentation = self$parse_documentation(a)
           )
         }
@@ -380,6 +381,7 @@ WSDLParser <- R6::R6Class(
             type = type,
             minOccurs = xml2::xml_attr(e, "minOccurs"),
             maxOccurs = xml2::xml_attr(e, "maxOccurs"),
+            default = xml2::xml_attr(e, "default"),
             documentation = self$parse_documentation(e)
           )
         }
