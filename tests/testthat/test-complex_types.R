@@ -28,8 +28,8 @@ test_that("Complex types are parsed and generated correctly", {
     expect_true(grepl('PortfolioCurrency="USD"', body))
     # No tns: prefix anymore
     expect_true(
-      grepl('<MID ID="AAPL" IDType="TICKER"/>', body) ||
-        grepl('<MID ID="AAPL" IDType="TICKER" />', body)
+      grepl('<MID [^>]*ID="AAPL" IDType="TICKER"[^>]*/>', body) ||
+        grepl('<MID [^>]*ID="AAPL" IDType="TICKER"[^>]* />', body)
     )
 
     structure(

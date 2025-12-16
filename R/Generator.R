@@ -363,17 +363,27 @@ Generator <- R6::R6Class(
     },
     get_detached_docs_view_model = function() {
       # We need to find a service and port
+      # Collect all operations from all ports
+      all_ops <- list()
       services <- self$wsdl$get_services()
-      service <- services[[1]] # TODO handle cases with multiple services
-      port <- service$ports[[1]] # TODO handle cases with multiple ports
 
-      ops <- self$wsdl$get_operations(port$binding)
+      for (svc in services) {
+        for (port in svc$ports) {
+          ops <- self$wsdl$get_operations(port$binding)
+          for (op_name in names(ops)) {
+            if (is.null(all_ops[[op_name]])) {
+              all_ops[[op_name]] <- ops[[op_name]]
+            }
+          }
+        }
+      }
+
       types <- self$wsdl$get_type_definitions() # Added to fix missing variable error
 
       # We want to generate Roxygen documentation for each operation
       # But independent of the client class (so users can read help easily)
 
-      op_list <- purrr::imap(ops, function(op, name) {
+      op_list <- purrr::imap(all_ops, function(op, name) {
         doc <- op$documentation %||% paste("Calling operation", name)
 
         args_info <- private$process_operation_args(name, op, types)
@@ -395,11 +405,20 @@ Generator <- R6::R6Class(
       list(detached_docs = op_list)
     },
     get_client_view_model = function() {
+      # Collect all operations from all ports
+      all_ops <- list()
       services <- self$wsdl$get_services()
-      service <- services[[1]] # TODO handle multiple services
-      port <- service$ports[[1]] # TODO handle multiple ports
 
-      ops <- self$wsdl$get_operations(port$binding)
+      for (svc in services) {
+        for (port in svc$ports) {
+          ops <- self$wsdl$get_operations(port$binding)
+          for (op_name in names(ops)) {
+            if (is.null(all_ops[[op_name]])) {
+              all_ops[[op_name]] <- ops[[op_name]]
+            }
+          }
+        }
+      }
       types <- self$wsdl$get_type_definitions()
       tns <- self$wsdl$get_target_namespace()
       services_meta <- self$wsdl$get_services()
@@ -408,7 +427,7 @@ Generator <- R6::R6Class(
         collapse = " "
       )
 
-      op_list <- purrr::imap(ops, function(op, name) {
+      op_list <- purrr::imap(all_ops, function(op, name) {
         doc <- op$documentation %||% paste("Call operation", name)
 
         args_info <- private$process_operation_args(name, op, types)

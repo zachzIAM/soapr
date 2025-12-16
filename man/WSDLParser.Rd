@@ -21,8 +21,6 @@ Parses a WSDL file to extract services, ports, operations, and types.
 \item{\code{element_form_default}}{The elementFormDefault value (qualified/unqualified).}
 
 \item{\code{attribute_form_default}}{The attributeFormDefault value (qualified/unqualified).}
-
-\item{\code{customizations}}{List of customization options.}
 }
 \if{html}{\out{</div>}}
 }
@@ -51,15 +49,13 @@ Parses a WSDL file to extract services, ports, operations, and types.
 \subsection{Method \code{new()}}{
 Initialize the WSDLParser.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{WSDLParser$new(path_or_url, customizations = list())}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{WSDLParser$new(path_or_url)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
 \item{\code{path_or_url}}{Path or URL to the WSDL file.}
-
-\item{\code{customizations}}{List of customization options.}
 }
 \if{html}{\out{</div>}}
 }

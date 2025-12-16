@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wsdl:definitions xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
+                  xmlns:tns="http://example.org/"
+                  xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
+                  xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+                  targetNamespace="http://example.org/">
+
+    <wsdl:types>
+        <xsd:schema targetNamespace="http://example.org/">
+            <xsd:element name="OpRequest" type="xsd:string"/>
+            <xsd:element name="OpResponse" type="xsd:string"/>
+        </xsd:schema>
+    </wsdl:types>
+
+    <wsdl:message name="OpAMessage">
+        <wsdl:part name="parameters" element="tns:OpRequest"/>
+    </wsdl:message>
+    <wsdl:message name="OpAOutput">
+        <wsdl:part name="parameters" element="tns:OpResponse"/>
+    </wsdl:message>
+    
+    <wsdl:message name="OpBMessage">
+        <wsdl:part name="parameters" element="tns:OpRequest"/>
+    </wsdl:message>
+    <wsdl:message name="OpBOutput">
+        <wsdl:part name="parameters" element="tns:OpResponse"/>
+    </wsdl:message>
+
+    <wsdl:portType name="PortTypeA">
+        <wsdl:operation name="OpA">
+            <wsdl:input message="tns:OpAMessage"/>
+            <wsdl:output message="tns:OpAOutput"/>
+        </wsdl:operation>
+    </wsdl:portType>
+
+    <wsdl:portType name="PortTypeB">
+        <wsdl:operation name="OpB">
+            <wsdl:input message="tns:OpBMessage"/>
+            <wsdl:output message="tns:OpBOutput"/>
+        </wsdl:operation>
+    </wsdl:portType>
+
+    <wsdl:binding name="BindingA" type="tns:PortTypeA">
+        <soap:binding transport="http://schemas.xmlsoap.org/soap/http"/>
+        <wsdl:operation name="OpA">
+            <soap:operation soapAction="OpA"/>
+            <wsdl:input><soap:body use="literal"/></wsdl:input>
+            <wsdl:output><soap:body use="literal"/></wsdl:output>
+        </wsdl:operation>
+    </wsdl:binding>
+
+    <wsdl:binding name="BindingB" type="tns:PortTypeB">
+        <soap:binding transport="http://schemas.xmlsoap.org/soap/http"/>
+        <wsdl:operation name="OpB">
+            <soap:operation soapAction="OpB"/>
+            <wsdl:input><soap:body use="literal"/></wsdl:input>
+            <wsdl:output><soap:body use="literal"/></wsdl:output>
+        </wsdl:operation>
+    </wsdl:binding>
+
+    <wsdl:service name="ServiceA">
+        <wsdl:port name="PortA" binding="tns:BindingA">
+            <soap:address location="http://example.org/A"/>
+        </wsdl:port>
+    </wsdl:service>
+
+    <wsdl:service name="ServiceB">
+        <wsdl:port name="PortB" binding="tns:BindingB">
+            <soap:address location="http://example.org/B"/>
+        </wsdl:port>
+    </wsdl:service>
+
+</wsdl:definitions>
