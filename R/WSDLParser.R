@@ -211,12 +211,21 @@ WSDLParser <- R6::R6Class(
         input_msg <- self$strip_ns(xml2::xml_attr(input, "message"))
         output_msg <- self$strip_ns(xml2::xml_attr(output, "message"))
 
-        # Validate messages exist
+        input_element <- NULL
         if (!is.na(input_msg)) {
           msg_xpath <- sprintf("//wsdl:message[@name='%s']", input_msg)
           msg_node <- xml2::xml_find_first(self$doc, msg_xpath, self$ns)
           if (is_xml_missing(msg_node)) {
             stop(sprintf("Message '%s' not found in WSDL", input_msg))
+          }
+          # Try to find part 'parameters' (Doc/Lit Wrapped) or first part
+          part <- xml2::xml_find_first(msg_node, "./wsdl:part[@name='parameters']", self$ns)
+          if (is_xml_missing(part)) {
+            part <- xml2::xml_find_first(msg_node, "./wsdl:part", self$ns)
+          }
+
+          if (!is_xml_missing(part)) {
+            input_element <- self$strip_ns(xml2::xml_attr(part, "element"))
           }
         }
         if (!is.na(output_msg)) {
@@ -234,6 +243,7 @@ WSDLParser <- R6::R6Class(
           name = op_name,
           action = ops_meta[[op_name]]$action,
           input_message = input_msg,
+          input_element = input_element,
           output_message = output_msg,
           documentation = doc
         )

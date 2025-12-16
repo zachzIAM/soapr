@@ -459,7 +459,9 @@ Generator <- R6::R6Class(
       # We need to look up input message -> part -> element -> complexType
       # For Document/Literal Wrapped, the input element name is usually the operation name.
 
-      op_type <- types[[op_name]]
+      # Use input element if extracted by parser, otherwise fallback to operation name
+      type_name <- op_def$input_element %||% op_name
+      op_type <- types[[type_name]]
 
       if (!is.null(op_type) && op_type$kind == "complex") {
         # Elements of the wrapper are the arguments
@@ -569,7 +571,7 @@ Generator <- R6::R6Class(
         # Fallback
         list(
           args = "...",
-          param_docs = NULL,
+          param_docs = c("... Additional arguments."),
           validation_code = NULL,
           arg_assignments = NULL,
           arg_validations = NULL
