@@ -80,13 +80,13 @@ while (!status$StatusResponse$IsDone) {
   status <- client$CheckRequestStatus(status$StatusResponse$RequestId)
 }
 
-client$GetCurrentSettings(InclSessionOverride = "true") |>
+client$GetCurrentSettings(InclSessionOverride = TRUE) |>
   purrr::map(~rbindlist(purrr::map(.x, as.data.table))) |>
   rbindlist(fill = TRUE) # benchmark is correct
 
 
 client$GetCurrentSessionModel()
-client$SetModel(tf$Model(Name = "MAC.XL", Owner = "SYSTEM"))
+client$SetModel(tf$Model(Name = "MAC.XL", Owner = "SYSTEM"))a
 client$GetCurrentSessionModel() # I am able to change the model although it sets it to MAC.L instead of MAC.XL???
 client$SetModel(tf$Model(Name = "GEMLTL", Owner = "SYSTEM"))
 client$GetCurrentSessionModel() # NOT CHANGED! still MAC.L
@@ -96,11 +96,12 @@ client$GetCurrentSessionModel() # NOT CHANGED! still MAC.L
 settings <- tf$CurrentSettings(Benchmark = "MSCIJPND", BenchmarkOwner = "SYSTEM")
 client$SetCurrentSettings(CurrentSettings = settings)
 
-client$GetCurrentSettings() |>
+client$GetCurrentSettings(FALSE) |>
   purrr::map(~rbindlist(purrr::map(.x, as.data.table))) |>
   rbindlist(fill = TRUE) # benchmark has not been changed
 
-client$GetCurrentSettings(InclSessionOverride = "true") |>
+
+client$GetCurrentSettings(InclSessionOverride = TRUE) |>
   purrr::map(~rbindlist(purrr::map(.x, as.data.table))) |>
   rbindlist(fill = TRUE) # benchmark has not been changed
 

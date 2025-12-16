@@ -104,7 +104,12 @@ client$SetCurrentSettings(CurrentSettings = settings)  # SOAP Fault: [S:Server] 
 
 # use existing portfolio ----------------------------------------------------------------------
 
-client$SetCurrentPortfolio(PortfolioName = "FOGGEQUI", PortfolioOwner = "InvestecAd")
+status <- client$SetCurrentPortfolio(PortfolioName = "FOGGEQUI", PortfolioOwner = "InvestecAd")
+while (!status$StatusResponse$IsDone) {
+  Sys.sleep(1)
+  status <- client$CheckRequestStatus(RequestId = status$StatusResponse$RequestId)
+}
+
 client$GetCurrentSettings() |>
   purrr::map(~rbindlist(purrr::map(.x, as.data.table))) |>
   rbindlist(fill = TRUE)
@@ -122,9 +127,9 @@ settings$Benchmark <- "MSCIJPND"
 settings$BenchmarkOwner <- "SYSTEM"
 
 client$SetCurrentSettings(CurrentSettings = settings)
-client$GetCurrentSettings(InclSessionOverride = "true") |>
-  purrr::map(~rbindlist(purrr::map(.x, as.data.table))) |>
-  rbindlist(fill = TRUE)  # INCORRECT Benchmark has remained MSAWIF_AD
+client$GetCurrentSettings(InclSessionOverride = TRUE) |>
+  purrr::map(~data.table::rbindlist(purrr::map(.x, data.table::as.data.table))) |>
+  data.table::rbindlist(fill = TRUE)  # INCORRECT Benchmark has remained MSAWIF_AD
 
 client$SetCurrentSettingsKeyVal(CurrentSettings = settings) # SOAP Fault: [S:Server] Entity References are not allowed in SOAP documents
 
