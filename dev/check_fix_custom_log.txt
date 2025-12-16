@@ -1,0 +1,25 @@
+list()
+attr(,"class")
+[1] "soap_object" "list"       
+attr(,"soap_type")
+[1] "LoginResponse"
+$RejectedAsset
+list()
+
+attr(,"class")
+[1] "soap_object" "list"       
+attr(,"soap_type")
+[1] "SetAdHocPortfolioResponse"
+
+--- Testing SetCurrentSettings (With Customizations) ---
+Error caught:
+<simpleError: SOAP Fault: [S:Server] java.lang.NullPointerException: Cannot invoke "com.barra.cp.bdti.CurrentSettings.getBenchmark()" because "cs" is null>
+
+--- Checking Values ---
+Benchmark: CASH 
+BaseCurrency: USD 
+list()
+attr(,"class")
+[1] "soap_object" "list"       
+attr(,"soap_type")
+[1] "LogoutResponse"

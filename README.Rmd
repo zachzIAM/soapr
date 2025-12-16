@@ -115,7 +115,7 @@ client$GetReportColumnName(ReportName = "Positions")
 Add WS-Security headers easily.
 
 ```r
-header <- WSSecurity$new(username = "myuser", password = "mypassword")
+header <- WSSecurity$new()$username_token(username = "myuser", password = "mypassword")
 client$add_header(header)
 ```
 

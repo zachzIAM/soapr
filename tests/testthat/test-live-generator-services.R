@@ -3,7 +3,6 @@ library(soapr)
 skip_on_ci()
 
 test_that("Static Client Generator works with Live Services", {
-
   services <- list(
     list(
       name = "CalculatorClient",
@@ -33,11 +32,15 @@ test_that("Static Client Generator works with Live Services", {
     message("Testing generator with: ", service$name)
 
     # Generate package
-    expect_error({
-      wsdl <- WSDLParser$new(service$url)
-      gen <- Generator$new(wsdl)
-      gen$generate_package(temp_dir, service$name)
-    }, NA, info = paste("Failed to generate package for", service$name))
+    expect_error(
+      {
+        wsdl <- WSDLParser$new(service$url)
+        gen <- Generator$new(wsdl)
+        gen$generate_package(temp_dir, service$name)
+      },
+      NA,
+      info = paste("Failed to generate package for", service$name)
+    )
 
     pkg_path <- file.path(temp_dir, service$name)
 
@@ -78,6 +81,7 @@ test_that("Static Client Generator works with Live Services", {
       "TypeFactory",
       where = as.environment(paste0("package:", service$name))
     ))
-  }
 
+    pkgload::unload(service$name)
+  }
 })

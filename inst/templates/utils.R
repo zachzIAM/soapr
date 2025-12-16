@@ -15,9 +15,26 @@ build_xml_node <- function(parent, name, value) {
   }
 
   # Create node
-  # Check if name is namespaced
-  node_name <- if (grepl(":", name)) name else paste0("tns:", name)
-  child <- xml2::xml_add_child(parent, node_name)
+  # Create node
+  # Handle namespaces based on elementFormDefault
+  element_form_default <- "{{{element_form_default}}}"
+
+  if (element_form_default == "qualified") {
+    node_name <- if (grepl(":", name)) name else paste0("tns:", name)
+    child <- xml2::xml_add_child(parent, node_name)
+  } else {
+    # Unqualified
+    # If parent has a default namespace, we must explicitly unset it for the child
+    # to ensure it is in no namespace.
+    node_name <- name
+    child <- xml2::xml_add_child(parent, node_name)
+
+    # Check if parent has default namespace
+    parent_ns <- xml2::xml_attr(parent, "xmlns")
+    if (!is.na(parent_ns) && parent_ns != "") {
+      xml2::xml_attr(child, "xmlns") <- ""
+    }
+  }
 
   if (is.list(value)) {
     soap_attrs <- attr(value, "soap_attrs")
@@ -33,7 +50,8 @@ build_xml_node <- function(parent, name, value) {
       }
     }
   } else {
-    xml2::xml_set_text(child, as.character(value))
+    val_str <- if (is.logical(value)) tolower(as.character(value)) else as.character(value)
+    xml2::xml_set_text(child, val_str)
   }
 }
 
@@ -72,19 +90,19 @@ handle_fault <- function(response) {
   )
 
   # Check for SOAP 1.2 Fault
-  if (inherits(fault_node, "xml_missing")) {
+  if (is_xml_missing(fault_node)) {
     fault_node <- tryCatch(
       xml2::xml_find_first(doc, ".//env:Fault", ns),
       warning = function(w) xml2::xml_missing()
     )
   }
 
-  if (inherits(fault_node, "xml_missing")) {
+  if (is_xml_missing(fault_node)) {
     # Fallback for when prefix is different but local name is Fault
     fault_node <- xml2::xml_find_first(doc, ".//*[local-name()='Fault']")
   }
 
-  if (!inherits(fault_node, "xml_missing")) {
+  if (!is_xml_missing(fault_node)) {
     # Extract Fault Code
     fault_code <- xml2::xml_text(xml2::xml_find_first(
       fault_node,
@@ -125,7 +143,7 @@ convert_builtin_type <- function(val, type_name) {
   switch(local_type,
     "int" = as.integer(val),
     "integer" = as.integer(val),
-    "long" = as.numeric(val),
+    "long" = bit64::as.integer64(val),
     "short" = as.integer(val),
     "byte" = as.integer(val),
     "decimal" = as.numeric(val),
@@ -212,4 +230,8 @@ deserialize <- function(node, type_name, schema) {
   attr(obj, "soap_attrs") <- names(type_def$attributes)
 
   return(obj)
+}
+
+is_xml_missing <- function(node) {
+  return(inherits(node, "xml_missing"))
 }

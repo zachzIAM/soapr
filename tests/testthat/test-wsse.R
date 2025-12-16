@@ -48,7 +48,7 @@ test_that("WS-Security Header Generation", {
   client <- Client$new(wsdl, port, factory, transport = mock_transport)
 
   # Add WSSE Header
-  wsse <- wss_username_token("testuser", "secret123")
+  wsse <- WSSecurity$new()$username_token("testuser", "secret123")
   client$add_header(wsse)
 
   # Call an operation

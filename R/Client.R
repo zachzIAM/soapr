@@ -35,13 +35,11 @@ Client <- R6::R6Class(
     #' @param factory A TypeFactory instance (optional).
     #' @param transport A function to handle the HTTP request (default: httr::POST).
     #' @param verbose Logical, whether to print debug info (default: FALSE).
-    initialize = function(
-      wsdl,
-      port_def = NULL,
-      factory = NULL,
-      transport = httr::POST,
-      verbose = FALSE
-    ) {
+    initialize = function(wsdl,
+                          port_def = NULL,
+                          factory = NULL,
+                          transport = httr::POST,
+                          verbose = FALSE) {
       self$wsdl <- wsdl
       if (is.null(port_def)) {
         # Default to first port of first service
@@ -58,7 +56,11 @@ Client <- R6::R6Class(
       self$verbose <- verbose
       self$handle <- httr::handle(self$port_def$location)
       self$operations <- self$wsdl$get_operations(self$port_def$binding)
-      self$serializer <- XMLSerializer$new()
+      self$serializer <- XMLSerializer$new(
+        element_form_default = self$wsdl$element_form_default,
+        attribute_form_default = self$wsdl$attribute_form_default,
+        target_namespace = self$target_namespace
+      )
       self$transport <- transport
       self$headers <- list()
 
@@ -119,7 +121,24 @@ Client <- R6::R6Class(
 
       # For now, we assume args match the expected structure
       for (arg_name in names(args)) {
-        # Validate Enums
+        if (
+          is.list(args[[arg_name]]) &&
+            !inherits(args[[arg_name]], "soap_object") &&
+            !is.null(self$factory$types[[arg_name]])
+        ) {
+          # Attempt coercion to soap_object
+          obj <- self$factory$create(arg_name)
+          input_list <- args[[arg_name]]
+
+          # Copy values
+          for (n in names(input_list)) {
+            obj[[n]] <- input_list[[n]]
+          }
+          # Replace argument with coerced object
+          args[[arg_name]] <- obj
+        }
+
+        # Validate Enums (Existing logic...)
         # Find the element definition for this argument
         # The operation input message name is op$input_message
         # We need to find the message part, then the element, then the type.
@@ -162,9 +181,6 @@ Client <- R6::R6Class(
         } else {
           # It might be an element that refers to a simpleType
           # In our parser, elements that define types are in the types list.
-          # If the element has a 'type' attribute, we need to look that up.
-          # Our parser structure for elements in `get_type_definitions` is:
-          # types[[name]] <- parse_complex_type(ct)
           # This only covers elements that have INLINE complexTypes.
 
           # If an element refers to a named simpleType, it might not be in the top-level types list as an element.
@@ -281,13 +297,10 @@ Client <- R6::R6Class(
           self$serializer$deserialize_response(response)
         },
         error = function(e) {
-          cat(
-            "Deserialization error:",
-            e$message,
-            "\n",
-            file = "/tmp/soapr_debug.log",
-            append = TRUE
-          )
+          logfile <- file.path(tempdir(), "soap_debug.log")
+          msg <- sprintf("Deserialization error: %s\n", e$message)
+          cat(msg, file = logfile, append = TRUE)
+          warning(sprintf("%sSee log %s", msg, logfile))
           # If not XML, let httr handle the status
           return(NULL)
         }
@@ -310,19 +323,19 @@ Client <- R6::R6Class(
       )
 
       # Check for SOAP 1.2 Fault
-      if (inherits(fault_node, "xml_missing")) {
+      if (is_xml_missing(fault_node)) {
         fault_node <- tryCatch(
           xml2::xml_find_first(doc, ".//env:Fault", ns),
           warning = function(w) xml2::xml_missing()
         )
       }
 
-      if (inherits(fault_node, "xml_missing")) {
+      if (is_xml_missing(fault_node)) {
         # Fallback for when prefix is different but local name is Fault
         fault_node <- xml2::xml_find_first(doc, ".//*[local-name()='Fault']")
       }
 
-      if (!inherits(fault_node, "xml_missing")) {
+      if (!is_xml_missing(fault_node)) {
         # Extract Fault Code
         fault_code <- xml2::xml_text(xml2::xml_find_first(
           fault_node,

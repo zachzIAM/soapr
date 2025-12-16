@@ -12,6 +12,7 @@ TypeFactory <- R6::R6Class(
     #' @param {{{.}}}
     {{/param_docs}}
     {{{name}}} = function({{{args}}}) {
+      {{{validation_code}}}
       obj <- {{{body}}}
       class(obj) <- c("soap_object", "list")
       attr(obj, "soap_type") <- "{{{name}}}"

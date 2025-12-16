@@ -1,0 +1,17 @@
+Loading required package: httr
+Tracing function "POST" in package "httr"
+[1] "POST"
+Warning message:
+package 'httr' was built under R version 4.3.3 
+1. Logging in...
+[1] "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\n  <soap:Body>\n    <Login xmlns=\"http://barra.com/cp/bdti\">\n      <User>iamquant</User>\n      <Client>kzdr85j9hv</Client>\n      <Password>TheCatSatOnTheMat99</Password>\n    </Login>\n  </soap:Body>\n</soap:Envelope>\n"
+list()
+attr(,"class")
+[1] "soap_object" "list"       
+attr(,"soap_type")
+[1] "LoginResponse"
+
+2. Calling SetCurrentSettings (Expect NPE, but capturing XML)...
+[1] "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\n  <soap:Body>\n    <SetCurrentSettings xmlns=\"http://barra.com/cp/bdti\">\n      <CurrentSettings>\n        <Benchmark>MSCIJPND</Benchmark>\n        <BenchmarkOwner>SYSTEM</BenchmarkOwner>\n      </CurrentSettings>\n    </SetCurrentSettings>\n  </soap:Body>\n</soap:Envelope>\n"
+Caught expected error:
+<simpleError: SOAP Fault: [S:Server] No session portfolio is selected. Use SetCurrentPortfolio method to select a portfolio or create AdHoc portfolio.>
