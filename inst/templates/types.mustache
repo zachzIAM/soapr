@@ -14,7 +14,9 @@ TypeFactory <- R6::R6Class(
     {{{name}}} = function({{{args}}}) {
       {{{validation_code}}}
       obj <- {{{body}}}
+      {{#is_complex}}
       class(obj) <- c("soap_object", "list")
+      {{/is_complex}}
       attr(obj, "soap_type") <- "{{{name}}}"
       {{#has_attrs}}
       attr(obj, "soap_attrs") <- {{{attr_names}}}

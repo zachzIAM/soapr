@@ -340,8 +340,75 @@ Generator <- R6::R6Class(
               attr_names = attr_names,
               has_attrs = !is.null(attr_names),
               body = body,
-              validation_code = validation_code
+              validation_code = validation_code,
+              is_complex = TRUE
             )
+          } else if (.x$kind == "element") {
+            # Simple Element Type
+            # Generate a constructor-like function
+            # Argument: The element name
+
+            arg_name <- .x$name
+            doc_str <- .x$documentation %||% paste("Create", .y)
+
+            # Since it's a simple type (element wrapper), we just pass it through
+            # But we can add validation if we want, or just documentation.
+            # For consistency with complex types, we might wrap it or just return it?
+            # Existing Factory logic for simple types might expect just the value.
+
+            # Let's generate a method that takes the value.
+            # args: "OpRequest = NA"
+            # body: "OpRequest"
+
+            list(
+              name = .y,
+              doc = doc_str,
+              param_docs = c(paste(arg_name, "The value.")),
+              args = paste0(arg_name, " = NA"),
+              attr_names = NULL, # No complex attributes
+              has_attrs = FALSE,
+              body = arg_name,
+              validation_code = NULL,
+              is_complex = FALSE
+            )
+          } else if (.x$kind == "simple") {
+            # Enum / SimpleType with restriction
+            if (!is.null(.x$values)) {
+              arg_name <- .y # Use type name as arg name? or 'value'
+              # But we usually name arg same as Type if no other context.
+              # Let's use 'value'.
+              arg_name <- "value"
+
+              vals_str <- paste(
+                sprintf('"%s"', .x$values),
+                collapse = ", "
+              )
+              choices_vec <- sprintf("c(%s)", vals_str)
+
+              # Strict validation for factory
+              validation_code <- sprintf(
+                "%s <- match.arg(%s, %s)",
+                arg_name,
+                arg_name,
+                choices_vec
+              )
+
+              doc_str <- paste("Create Enum", .y)
+
+              list(
+                name = .y,
+                doc = doc_str,
+                param_docs = c(paste(arg_name, "One of:", vals_str)),
+                args = paste0(arg_name, " = NA"),
+                attr_names = NULL,
+                has_attrs = FALSE,
+                body = arg_name,
+                validation_code = validation_code,
+                is_complex = FALSE
+              )
+            } else {
+              NULL
+            }
           } else {
             NULL
           }
