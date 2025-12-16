@@ -23,12 +23,10 @@ Service <- R6::R6Class(
     #' @param service_name Name of the service to use (optional).
     #' @param port_name Name of the port to use (optional).
     #' @param verbose Logical, whether to print debug info.
-    initialize = function(
-      wsdl_path,
-      service_name = NULL,
-      port_name = NULL,
-      verbose = FALSE
-    ) {
+    initialize = function(wsdl_path,
+                          service_name = NULL,
+                          port_name = NULL,
+                          verbose = FALSE) {
       self$wsdl <- WSDLParser$new(wsdl_path)
 
       services <- self$wsdl$get_services()
@@ -97,7 +95,7 @@ Service <- R6::R6Class(
     #' List all available services.
     #' @return A character vector of service names.
     list_services = function() {
-      sapply(self$wsdl$get_services(), function(x) x$name)
+      unname(sapply(self$wsdl$get_services(), function(x) x$name))
     },
 
     #' @description
@@ -107,7 +105,7 @@ Service <- R6::R6Class(
       services <- self$wsdl$get_services()
       for (svc in services) {
         if (svc$name == self$service_name) {
-          return(sapply(svc$ports, function(x) x$name))
+          return(unname(sapply(svc$ports, function(x) x$name)))
         }
       }
       return(character(0))
