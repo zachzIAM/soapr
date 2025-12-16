@@ -50,7 +50,8 @@ build_xml_node <- function(parent, name, value) {
       }
     }
   } else {
-    xml2::xml_set_text(child, as.character(value))
+    val_str <- if (is.logical(value)) tolower(as.character(value)) else as.character(value)
+    xml2::xml_set_text(child, val_str)
   }
 }
 
