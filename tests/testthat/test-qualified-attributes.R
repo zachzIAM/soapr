@@ -14,6 +14,9 @@ test_that("XMLSerializer handles qualified attributes", {
                     elementFormDefault="qualified"
                     attributeFormDefault="qualified">
             <xsd:complexType name="QualifiedType">
+                <xsd:sequence>
+                    <xsd:element name="Elem1" type="xsd:string"/>
+                </xsd:sequence>
                 <xsd:attribute name="Attr1" type="xsd:string"/>
             </xsd:complexType>
         </xsd:schema>
@@ -37,26 +40,24 @@ test_that("XMLSerializer handles qualified attributes", {
     factory <- service$factory
 
     # Create object
-    obj <- factory$create("QualifiedType", Attr1 = "Value1")
+    obj <- factory$create("QualifiedType", Attr1 = "Value1", Elem1 = "Val1")
 
     # Serialize
     serializer <- XMLSerializer$new(
         element_form_default = "qualified",
         attribute_form_default = "qualified",
-        target_namespace = "http://example.org/qualified"
+        target_namespace = "http://example.org/qualified",
+        target_namespace_prefix = "tns"
     )
 
     doc <- xml2::xml_new_root("root", "xmlns:tns" = "http://example.org/qualified")
     serializer$serialize(doc, "Obj", obj, ns = "http://example.org/qualified")
 
     # Check XML
-    # Expected: <tns:Obj tns:Attr1="Value1" xmlns:tns="...">...</tns:Obj>
-    # Note: xml2 might use a different prefix if tns is not mapped to tns prefix in the node internally,
-    # but since we defined xmlns:tns on root, using "tns:Attr1" should work if we construct it that way.
-
-    # However, XMLSerializer currently doesn't know the prefix 'tns'. It knows the URI.
-    # If we set attribute name to "tns:Attr1", xml2 resolves 'tns' against definitions.
+    # Expected: <tns:Obj tns:Attr1="Value1" ...><tns:Elem1>Val1</tns:Elem1></tns:Obj>
 
     xml_str <- as.character(doc)
-    expect_true(grepl('tns:Attr1="Value1"', xml_str) || grepl('ns.:Attr1="Value1"', xml_str))
+    expect_true(grepl('tns:Attr1="Value1"', xml_str))
+    # Elem1 is qualified via default namespace from Obj
+    expect_true(grepl("<Elem1>Val1</Elem1>", xml_str))
 })

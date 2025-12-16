@@ -54,15 +54,10 @@ XMLSerializer <- R6::R6Class(
 
       if (is.null(node_ns)) {
         if (self$element_form_default == "qualified") {
-          # If qualified, we must ensure the namespace is used.
-          # Typically we rely on the prefix derived from xmlns:p="targetNamespace"
-          # If we passed just "name", xml2 creates explicit xmlns="" if parent has xmlns="...".
-          # We need xml2 to reuse the prefix.
-          # Best way: Check if target_namespace is set, if so, use passing xmlns=target_namespace tells xml2 to use the prefix!
           if (!is.null(self$target_namespace)) {
             node_ns <- self$target_namespace
           } else {
-            node_ns <- NULL # Fallback to inherit (might result in unqualified if no default ns)
+            node_ns <- NULL
           }
         } else {
           node_ns <- "" # Unqualified - Explicitly remove namespace
