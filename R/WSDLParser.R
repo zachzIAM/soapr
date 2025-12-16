@@ -92,12 +92,16 @@ WSDLParser <- R6::R6Class(
     get_services = function() {
       # Find all service elements
       services <- xml2::xml_find_all(self$doc, "//wsdl:service", self$ns)
-      lapply(services, function(svc) {
+      res <- lapply(services, function(svc) {
         list(
           name = xml2::xml_attr(svc, "name"),
           ports = self$get_ports(svc)
         )
       })
+      if (length(res) > 0) {
+        names(res) <- vapply(res, "[[", character(1), "name")
+      }
+      return(res)
     },
 
     #' @description
@@ -106,13 +110,17 @@ WSDLParser <- R6::R6Class(
     #' @return A list of ports.
     get_ports = function(service_node) {
       ports <- xml2::xml_find_all(service_node, "./wsdl:port", self$ns)
-      lapply(ports, function(port) {
+      res <- lapply(ports, function(port) {
         list(
           name = xml2::xml_attr(port, "name"),
           binding = self$strip_ns(xml2::xml_attr(port, "binding")),
           location = self$get_port_location(port)
         )
       })
+      if (length(res) > 0) {
+        names(res) <- vapply(res, "[[", character(1), "name")
+      }
+      return(res)
     },
 
     #' @description
