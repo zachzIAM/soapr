@@ -309,6 +309,17 @@ WSDLParser <- R6::R6Class(
         ct <- xml2::xml_find_first(el, "./xsd:complexType", self$ns)
         if (!is_xml_missing(ct)) {
           types[[name]] <- self$parse_complex_type(ct)
+        } else {
+          # Check if it has a type attribute (Simple Element)
+          type_attr <- self$strip_ns(xml2::xml_attr(el, "type"))
+          if (!is.na(type_attr)) {
+            types[[name]] <- list(
+              kind = "element",
+              name = name,
+              type = type_attr,
+              documentation = self$parse_documentation(el)
+            )
+          }
         }
       }
 

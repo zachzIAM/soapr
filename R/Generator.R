@@ -567,6 +567,19 @@ Generator <- R6::R6Class(
           arg_assignments = arg_assignments,
           arg_validations = unname(validations)
         )
+      } else if (!is.null(op_type) && op_type$kind == "element") {
+        # Simple Element Wrapper
+        # The argument is the element itself
+        arg_name <- op_type$name
+        doc_text <- op_type$documentation %||% paste(arg_name)
+
+        list(
+          args = sprintf("%s = NA", arg_name),
+          param_docs = c(paste(arg_name, doc_text)),
+          validation_code = NULL,
+          arg_assignments = sprintf("args[['%s']] <- %s", arg_name, arg_name),
+          arg_validations = NULL
+        )
       } else {
         # Fallback
         list(
