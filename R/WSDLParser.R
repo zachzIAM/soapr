@@ -111,10 +111,12 @@ WSDLParser <- R6::R6Class(
     get_ports = function(service_node) {
       ports <- xml2::xml_find_all(service_node, "./wsdl:port", self$ns)
       res <- lapply(ports, function(port) {
+        binding_name <- self$strip_ns(xml2::xml_attr(port, "binding"))
         list(
           name = xml2::xml_attr(port, "name"),
-          binding = self$strip_ns(xml2::xml_attr(port, "binding")),
-          location = self$get_port_location(port)
+          binding = binding_name,
+          location = self$get_port_location(port),
+          operations = self$get_operations(binding_name)
         )
       })
       if (length(res) > 0) {
