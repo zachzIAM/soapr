@@ -215,6 +215,8 @@ Generator <- R6::R6Class(
             )
             body <- if (length(body) > 0) {
               paste(trimws(capture.output(dput(body))), collapse = " ")
+            } else {
+              "list()"
             }
 
             param_docs <- c(
@@ -222,7 +224,11 @@ Generator <- R6::R6Class(
               purrr::map_chr(elements_handling, ~ .x$param_doc)
             )
             param_docs <- purrr::set_names(param_docs, NULL)
-            param_docs <- if (length(param_docs) > 0) param_docs
+            param_docs_str <- if (length(param_docs) > 0) {
+              paste(sprintf("#' @param %s", param_docs), collapse = "\n    ")
+            } else {
+              ""
+            }
 
             # Fix attribute names: we want the names of the attributes, not the list of definitions
             attr_names <- if (length(.x$attributes) > 0) {
@@ -335,7 +341,7 @@ Generator <- R6::R6Class(
             list(
               name = .y,
               doc = doc_str,
-              param_docs = param_docs,
+              param_docs_str = param_docs_str,
               args = args,
               attr_names = attr_names,
               has_attrs = !is.null(attr_names),
@@ -363,7 +369,7 @@ Generator <- R6::R6Class(
             list(
               name = .y,
               doc = doc_str,
-              param_docs = c(paste(arg_name, "The value.")),
+              param_docs_str = sprintf("#' @param %s The value.", arg_name),
               args = paste0(arg_name, " = NA"),
               attr_names = NULL, # No complex attributes
               has_attrs = FALSE,
@@ -373,7 +379,7 @@ Generator <- R6::R6Class(
             )
           } else if (.x$kind == "simple") {
             # Enum / SimpleType with restriction
-            if (!is.null(.x$values)) {
+            if (!is.null(.x$values) && length(.x$values) > 0) {
               arg_name <- .y # Use type name as arg name? or 'value'
               # But we usually name arg same as Type if no other context.
               # Let's use 'value'.
@@ -398,7 +404,7 @@ Generator <- R6::R6Class(
               list(
                 name = .y,
                 doc = doc_str,
-                param_docs = c(paste(arg_name, "One of:", vals_str)),
+                param_docs_str = sprintf("#' @param %s One of: %s", arg_name, vals_str),
                 args = paste0(arg_name, " = NA"),
                 attr_names = NULL,
                 has_attrs = FALSE,
@@ -455,14 +461,13 @@ Generator <- R6::R6Class(
 
         args_info <- private$process_operation_args(name, op, types)
 
-        args_doc <- args_info$param_docs
         usage_doc <- paste0(name, "(", args_info$args, ")")
 
         list(
           name = name,
           title = doc,
           usage_doc = usage_doc,
-          args_doc = args_doc,
+          param_docs_str = args_info$param_docs_str,
           alias = name
         )
       })
@@ -491,7 +496,7 @@ Generator <- R6::R6Class(
       services_meta <- self$wsdl$get_services()
       services_meta_dump <- paste(
         trimws(capture.output(dput(services_meta))),
-        collapse = " "
+        collapse = "\n      "
       )
 
       op_list <- purrr::imap(all_ops, function(op, name) {
@@ -503,7 +508,7 @@ Generator <- R6::R6Class(
           name = name,
           doc = doc,
           args = args_info$args,
-          args_doc = args_info$param_docs, # RENAMED from param_docs to match template
+          param_docs_str = args_info$param_docs_str,
           validation_code = args_info$validation_code,
           arg_assignments = args_info$arg_assignments,
           arg_validations = args_info$arg_validations,
@@ -540,12 +545,14 @@ Generator <- R6::R6Class(
           type_def <- types[[type_name]]
 
           is_enum <- FALSE
+          is_complex <- FALSE
           choices_vec <- ""
 
           if (
             !is.null(type_def) &&
               type_def$kind == "simple" &&
-              !is.null(type_def$values)
+              !is.null(type_def$values) &&
+              length(type_def$values) > 0
           ) {
             is_enum <- TRUE
             vals_str <- paste(
@@ -553,6 +560,8 @@ Generator <- R6::R6Class(
               collapse = ", "
             )
             choices_vec <- sprintf("c(%s)", vals_str)
+          } else if (!is.null(type_def) && type_def$kind == "complex") {
+            is_complex <- TRUE
           }
 
           # Check optionality
@@ -603,6 +612,16 @@ Generator <- R6::R6Class(
                 )
               )
             }
+          } else if (is_complex) {
+            validations <<- c(
+              validations,
+              sprintf(
+                "check_soap_type(%s, \"%s\", \"%s\")",
+                elem_name,
+                type_name,
+                elem_name
+              )
+            )
           }
 
           p_doc <- elem_def$documentation %||% paste(elem_name)
@@ -621,11 +640,16 @@ Generator <- R6::R6Class(
 
         args_str <- paste(purrr::map_chr(arg_objs, "str"), collapse = ", ")
         param_docs <- unname(purrr::map_chr(arg_objs, "doc"))
+        param_docs_str <- if (length(param_docs) > 0) {
+          paste(sprintf("#' @param %s", param_docs), collapse = "\n    ")
+        } else {
+          ""
+        }
         arg_assignments <- unname(purrr::map_chr(arg_objs, "assignment"))
 
         list(
           args = args_str,
-          param_docs = param_docs,
+          param_docs_str = param_docs_str,
           validation_code = if (length(validations) > 0) {
             paste(validations, collapse = "\n      ")
           } else {
@@ -642,7 +666,7 @@ Generator <- R6::R6Class(
 
         list(
           args = sprintf("%s = NA", arg_name),
-          param_docs = c(paste(arg_name, doc_text)),
+          param_docs_str = sprintf("#' @param %s %s", arg_name, doc_text),
           validation_code = NULL,
           arg_assignments = sprintf("args[['%s']] <- %s", arg_name, arg_name),
           arg_validations = NULL
@@ -651,7 +675,7 @@ Generator <- R6::R6Class(
         # Fallback
         list(
           args = "...",
-          param_docs = c("... Additional arguments."),
+          param_docs_str = "#' @param ... Additional arguments.",
           validation_code = NULL,
           arg_assignments = NULL,
           arg_validations = NULL

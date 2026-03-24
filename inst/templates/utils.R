@@ -181,6 +181,18 @@ deserialize <- function(node, type_name, schema) {
     return(convert_builtin_type(val, base_type))
   }
 
+  if (type_def$kind == "element") {
+    if (!is.null(type_def$type) && type_def$type != type_name && type_def$type != "") {
+      return(deserialize(node, type_def$type, schema))
+    }
+    
+    # Return as list representation of the XML tree
+    val <- xml2::as_list(node)
+    class(val) <- c("soap_object", "list")
+    attr(val, "soap_type") <- type_name
+    return(val)
+  }
+
   # Complex Type
   obj <- list()
 
@@ -234,4 +246,27 @@ deserialize <- function(node, type_name, schema) {
 
 is_xml_missing <- function(node) {
   return(inherits(node, "xml_missing"))
+}
+
+check_soap_type <- function(obj, expected_type, arg_name) {
+  if (is.list(obj) && !inherits(obj, "soap_object")) {
+    for (i in seq_along(obj)) {
+      check_soap_type(obj[[i]], expected_type, sprintf("%s[[%d]]", arg_name, i))
+    }
+    return(invisible(TRUE))
+  }
+
+  if (is.atomic(obj) && length(obj) == 1 && is.na(obj)) {
+    return(invisible(TRUE))
+  }
+
+  if (!inherits(obj, "soap_object")) {
+    stop(sprintf("Argument '%s' must be an object of class 'soap_object', but got '%s'.", arg_name, class(obj)[1]), call. = FALSE)
+  }
+
+  actual_type <- attr(obj, "soap_type")
+  if (!identical(actual_type, expected_type)) {
+    stop(sprintf("Argument '%s' must be of SOAP type '%s', but got '%s'.", arg_name, expected_type, actual_type), call. = FALSE)
+  }
+  invisible(TRUE)
 }

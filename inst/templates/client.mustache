@@ -72,10 +72,8 @@ Client <- R6::R6Class(
     },
     {{#operations}}
 
-    #' @description Call the {{{name}}} operation.
-{{#args_doc}}
-    #' @param {{{.}}}
-{{/args_doc}}
+    #' @description {{{doc}}}
+    {{{param_docs_str}}}
     {{{name}}} = function({{{args}}}) {
       op_name <- "{{{name}}}"
       op_meta <- self$port_def$operations[[op_name]]

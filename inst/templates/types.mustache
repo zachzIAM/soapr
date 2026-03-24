@@ -8,9 +8,7 @@ TypeFactory <- R6::R6Class(
 
     {{#types}}
     #' @description {{{doc}}}
-    {{#param_docs}}
-    #' @param {{{.}}}
-    {{/param_docs}}
+    {{{param_docs_str}}}
     {{{name}}} = function({{{args}}}) {
       {{{validation_code}}}
       obj <- {{{body}}}

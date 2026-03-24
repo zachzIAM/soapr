@@ -25,6 +25,7 @@ Creates objects for SOAP requests.
 \itemize{
 \item \href{#method-Factory-new}{\code{Factory$new()}}
 \item \href{#method-Factory-create}{\code{Factory$create()}}
+\item \href{#method-Factory-from_list}{\code{Factory$from_list()}}
 \item \href{#method-Factory-get_type_names}{\code{Factory$get_type_names()}}
 \item \href{#method-Factory-deserialize}{\code{Factory$deserialize()}}
 \item \href{#method-Factory-convert_builtin_type}{\code{Factory$convert_builtin_type()}}
@@ -54,18 +55,42 @@ Initialize the Factory.
 \subsection{Method \code{create()}}{
 Create a new object of a given type.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Factory$create(type_name)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{Factory$create(type_name, ...)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
 \item{\code{type_name}}{The name of the type to create.}
+
+\item{\code{...}}{Named arguments to initialize the object fields.}
 }
 \if{html}{\out{</div>}}
 }
 \subsection{Returns}{
-A list representing the object, or NULL if simple type.
+A list representing the object, or NA/default for simple type.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-Factory-from_list"></a>}}
+\if{latex}{\out{\hypertarget{method-Factory-from_list}{}}}
+\subsection{Method \code{from_list()}}{
+Convert a list to a SOAP object of a given type.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Factory$from_list(data, type_name)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{data}}{The list to convert.}
+
+\item{\code{type_name}}{The target type name.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+The converted soap_object.
 }
 }
 \if{html}{\out{<hr>}}

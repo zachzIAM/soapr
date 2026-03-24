@@ -19,6 +19,8 @@ Handles serialization of R objects to XML nodes.
 \item{\code{attribute_form_default}}{The attributeFormDefault value.}
 
 \item{\code{target_namespace}}{The target namespace.}
+
+\item{\code{target_namespace_prefix}}{The prefix for target namespace (default "tns").}
 }
 \if{html}{\out{</div>}}
 }
@@ -43,7 +45,8 @@ Initialize the XMLSerializer.
 \if{html}{\out{<div class="r">}}\preformatted{XMLSerializer$new(
   element_form_default = "unqualified",
   attribute_form_default = "unqualified",
-  target_namespace = NULL
+  target_namespace = NULL,
+  target_namespace_prefix = "tns"
 )}\if{html}{\out{</div>}}
 }
 
@@ -55,6 +58,8 @@ Initialize the XMLSerializer.
 \item{\code{attribute_form_default}}{The attributeFormDefault value.}
 
 \item{\code{target_namespace}}{The target namespace.}
+
+\item{\code{target_namespace_prefix}}{The prefix for target namespace.}
 
 \item{\code{parent}}{The parent xml_node.}
 
