@@ -44,7 +44,21 @@ Factory <- R6::R6Class(
         # Returning NA is safer to indicate "not set".
         # We can use convert_builtin_type to get the NA of correct type (e.g. integer)
         base <- type_def$base %||% "xsd:string"
-        return(self$convert_builtin_type(NA, base))
+        
+        val <- if (length(args) > 0) args[[1]] else NA
+        if (!is.null(names(args)) && !is.null(args[["value"]])) {
+            val <- args[["value"]]
+        }
+        return(self$convert_builtin_type(val, base))
+      }
+      
+      if (type_def$kind == "element") {
+        arg_name <- type_def$name
+        val <- if (length(args) > 0) args[[1]] else NA
+        if (!is.null(names(args)) && !is.null(args[[arg_name]])) {
+            val <- args[[arg_name]]
+        }
+        return(self$convert_builtin_type(val, type_def$type %||% "xsd:string"))
       }
 
       obj <- list()
@@ -173,27 +187,31 @@ Factory <- R6::R6Class(
     #' @return The deserialized R object.
     deserialize = function(node, type_name) {
       if (is.null(self$types[[type_name]])) {
-        # Check for built-in XSD types
-        val <- if (length(xml2::xml_children(node)) == 0) {
-          xml2::xml_text(node)
+        if (length(xml2::xml_children(node)) == 0) {
+          val <- xml2::xml_text(node)
+          return(self$convert_builtin_type(val, type_name))
         } else {
-          xml2::as_list(node)
+          return(self$deserialize_dynamic(node, type_name))
         }
-
-        return(self$convert_builtin_type(val, type_name))
       }
 
       type_def <- self$types[[type_name]]
 
       if (type_def$kind == "simple") {
         val <- xml2::xml_text(node)
-        # Use the base type for conversion if available
         base_type <- if (!is.null(type_def$base)) {
           type_def$base
         } else {
           "xsd:string"
         }
         return(self$convert_builtin_type(val, base_type))
+      }
+      
+      if (type_def$kind == "element") {
+        if (!is.null(type_def$type) && type_def$type != type_name && type_def$type != "") {
+          return(self$deserialize(node, type_def$type))
+        }
+        return(self$deserialize_dynamic(node, type_name))
       }
 
       # Complex Type
@@ -213,14 +231,6 @@ Factory <- R6::R6Class(
       # Elements
       for (elem_name in names(type_def$elements)) {
         elem_def <- type_def$elements[[elem_name]]
-
-        # Find children with this name
-        # Namespace handling is tricky. We'll try local name first.
-        # xpath = paste0("./*[local-name()='", elem_name, "']")
-        # children <- xml2::xml_find_all(node, xpath)
-
-        # Simpler approach: iterate over all children and match names
-        # This is faster than repeated xpath queries
 
         children <- xml2::xml_children(node)
         matching_children <- children[xml2::xml_name(children) == elem_name]
@@ -242,10 +252,16 @@ Factory <- R6::R6Class(
         if (!is.na(elem_def$maxOccurs) && elem_def$maxOccurs == "unbounded") {
           obj[[elem_name]] <- child_vals
         } else {
-          # If maxOccurs is 1, but we found multiple, what to do? Take first?
-          # If maxOccurs is 1, we expect only 1.
           obj[[elem_name]] <- child_vals[[1]]
         }
+      }
+
+      parsed <- tryCatch({
+        do.call(self$create, c(list(type_name = type_name), obj))
+      }, error = function(e) NULL)
+      
+      if (!is.null(parsed) && inherits(parsed, "soap_object")) {
+         return(parsed)
       }
 
       class(obj) <- c("soap_object", "list")
@@ -253,6 +269,63 @@ Factory <- R6::R6Class(
       attr(obj, "soap_attrs") <- names(type_def$attributes)
 
       return(obj)
+    },
+    
+    #' @description
+    #' Dynamically deserialize unknown structures
+    #' @param node The xml node
+    #' @param type_name The requested type name
+    deserialize_dynamic = function(node, type_name) {
+      children <- xml2::xml_children(node)
+      
+      if (length(children) == 0) {
+        val <- xml2::xml_text(node)
+        if (!is.null(self$types[[type_name]])) {
+           parsed <- tryCatch({
+               do.call(self$create, list(type_name = type_name, val))
+           }, error = function(e) NULL)
+           if (!is.null(parsed)) return(parsed)
+        }
+        return(self$convert_builtin_type(val, type_name))
+      }
+      
+      res <- list()
+      for (child in children) {
+        child_name <- xml2::xml_name(child)
+        local_child_name <- gsub("^.*:", "", child_name)
+        
+        child_val <- self$deserialize(child, local_child_name)
+        
+        if (!local_child_name %in% names(res)) {
+          res[[local_child_name]] <- child_val
+        } else {
+          current <- res[[local_child_name]]
+          if (inherits(current, "soap_object") || is.atomic(current)) {
+             res[[local_child_name]] <- list(current, child_val)
+          } else {
+             res[[local_child_name]][[length(current) + 1]] <- child_val
+          }
+        }
+      }
+      
+      attrs <- xml2::xml_attrs(node)
+      if (length(attrs) > 0) {
+         attributes(res) <- c(attributes(res), as.list(attrs))
+      }
+      
+      if (!is.null(self$types[[type_name]])) {
+        parsed <- tryCatch({
+          do.call(self$create, c(list(type_name = type_name), res))
+        }, error = function(e) NULL)
+        
+        if (!is.null(parsed) && inherits(parsed, "soap_object")) {
+           return(parsed)
+        }
+      }
+      
+      class(res) <- c("soap_object", "list")
+      attr(res, "soap_type") <- type_name
+      return(res)
     },
 
     #' @description

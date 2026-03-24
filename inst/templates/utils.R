@@ -162,6 +162,22 @@ convert_builtin_type <- function(val, type_name) {
 deserialize_dynamic <- function(node, type_name, schema, factory) {
   children <- xml2::xml_children(node)
   
+  if (length(children) == 0) {
+    val <- xml2::xml_text(node)
+    
+    if (!is.null(factory) && type_name %in% names(factory)) {
+       parsed <- tryCatch({
+         arg_name <- names(formals(factory[[type_name]]))[1]
+         args <- list()
+         args[[arg_name]] <- convert_builtin_type(val, type_name)
+         do.call(factory[[type_name]], args)
+       }, error = function(e) NULL)
+       if (!is.null(parsed)) return(parsed)
+    }
+    
+    return(convert_builtin_type(val, type_name))
+  }
+  
   res <- list()
   for (child in children) {
     child_name <- xml2::xml_name(child)
