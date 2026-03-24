@@ -153,20 +153,64 @@ convert_builtin_type <- function(val, type_name) {
       if (tolower(val) == "true" || val == "1") TRUE else FALSE
     },
     "string" = as.character(val),
+    "date" = as.Date(val),
+    "dateTime" = as.POSIXct(val, format = "%Y-%m-%dT%H:%M:%OSZ", tz = "UTC"),
     val # Default: return as is
   )
 }
 
-deserialize <- function(node, type_name, schema) {
+deserialize_dynamic <- function(node, type_name, schema, factory) {
+  children <- xml2::xml_children(node)
+  
+  res <- list()
+  for (child in children) {
+    child_name <- xml2::xml_name(child)
+    local_child_name <- gsub("^.*:", "", child_name)
+    
+    # dynamic parse
+    child_val <- deserialize(child, local_child_name, schema, factory)
+    
+    if (!local_child_name %in% names(res)) {
+      res[[local_child_name]] <- child_val
+    } else {
+      current <- res[[local_child_name]]
+      if (inherits(current, "soap_object") || is.atomic(current)) {
+         res[[local_child_name]] <- list(current, child_val)
+      } else {
+         res[[local_child_name]][[length(current) + 1]] <- child_val
+      }
+    }
+  }
+  
+  attrs <- xml2::xml_attrs(node)
+  if (length(attrs) > 0) {
+     attributes(res) <- c(attributes(res), as.list(attrs))
+  }
+  
+  if (!is.null(factory) && type_name %in% names(factory)) {
+    parsed <- tryCatch({
+      do.call(factory[[type_name]], res)
+    }, error = function(e) NULL)
+    
+    if (!is.null(parsed)) {
+       return(parsed)
+    }
+  }
+  
+  class(res) <- c("soap_object", "list")
+  attr(res, "soap_type") <- type_name
+  return(res)
+}
+
+deserialize <- function(node, type_name, schema, factory = NULL) {
   if (is.null(schema[[type_name]])) {
     # Check for built-in XSD types
-    val <- if (length(xml2::xml_children(node)) == 0) {
-      xml2::xml_text(node)
+    if (length(xml2::xml_children(node)) == 0) {
+      val <- xml2::xml_text(node)
+      return(convert_builtin_type(val, type_name))
     } else {
-      xml2::as_list(node)
+      return(deserialize_dynamic(node, type_name, schema, factory))
     }
-
-    return(convert_builtin_type(val, type_name))
   }
 
   type_def <- schema[[type_name]]
@@ -183,14 +227,10 @@ deserialize <- function(node, type_name, schema) {
 
   if (type_def$kind == "element") {
     if (!is.null(type_def$type) && type_def$type != type_name && type_def$type != "") {
-      return(deserialize(node, type_def$type, schema))
+      return(deserialize(node, type_def$type, schema, factory))
     }
     
-    # Return as list representation of the XML tree
-    val <- xml2::as_list(node)
-    class(val) <- c("soap_object", "list")
-    attr(val, "soap_type") <- type_name
-    return(val)
+    return(deserialize_dynamic(node, type_name, schema, factory))
   }
 
   # Complex Type
@@ -227,13 +267,23 @@ deserialize <- function(node, type_name, schema) {
 
     # Deserialize children
     child_vals <- lapply(matching_children, function(child) {
-      deserialize(child, elem_def$type, schema)
+      deserialize(child, elem_def$type, schema, factory)
     })
 
     if (!is.na(elem_def$maxOccurs) && elem_def$maxOccurs == "unbounded") {
       obj[[elem_name]] <- child_vals
     } else {
       obj[[elem_name]] <- child_vals[[1]]
+    }
+  }
+
+  if (!is.null(factory) && type_name %in% names(factory)) {
+    parsed <- tryCatch({
+      do.call(factory[[type_name]], obj)
+    }, error = function(e) NULL)
+    
+    if (!is.null(parsed)) {
+       return(parsed)
     }
   }
 

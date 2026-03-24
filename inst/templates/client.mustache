@@ -134,7 +134,7 @@ Client <- R6::R6Class(
       local_name <- gsub("^.*:", "", response_name)
       schema <- get_schema()
       if (!is.null(schema[[local_name]])) {
-        deserialize(response_node, local_name, schema)
+        deserialize(response_node, local_name, schema, self$types)
       } else {
         content
       }

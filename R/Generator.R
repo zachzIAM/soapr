@@ -36,6 +36,9 @@ Generator <- R6::R6Class(
       # Create README.md
       self$write_readme(pkg_path, package_name)
 
+      # Create License
+      withr::with_dir(pkg_path, usethis::use_mit_license("Ninety One"))
+
       # Create R/utils.R (helper functions)
       self$write_utils(pkg_path)
 
@@ -413,7 +416,20 @@ Generator <- R6::R6Class(
                 is_complex = FALSE
               )
             } else {
-              NULL
+              arg_name <- "value"
+              doc_str <- paste("Create", .y)
+
+              list(
+                name = .y,
+                doc = doc_str,
+                param_docs_str = sprintf("#' @param %s The value.", arg_name),
+                args = paste0(arg_name, " = NA"),
+                attr_names = NULL,
+                has_attrs = FALSE,
+                body = arg_name,
+                validation_code = NULL,
+                is_complex = FALSE
+              )
             }
           } else {
             NULL
