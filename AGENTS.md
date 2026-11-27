@@ -20,7 +20,7 @@
 - **Commits:** Use [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `docs:`, `test:`, `refactor:`, `chore:`) to support automated versioning and release notes.
 - **Role split:**
   - **Planner / Triage:** Investigates issues, designs fixes, and creates clearly scoped GitHub Issues with acceptance criteria, affected files, and labels.
-  - **Implementer:** Works on a single assigned issue from a fresh branch off `main`, writes tests first or alongside the change, runs all QA checks, opens a PR with `Closes #<number>`, and merges only after CI (`R-CMD-check`) is green.
+  - **Implementer:** Works on a single assigned issue from a fresh branch off `main`, writes tests first or alongside the change, runs all QA checks, opens a PR with `Closes #<number>`, runs the local `pr-reviewer` skill (`.agents/skills/pr-reviewer/SKILL.md`) in an independent read-only subagent to address any blocking findings, and merges only after the review approves and CI (`R-CMD-check`) is green.
 
 ## Coding & Package Standards
 
