@@ -55,7 +55,7 @@ WSDL Parser"><!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax/libs
   <div class="col-md-9 contents">
     <div class="page-header">
     <h1>WSDL Parser</h1>
-    <small class="dont-index">Source: <a href="https://github.com/zachzIAM/soapr/blob/v0.2.0/R/WSDLParser.R" class="external-link"><code>R/WSDLParser.R</code></a></small>
+    <small class="dont-index">Source: <a href="https://github.com/zachzIAM/soapr/blob/main/R/WSDLParser.R" class="external-link"><code>R/WSDLParser.R</code></a></small>
     <div class="hidden name"><code>WSDLParser.Rd</code></div>
     </div>
 
@@ -280,7 +280,13 @@ and standard ones, prioritizing the document's namespace but ensure standard pre
 <h3 id="method-parse-complex-type-">Method <code>parse_complex_type()</code><a class="anchor" aria-label="anchor" href="#method-parse-complex-type-"></a></h3>
 <p>Parse a complexType node.</p><div class="section">
 <h4 id="usage-10">Usage<a class="anchor" aria-label="anchor" href="#usage-10"></a></h4>
-<p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">WSDLParser</span><span class="op">$</span><span class="fu">parse_complex_type</span><span class="op">(</span><span class="va">node</span>, schema_ns <span class="op">=</span> <span class="va">self</span><span class="op">$</span><span class="va">ns</span><span class="op">)</span></span></code></pre></div><p></p></div>
+<p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">WSDLParser</span><span class="op">$</span><span class="fu">parse_complex_type</span><span class="op">(</span></span>
+<span>  <span class="va">node</span>,</span>
+<span>  schema_ns <span class="op">=</span> <span class="va">self</span><span class="op">$</span><span class="va">ns</span>,</span>
+<span>  type_name <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  visited <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">character</a></span><span class="op">(</span><span class="fl">0</span><span class="op">)</span>,</span>
+<span>  nested_collector <span class="op">=</span> <span class="cn">NULL</span></span>
+<span><span class="op">)</span></span></code></pre></div><p></p></div>
 </div>
 
 <div class="section">
@@ -291,6 +297,18 @@ and standard ones, prioritizing the document's namespace but ensure standard pre
 
 <dt><code>schema_ns</code></dt>
 <dd><p>Namespace vector to use for XPath queries on this schema.</p></dd>
+
+
+<dt><code>type_name</code></dt>
+<dd><p>Optional enclosing type name for scoping inline anonymous subtypes.</p></dd>
+
+
+<dt><code>visited</code></dt>
+<dd><p>Visited base type names to prevent inheritance cycles.</p></dd>
+
+
+<dt><code>nested_collector</code></dt>
+<dd><p>Optional environment collecting inline anonymous subtypes.</p></dd>
 
 
 </dl><p></p></div>
