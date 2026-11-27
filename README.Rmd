@@ -18,123 +18,184 @@ knitr::opts_chunk$set(
 <!-- badges: start -->
 [![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
 [![R-CMD-check](https://github.com/zachzIAM/soapr/actions/workflows/check.yaml/badge.svg)](https://github.com/zachzIAM/soapr/actions/workflows/check.yaml)
+[![lint](https://github.com/zachzIAM/soapr/actions/workflows/lint.yaml/badge.svg)](https://github.com/zachzIAM/soapr/actions/workflows/lint.yaml)
+[![GitHub release](https://img.shields.io/github/v/release/zachzIAM/soapr)](https://github.com/zachzIAM/soapr/releases)
+[![pkgdown](https://img.shields.io/badge/docs-pkgdown-blue.svg)](https://zachziam.github.io/soapr/)
 <!-- badges: end -->
 
-**soapr** is a modern, robust SOAP client generator for R. It bridges the gap between legacy SOAP services and modern R workflows by generating type-safe, object-oriented R packages from WSDL files.
+**soapr** is a modern SOAP client and R package generator driven by WSDL definitions. Use it either to **generate standalone, type-safe R packages** from a WSDL file/URL or to **interact dynamically** with SOAP 1.1 and SOAP 1.2 web services at runtime.
 
-## ✨ Features
+## Features
 
-*   📦 **Static Client Generation**: Generate full-fledged R packages with R6 classes, documentation, and dependencies.
-*   🚀 **Dynamic Client**: Interact with services on-the-fly for quick exploration.
-*   🛡️ **Type Safety**:
-    *   **Complex Types**: Auto-generated factories for complex objects.
-    *   **Enums**: `match.arg` validation and autocomplete for enumerated types.
-*   🔒 **WS-Security**: Built-in support for UsernameToken authentication.
-*   🧪 **Testing Ready**: Easily mock network transports for robust testing.
+- **Static Client Generation (`Generator`)**: Generates standalone R packages (`httr`, `xml2`, `R6`, `bit64` only) with `Client` and `TypeFactory` R6 classes, Roxygen documentation, `NAMESPACE`, and `LICENSE`.
+- **Dynamic Runtime Client (`Service` / `Client`)**: Connects to services directly from a WSDL path or URL for ad-hoc exploration and scripting.
+- **Comprehensive WSDL & XSD Support (`WSDLParser`)**: Parses multi-schema `<wsdl:types>`, resolves local and remote `<xsd:import>` / `<xsd:include>` chains with cycle protection, and supports recursive `<xsd:complexContent>` inheritance, `<xsd:simpleContent>`, `<xsd:sequence>` / `<xsd:choice>` / `<xsd:all>` compositors, and inline anonymous nested types.
+- **SOAP 1.1 & SOAP 1.2 Protocol Parity**: Automatically selects SOAP 1.1 (`http://schemas.xmlsoap.org/soap/envelope/`, `text/xml; charset=utf-8`, `SOAPAction`) or SOAP 1.2 (`http://www.w3.org/2003/05/soap-envelope`, `application/soap+xml; charset=utf-8; action="..."`) per port binding and parses SOAP 1.1 / 1.2 faults uniformly across dynamic and static clients.
+- **Type Safety & XSD Conversion**: Typed constructors, `match.arg()` validation for enums, `xsd:date` (`Date`), UTC `xsd:dateTime` (`POSIXct` with timezone offset normalization), `xsd:long` (`bit64::integer64`), `xsd:boolean`, and namespace-compliant `elementFormDefault` / `attributeFormDefault` serialization.
+- **WS-Security & Mockable Transports**: Built-in `WSSecurity` `UsernameToken` headers and injectable transport hooks for offline unit testing.
+- **Lean Dependency Footprint**: Base-R and minimal XML/HTTP dependencies (`soapr` avoids data-frame/tabular tidyverse packages; generated packages require only `httr`, `xml2`, `R6`, and `bit64`).
 
-## 📦 Installation
+## Installation
 
-You can install the development version of soapr from [GitHub](https://github.com/) with:
+Install the development version of `soapr` from [GitHub](https://github.com/zachzIAM/soapr) with:
 
-``` r
+```r
 # install.packages("devtools")
 devtools::install_github("zachzIAM/soapr", build_vignettes = TRUE)
 ```
 
-> **Note**: `build_vignettes = TRUE` is required to view the vignettes locally.
+> **Note**: Pass `build_vignettes = TRUE` (with `pandoc` available) if you want to build and view vignettes locally.
 
-## 🚀 Quick Start
+## Quick Start
 
-### 1. Generate a Client Package
+### 1. Static Client Package (Recommended)
 
-The recommended way to use `soapr` is to generate a dedicated package for your service.
+Generate a dedicated, standalone R package for your SOAP service with custom package metadata:
 
 ```r
 library(soapr)
 
-# 1. Parse the WSDL
 wsdl_url <- "http://www.dneonline.com/calculator.asmx?WSDL"
 wsdl <- WSDLParser$new(wsdl_url)
 
-# 2. Initialize the Generator
 gen <- Generator$new(wsdl)
-
-# 3. Generate the Package
-# This creates a 'calculator' directory with a complete R package
-gen$generate_package(".", "calculator")
+gen$generate_package(
+  path = ".",
+  package_name = "calculator",
+  author = "Package Maintainer",
+  email = "maintainer@example.com",
+  license_holder = "Example Org"
+)
 ```
 
-### 2. Use the Generated Client
-
-Once installed, your client provides a clean, object-oriented API.
+Install or load the generated package and call operations directly:
 
 ```r
-# Install and load your new package
 devtools::install("calculator")
 library(calculator)
 
-# Initialize the client
 client <- calculator::new_client()
-
-# Call operations with autocomplete!
-# client$Add(...)
-result <- client$Add(intA = 5, intB = 10)
-print(result$AddResult)
+result <- client$Add(intA = 5L, intB = 10L)
+result$AddResult
 #> [1] 15
 ```
 
-## 🛠️ Advanced Usage
+### 2. Dynamic Runtime Client
 
-### Complex Types (Type Factory)
-
-Forget about manually constructing nested lists. Use the **Type Factory** to create complex objects with validation.
+Use `Service$new()` when you want to inspect and call a service without generating a package on disk:
 
 ```r
-# Create a complex object using the factory
-# client$types$Column(...)
-col <- client$types$Column(
-  Name = "ISIN", 
-  Owner = "SYSTEM"
-)
+library(soapr)
 
-# Pass it to an operation
-client$GetPositionsReport(Column = col)
+svc <- Service$new("service.wsdl")
+
+# Create a typed input object from the schema
+req <- svc$factory$create("OrderRequest", Id = bit64::as.integer64("9007199254740993"))
+
+# Invoke an operation
+res <- svc$client$SubmitOrder(Payload = req)
 ```
 
-### Enumerations
+For lower-level control, `Client$new(wsdl, port_def = ..., factory = ..., transport = ...)` accepts a pre-parsed `WSDLParser`, selected port definition, and custom transport function.
 
-Arguments with enumerated types are automatically validated and provide autocomplete.
+## Protocol, Schema & Type Features
+
+### Multiple Services, Ports & SOAP 1.1 / 1.2
+
+WSDLs that expose multiple services or both SOAP 1.1 and SOAP 1.2 ports can be targeted explicitly in both dynamic and static clients:
 
 ```r
-# 'ReportName' must be one of the allowed values
-client$GetReportColumnName(ReportName = "Positions")
+# Inspect discovered services, ports, and SOAP versions (1.1 vs 1.2)
+parser <- WSDLParser$new("multiport.wsdl")
+names(parser$get_services())
+
+# Dynamic client selecting service and port
+svc12 <- Service$new(
+  "multiport.wsdl",
+  service_name = "CountryInfoService",
+  port_name = "CountryInfoServiceSoap12"
+)
+
+# Generated static client selecting service and port
+client12 <- mypkg::new_client(
+  service = "CountryInfoService",
+  port = "CountryInfoServiceSoap12"
+)
+```
+
+When using a SOAP 1.2 port, `soapr` automatically wraps payloads in the SOAP 1.2 envelope (`http://www.w3.org/2003/05/soap-envelope`) and sets `Content-Type: application/soap+xml; charset=utf-8; action="..."`.
+
+### Complex Types, Enums, `simpleContent`, Dates & Qualified Schemas
+
+- **Complex types (`client$types` / `svc$factory$create`)**: Create nested structures and XML attributes cleanly; generated constructors track `soap_type`, `soap_attrs`, and (for `<xsd:simpleContent>`) `soap_simple_content` (`value` text plus attributes).
+- **Enumerations**: Simple type restrictions generate `match.arg()` checks in static factories and runtime validation in `Client`.
+- **Dates & DateTimes**: `xsd:date` values parse to `Date`; `xsd:dateTime` values (including `Z` and numeric offsets such as `+02:00`) normalize to UTC `POSIXct`.
+- **Qualified Namespaces & Attributes**: Serializers respect per-WSDL `elementFormDefault` (`qualified` vs `unqualified`) and `attributeFormDefault` (`tns:` attribute qualification vs unqualified attributes).
+
+```r
+# Static TypeFactory usage with attributes, enums, and dates
+amount <- client$types$MoneyAmount(currency = "EUR", value = 42.50)
+order <- client$types$Order(
+  Priority = "HIGH",
+  OrderDate = as.Date("2025-03-10"),
+  Amount = amount
+)
+client$CreateOrder(Order = order)
 ```
 
 ### Authentication (WS-Security)
 
-Add WS-Security headers easily.
+Attach a `UsernameToken` SOAP header to either a dynamic client or a generated static client:
 
 ```r
-header <- WSSecurity$new()$username_token(username = "myuser", password = "mypassword")
-client$add_header(header)
+sec_header <- WSSecurity$new()$username_token(
+  username = "myuser",
+  password = "mypassword",
+  password_type = "PasswordText"
+)
+client$add_header(sec_header)
 ```
 
-### Mocking & Testing
+### Mock Transport Testing
 
-Inject a mock transport to test your code without hitting the real service.
+Inject custom transports in unit tests to inspect outgoing XML envelopes/headers and return mocked HTTP responses offline:
 
 ```r
-mock_transport <- function(url, action, body, config, handle) {
-  list(
-    status_code = 200, 
-    content = charToRaw("<response>...</response>"),
-    headers = list("Content-Type" = "text/xml")
+mock_httr_response <- function(url, xml_body, ct = "text/xml; charset=utf-8") {
+  headers <- list(`Content-Type` = ct)
+  structure(
+    list(
+      url = url,
+      status_code = 200L,
+      headers = headers,
+      all_headers = list(list(status = 200L, version = "HTTP/1.1", headers = headers)),
+      content = charToRaw(enc2utf8(xml_body))
+    ),
+    class = "response"
   )
 }
 
-client <- calculator::new_client(transport = mock_transport)
+# Static client mock transport
+stat_client <- mypkg::new_client(
+  transport = function(url, action, body, config, handle) {
+    mock_httr_response(url, "<soap:Envelope ...>...</soap:Envelope>")
+  }
+)
+
+# Dynamic client mock transport
+svc <- Service$new("service.wsdl")
+svc$client$transport <- function(url, handle, body, ...) {
+  mock_httr_response(url, "<soap:Envelope ...>...</soap:Envelope>")
+}
 ```
 
-## 📄 License
+## Documentation & Contributing
 
-MIT
+- **Package documentation site**: [https://zachziam.github.io/soapr/](https://zachziam.github.io/soapr/)
+- **Getting Started vignette**: [Online article](https://zachziam.github.io/soapr/articles/getting-started.html) | [vignettes/getting-started.Rmd](vignettes/getting-started.Rmd)
+- **Release notes**: [NEWS.md](NEWS.md)
+- **Development workflow**: See [AGENTS.md](AGENTS.md) for branch naming, Conventional Commits, dynamic/static parity rules, and pre-PR checks (`roxygen2::roxygenise()`, `testthat::test_local()`, `lintr::lint_package()`, and `rcmdcheck::rcmdcheck()`).
+
+## License
+
+MIT ([LICENSE](LICENSE))
