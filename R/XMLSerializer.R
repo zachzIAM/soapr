@@ -101,20 +101,41 @@ XMLSerializer <- R6::R6Class(
     #' @param response The httr response object.
     #' @return An xml_document.
     deserialize_response = function(response) {
-      content_type <- httr::headers(response)$`Content-Type`
+      content_type <- private$get_header_ci(httr::headers(response), "Content-Type")
 
       # Check if it's XML
       if (
         !is.null(content_type) &&
-          !grepl("xml", content_type, ignore.case = TRUE)
+          length(content_type) > 0 &&
+          !is.na(content_type[[1]]) &&
+          !grepl("xml", content_type[[1]], ignore.case = TRUE)
       ) {
         stop("Response is not XML")
       }
 
-      xml2::read_xml(httr::content(response, "text", encoding = "UTF-8"))
+      body_text <- httr::content(response, "text", encoding = "UTF-8")
+      if (is.null(body_text) || length(body_text) == 0 || is.na(body_text[[1]]) || !nzchar(trimws(body_text[[1]]))) {
+        return(NULL)
+      }
+
+      xml2::read_xml(body_text[[1]])
     }
   ),
   private = list(
+    get_header_ci = function(headers, target_name) {
+      if (is.null(headers) || length(headers) == 0) {
+        return(NULL)
+      }
+      hdr_names <- names(headers)
+      if (is.null(hdr_names)) {
+        return(NULL)
+      }
+      idx <- which(tolower(hdr_names) == tolower(target_name))
+      if (length(idx) == 0) {
+        return(NULL)
+      }
+      headers[[idx[1]]]
+    },
     get_active_default_ns = function(node) {
       cur <- node
       while (inherits(cur, "xml_node") && xml2::xml_type(cur) == "element") {

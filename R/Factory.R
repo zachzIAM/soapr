@@ -363,7 +363,17 @@ Factory <- R6::R6Class(
         "float" = as.numeric(val),
         "double" = as.numeric(val),
         "boolean" = {
-          if (tolower(val) == "true" || val == "1") TRUE else FALSE
+          if (is.null(val) || length(val) == 0) {
+            NA
+          } else if (is.logical(val)) {
+            val
+          } else {
+            val_chr <- tolower(trimws(as.character(val)))
+            res <- rep(FALSE, length(val_chr))
+            res[is.na(val)] <- NA
+            res[!is.na(val) & (val_chr == "true" | val_chr == "1")] <- TRUE
+            res
+          }
         },
         "string" = as.character(val),
         val # Default: return as is
