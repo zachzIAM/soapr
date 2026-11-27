@@ -88,7 +88,7 @@
 <ul><li>
 <strong>Planner / Triage:</strong> Investigates issues, designs fixes, and creates clearly scoped GitHub Issues with acceptance criteria, affected files, and labels.</li>
 <li>
-<strong>Implementer:</strong> Works on a single assigned issue from a fresh branch off <code>main</code>, writes tests first or alongside the change, runs all QA checks, opens a PR with <code>Closes #&lt;number&gt;</code>, and merges only after CI (<code>R-CMD-check</code>) is green.</li>
+<strong>Implementer:</strong> Works on a single assigned issue from a fresh branch off <code>main</code>, writes tests first or alongside the change, runs all QA checks, opens a PR with <code>Closes #&lt;number&gt;</code>, runs the local <code>pr-reviewer</code> skill (<code>.agents/skills/pr-reviewer/SKILL.md</code>) in an independent read-only subagent to address any blocking findings, and merges only after the review approves and CI (<code>R-CMD-check</code>) is green.</li>
 </ul></li>
 </ul></div>
 <div class="section level2">
