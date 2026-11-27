@@ -1,3 +1,8 @@
+# soapr 0.1.3 (2026-11-27)
+
+### Bug Fixes
+- use op$input_element, guard simple-enum defaults, and align date/dateTime parsing (e1ce56a)
+
 # soapr 0.1.2 (2026-11-27)
 
 ### Bug Fixes
