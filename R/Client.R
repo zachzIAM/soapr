@@ -112,8 +112,18 @@ Client <- R6::R6Class(
 
       body <- xml2::xml_add_child(envelope, "soap:Body")
 
-      # Use default namespace for the operation and its children
-      op_node <- xml2::xml_add_child(body, op$name)
+      # Use default namespace for the operation wrapper element and its children
+      input_elem <- if (
+        !is.null(op$input_element) &&
+          length(op$input_element) == 1L &&
+          !is.na(op$input_element) &&
+          nzchar(op$input_element)
+      ) {
+        op$input_element
+      } else {
+        op$name
+      }
+      op_node <- xml2::xml_add_child(body, input_elem)
       xml2::xml_attr(op_node, "xmlns") <- self$target_namespace
 
       # Get input message type definition if available
@@ -191,8 +201,8 @@ Client <- R6::R6Class(
           # self$operations[[op$name]] doesn't have the full type tree.
 
           # Let's try to get the input type definition for the operation.
-          # The operation name usually matches the input element name in wrapped doc/lit.
-          op_input_type <- self$wsdl$get_type_definitions()[[op$name]]
+          # Usually matches the input element name (falling back to operation name).
+          op_input_type <- self$wsdl$get_type_definitions()[[input_elem]]
 
           if (
             !is.null(op_input_type) &&
