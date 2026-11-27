@@ -33,4 +33,33 @@ test_that("Generator parameterizes author, email, and license_holder with sensib
     custom_desc
   )))
   expect_true(any(grepl("COPYRIGHT HOLDER: Acme Corp", custom_lic)))
+
+  # 3. Fallback handling for NULL, NA, empty, and non-scalar metadata values
+  gen$generate_package(
+    temp_dir,
+    "FallbackMetaPkg",
+    author = NA_character_,
+    email = "",
+    license_holder = NULL
+  )
+  fallback_desc <- readLines(file.path(temp_dir, "FallbackMetaPkg", "DESCRIPTION"))
+  fallback_lic <- readLines(file.path(temp_dir, "FallbackMetaPkg", "LICENSE"))
+
+  expect_true(any(grepl(
+    'Authors@R: person\\("Package Author", email = "author@example.com", role = c\\("aut", "cre"\\)\\)',
+    fallback_desc
+  )))
+  expect_true(any(grepl("COPYRIGHT HOLDER: FallbackMetaPkg authors", fallback_lic)))
+
+  gen$write_description(
+    file.path(temp_dir, "FallbackMetaPkg"),
+    "FallbackMetaPkg",
+    author = c("A", "B"),
+    email = character(0)
+  )
+  multi_desc <- readLines(file.path(temp_dir, "FallbackMetaPkg", "DESCRIPTION"))
+  expect_true(any(grepl(
+    'Authors@R: person\\("Package Author", email = "author@example.com", role = c\\("aut", "cre"\\)\\)',
+    multi_desc
+  )))
 })

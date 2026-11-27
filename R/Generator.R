@@ -84,10 +84,12 @@ Generator <- R6::R6Class(
     #' @param author The package author name.
     #' @param email The package maintainer email.
     write_description = function(path, name, author = "Package Author", email = "author@example.com") {
+      safe_author <- private$normalize_metadata_value(author, "Package Author", escape_quotes = TRUE)
+      safe_email <- private$normalize_metadata_value(email, "author@example.com", escape_quotes = TRUE)
       view <- list(
         package_name = name,
-        author = author,
-        email = email
+        author = safe_author,
+        email = safe_email
       )
       template <- private$read_template("DESCRIPTION.mustache")
       content <- whisker::whisker.render(template, view)
@@ -161,13 +163,26 @@ Generator <- R6::R6Class(
     }
   ),
   private = list(
+    normalize_metadata_value = function(val, default, escape_quotes = FALSE) {
+      normalized <- if (
+        is.null(val) ||
+          length(val) != 1L ||
+          is.na(val) ||
+          !nzchar(trimws(as.character(val)))
+      ) {
+        default
+      } else {
+        as.character(val)
+      }
+      if (escape_quotes) {
+        normalized <- gsub("\\\\", "\\\\\\\\", normalized)
+        normalized <- gsub('"', '\\\\"', normalized)
+      }
+      normalized
+    },
     write_license = function(path, package_name, license_holder = paste(package_name, "authors")) {
       year <- format(Sys.Date(), "%Y")
-      holder <- if (is.null(license_holder) || !nzchar(license_holder)) {
-        paste(package_name, "authors")
-      } else {
-        license_holder
-      }
+      holder <- private$normalize_metadata_value(license_holder, paste(package_name, "authors"))
       writeLines(
         c(
           paste("YEAR:", year),
