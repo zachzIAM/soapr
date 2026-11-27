@@ -340,7 +340,8 @@ Factory <- R6::R6Class(
         local_type <- gsub("^.*:", "", type_name)
         primitive_types <- c(
           "int", "integer", "long", "short", "byte",
-          "decimal", "float", "double", "boolean", "string"
+          "decimal", "float", "double", "boolean", "string",
+          "date", "dateTime"
         )
         if (local_type %in% primitive_types) {
           val <- unlist(val)
@@ -376,8 +377,74 @@ Factory <- R6::R6Class(
           }
         },
         "string" = as.character(val),
+        "date" = private$parse_xsd_date(val),
+        "dateTime" = private$parse_xsd_datetime(val),
         val # Default: return as is
       )
+    }
+  ),
+  private = list(
+    parse_xsd_date = function(val) {
+      if (is.null(val) || length(val) == 0) {
+        return(as.Date(NA))
+      }
+      if (inherits(val, "Date")) {
+        return(val)
+      }
+      vals <- as.character(val)
+      parsed <- vapply(vals, function(s) {
+        if (is.na(s)) {
+          return(NA_real_)
+        }
+        s <- trimws(s)
+        if (!nzchar(s)) {
+          return(NA_real_)
+        }
+        s <- sub("(Z|[+-][0-9]{2}:?[0-9]{2})$", "", s, ignore.case = TRUE)
+        d <- tryCatch(as.Date(s, format = "%Y-%m-%d"), error = function(e) as.Date(NA))
+        as.numeric(d)
+      }, numeric(1), USE.NAMES = FALSE)
+      as.Date(parsed, origin = "1970-01-01")
+    },
+
+    parse_xsd_datetime = function(val) {
+      if (is.null(val) || length(val) == 0) {
+        return(as.POSIXct(NA_real_, origin = "1970-01-01", tz = "UTC"))
+      }
+      if (inherits(val, "POSIXt")) {
+        out <- as.POSIXct(val)
+        attr(out, "tzone") <- "UTC"
+        return(out)
+      }
+      vals <- as.character(val)
+      parsed <- vapply(vals, function(s) {
+        if (is.na(s)) {
+          return(NA_real_)
+        }
+        s <- trimws(s)
+        if (!nzchar(s)) {
+          return(NA_real_)
+        }
+        offset_sec <- 0
+        if (grepl("[Zz]$", s)) {
+          s <- sub("[Zz]$", "", s)
+        } else if (grepl("([+-])([0-9]{2}):?([0-9]{2})$", s)) {
+          m <- regexec("([+-])([0-9]{2}):?([0-9]{2})$", s)
+          parts <- regmatches(s, m)[[1]]
+          sign <- if (parts[2] == "-") -1 else 1
+          offset_sec <- sign * (as.numeric(parts[3]) * 3600 + as.numeric(parts[4]) * 60)
+          s <- sub("([+-])([0-9]{2}):?([0-9]{2})$", "", s)
+        }
+        dt <- as.POSIXct(s, format = "%Y-%m-%dT%H:%M:%OS", tz = "UTC")
+        if (is.na(dt)) {
+          dt <- as.POSIXct(s, format = "%Y-%m-%d %H:%M:%OS", tz = "UTC")
+        }
+        if (is.na(dt)) {
+          return(NA_real_)
+        }
+        as.numeric(dt) - offset_sec
+      }, numeric(1), USE.NAMES = FALSE)
+      as.POSIXct(parsed, origin = "1970-01-01", tz = "UTC")
     }
   )
 )

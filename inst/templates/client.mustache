@@ -107,7 +107,7 @@ Client <- R6::R6Class(
       }
 
       body <- xml2::xml_add_child(envelope, "soap:Body")
-      op_node <- xml2::xml_add_child(body, op_name)
+      op_node <- xml2::xml_add_child(body, "{{{input_element}}}")
       xml2::xml_attr(op_node, "xmlns") <- "{{{tns}}}"
 
       for (arg_name in names(args)) {
