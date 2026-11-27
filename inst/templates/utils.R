@@ -260,12 +260,19 @@ parse_xsd_datetime <- function(val) {
 }
 
 convert_builtin_type <- function(val, type_name) {
-  if (is.list(val)) {
-    return(val)
-  }
-
-  # Strip namespace prefix if present
   local_type <- gsub("^.*:", "", type_name)
+  if (is.list(val)) {
+    primitive_types <- c(
+      "int", "integer", "long", "short", "byte",
+      "decimal", "float", "double", "boolean", "string",
+      "date", "dateTime"
+    )
+    if (local_type %in% primitive_types) {
+      val <- unlist(val)
+    } else {
+      return(val)
+    }
+  }
 
   switch(local_type,
     "int" = as.integer(val),
@@ -277,7 +284,7 @@ convert_builtin_type <- function(val, type_name) {
     "float" = as.numeric(val),
     "double" = as.numeric(val),
     "boolean" = {
-      if (is.null(val) || length(val) == 0) {
+      if (is.null(val) || length(val) == 0L) {
         NA
       } else if (is.logical(val)) {
         val
@@ -299,20 +306,25 @@ convert_builtin_type <- function(val, type_name) {
 deserialize_dynamic <- function(node, type_name, schema, factory) {
   children <- xml2::xml_children(node)
 
-  if (length(children) == 0) {
+  if (length(children) == 0L) {
     val <- xml2::xml_text(node)
+    converted <- convert_builtin_type(val, type_name)
 
     if (!is.null(factory) && type_name %in% names(factory)) {
       parsed <- tryCatch({
-        arg_name <- names(formals(factory[[type_name]]))[1]
-        args <- list()
-        args[[arg_name]] <- convert_builtin_type(val, type_name)
-        do.call(factory[[type_name]], args)
+        arg_names <- names(formals(factory[[type_name]]))
+        if (length(arg_names) > 0L) {
+          args <- list()
+          args[[arg_names[1]]] <- converted
+          do.call(factory[[type_name]], args)
+        } else {
+          NULL
+        }
       }, error = function(e) NULL)
       if (!is.null(parsed)) return(parsed)
     }
 
-    return(convert_builtin_type(val, type_name))
+    return(converted)
   }
 
   res <- list()
@@ -330,22 +342,23 @@ deserialize_dynamic <- function(node, type_name, schema, factory) {
       if (inherits(current, "soap_object") || is.atomic(current)) {
         res[[local_child_name]] <- list(current, child_val)
       } else {
-        res[[local_child_name]][[length(current) + 1]] <- child_val
+        res[[local_child_name]][[length(current) + 1L]] <- child_val
       }
     }
   }
 
   attrs <- xml2::xml_attrs(node)
-  if (length(attrs) > 0) {
+  if (length(attrs) > 0L) {
     attributes(res) <- c(attributes(res), as.list(attrs))
   }
 
-  if (!is.null(factory) && type_name %in% names(factory)) {
+  if (!is.null(factory) && type_name %in% names(factory) &&
+        !is.null(schema[[type_name]]) && identical(schema[[type_name]]$kind, "complex")) {
     parsed <- tryCatch({
       do.call(factory[[type_name]], res)
     }, error = function(e) NULL)
 
-    if (!is.null(parsed)) {
+    if (!is.null(parsed) && inherits(parsed, "soap_object")) {
       return(parsed)
     }
   }
@@ -435,7 +448,7 @@ deserialize <- function(node, type_name, schema, factory = NULL) {
       do.call(factory[[type_name]], obj)
     }, error = function(e) NULL)
 
-    if (!is.null(parsed)) {
+    if (!is.null(parsed) && inherits(parsed, "soap_object")) {
       return(parsed)
     }
   }
@@ -445,6 +458,35 @@ deserialize <- function(node, type_name, schema, factory = NULL) {
   attr(obj, "soap_attrs") <- names(type_def$attributes)
 
   return(obj)
+}
+
+extract_response_object <- function(content, schema, factory) {
+  if (!inherits(content, "xml_node")) {
+    return(NULL)
+  }
+
+  body_node <- xml2::xml_find_first(content, ".//*[local-name()='Body']")
+  if (is_xml_missing(body_node)) {
+    return(NULL)
+  }
+
+  body_children <- xml2::xml_children(body_node)
+  if (length(body_children) == 0L) {
+    return(NULL)
+  }
+
+  response_node <- body_children[[1]]
+  response_name <- xml2::xml_name(response_node)
+  local_name <- gsub("^.*:", "", response_name)
+
+  if (!is.null(schema[[response_name]])) {
+    return(deserialize(response_node, response_name, schema, factory))
+  }
+  if (!is.null(schema[[local_name]])) {
+    return(deserialize(response_node, local_name, schema, factory))
+  }
+
+  content
 }
 
 is_xml_missing <- function(node) {

@@ -37,9 +37,6 @@ Handles serialization of R objects to XML nodes.
 \if{html}{\out{<a id="method-XMLSerializer-new"></a>}}
 \if{latex}{\out{\hypertarget{method-XMLSerializer-new}{}}}
 \subsection{Method \code{new()}}{
-Serialize an R object to an XML node.
-
-
 Initialize the XMLSerializer.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{XMLSerializer$new(
@@ -60,12 +57,6 @@ Initialize the XMLSerializer.
 \item{\code{target_namespace}}{The target namespace.}
 
 \item{\code{target_namespace_prefix}}{The prefix for target namespace.}
-
-\item{\code{parent}}{The parent xml_node.}
-
-\item{\code{name}}{The name of the element.}
-
-\item{\code{value}}{The value to serialize.}
 }
 \if{html}{\out{</div>}}
 }

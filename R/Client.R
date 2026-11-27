@@ -263,119 +263,20 @@ Client <- R6::R6Class(
         print(content)
       }
 
-      # Extract Body
-      body_node <- xml2::xml_find_first(content, ".//*[local-name()='Body']")
-      if (is_xml_missing(body_node)) {
-        return(NULL)
-      }
-
-      body_children <- xml2::xml_children(body_node)
-      if (length(body_children) == 0) {
-        return(NULL)
-      }
-
-      response_node <- body_children[[1]]
-
-      # We need the type name for this response node.
-      # In document/literal wrapped, the element name IS the type name (or close to it).
-      # Let's try to use the local name of the response node.
-      response_name <- xml2::xml_name(response_node)
-
-      # Remove namespace prefix if present (xml_name usually returns local name if not qualified, but let's be safe)
-      # xml_name returns the name with prefix if it has one? No, it returns local name usually.
-      # Wait, xml_name returns "tns:SetAdHocPortfolioResponse" or just "SetAdHocPortfolioResponse"?
-      # It depends on how it was parsed.
-      # Let's assume it matches a type in our factory.
-
-      # If we can't find the type, we return the xml_node (backward compatibility)
-      if (!is.null(self$factory$types[[response_name]])) {
-        return(self$factory$deserialize(response_node, response_name))
-      } else {
-        # Try stripping namespace just in case
-        local_name <- gsub("^.*:", "", response_name)
-        if (!is.null(self$factory$types[[local_name]])) {
-          return(self$factory$deserialize(response_node, local_name))
-        }
-      }
-
-      return(content)
+      soap_extract_response_object(
+        content = content,
+        schema = self$factory$types,
+        deserialize_fn = function(node, type_name) self$factory$deserialize(node, type_name)
+      )
     },
     #' @description
     #' Handle SOAP Faults.
     #' @param response The httr response object.
     handle_fault = function(response) {
-      # Parse the response content
-      doc <- tryCatch(
-        {
-          self$serializer$deserialize_response(response)
-        },
-        error = function(e) {
-          logfile <- file.path(tempdir(), "soap_debug.log")
-          msg <- sprintf("Deserialization error: %s\n", e$message)
-          cat(msg, file = logfile, append = TRUE)
-          warning(sprintf("%sSee log %s", msg, logfile))
-          # If not XML, let httr handle the status
-          return(NULL)
-        }
+      soap_handle_fault(
+        response = response,
+        deserialize_fn = function(r) self$serializer$deserialize_response(r)
       )
-
-      if (is.null(doc)) {
-        httr::stop_for_status(response)
-        return()
-      }
-
-      ns <- xml2::xml_ns(doc)
-
-      # Check for SOAP 1.1 Fault
-      # Only search for soap:Fault if soap prefix is defined or we provide it
-      # Ideally we should use the namespace URI, but xml2 makes that verbose in XPath
-      # Let's try to find it safely
-      fault_node <- tryCatch(
-        xml2::xml_find_first(doc, ".//soap:Fault", ns),
-        warning = function(w) xml2::xml_missing()
-      )
-
-      # Check for SOAP 1.2 Fault
-      if (is_xml_missing(fault_node)) {
-        fault_node <- tryCatch(
-          xml2::xml_find_first(doc, ".//env:Fault", ns),
-          warning = function(w) xml2::xml_missing()
-        )
-      }
-
-      if (is_xml_missing(fault_node)) {
-        # Fallback for when prefix is different but local name is Fault
-        fault_node <- xml2::xml_find_first(doc, ".//*[local-name()='Fault']")
-      }
-
-      if (!is_xml_missing(fault_node)) {
-        # Extract Fault Code
-        fault_code <- xml2::xml_text(xml2::xml_find_first(
-          fault_node,
-          ".//*[local-name()='faultcode' or local-name()='Code']"
-        ))
-
-        # Extract Fault String/Reason
-        fault_string <- xml2::xml_text(xml2::xml_find_first(
-          fault_node,
-          ".//*[local-name()='faultstring' or local-name()='Reason']"
-        ))
-
-        # Extract Detail
-        fault_detail <- xml2::xml_text(xml2::xml_find_first(
-          fault_node,
-          ".//*[local-name()='detail' or local-name()='Detail']"
-        ))
-
-        msg <- sprintf("SOAP Fault: [%s] %s", fault_code, fault_string)
-        if (!is.na(fault_detail) && nchar(fault_detail) > 0) {
-          msg <- paste0(msg, "\nDetail: ", fault_detail)
-        }
-        stop(msg, call. = FALSE)
-      }
-
-      # If no fault found, let httr handle it
-      httr::stop_for_status(response)
     }
   )
 )
