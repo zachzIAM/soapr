@@ -18,6 +18,12 @@ Parses a WSDL file to extract services, ports, operations, and types.
 
 \item{\code{ns}}{The namespace definitions.}
 
+\item{\code{source}}{The original WSDL file path or URL.}
+
+\item{\code{schemas}}{Per-schema metadata discovered across inline, imported, and included schemas.}
+
+\item{\code{schema_loader}}{Optional custom loader function(uri) for resolving external schemas.}
+
 \item{\code{element_form_default}}{The elementFormDefault value (qualified/unqualified).}
 
 \item{\code{attribute_form_default}}{The attributeFormDefault value (qualified/unqualified).}
@@ -31,6 +37,7 @@ Parses a WSDL file to extract services, ports, operations, and types.
 \item \href{#method-WSDLParser-extend_namespace}{\code{WSDLParser$extend_namespace()}}
 \item \href{#method-WSDLParser-get_target_namespace}{\code{WSDLParser$get_target_namespace()}}
 \item \href{#method-WSDLParser-parse_schema_defaults}{\code{WSDLParser$parse_schema_defaults()}}
+\item \href{#method-WSDLParser-get_schemas}{\code{WSDLParser$get_schemas()}}
 \item \href{#method-WSDLParser-get_services}{\code{WSDLParser$get_services()}}
 \item \href{#method-WSDLParser-get_ports}{\code{WSDLParser$get_ports()}}
 \item \href{#method-WSDLParser-get_port_location}{\code{WSDLParser$get_port_location()}}
@@ -49,13 +56,15 @@ Parses a WSDL file to extract services, ports, operations, and types.
 \subsection{Method \code{new()}}{
 Initialize the WSDLParser.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{WSDLParser$new(path_or_url)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{WSDLParser$new(path_or_url, schema_loader = NULL)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
 \item{\code{path_or_url}}{Path or URL to the WSDL file.}
+
+\item{\code{schema_loader}}{Optional function taking a URI/path and returning an xml_document or XML string.}
 }
 \if{html}{\out{</div>}}
 }
@@ -95,11 +104,25 @@ The target namespace URI.
 \if{html}{\out{<a id="method-WSDLParser-parse_schema_defaults"></a>}}
 \if{latex}{\out{\hypertarget{method-WSDLParser-parse_schema_defaults}{}}}
 \subsection{Method \code{parse_schema_defaults()}}{
-Parse schema defaults (elementFormDefault, attributeFormDefault) from the WSDL.
+Parse schema defaults (elementFormDefault, attributeFormDefault) from the WSDL schemas.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{WSDLParser$parse_schema_defaults()}\if{html}{\out{</div>}}
 }
 
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-WSDLParser-get_schemas"></a>}}
+\if{latex}{\out{\hypertarget{method-WSDLParser-get_schemas}{}}}
+\subsection{Method \code{get_schemas()}}{
+Get metadata for all discovered schemas (inline, imported, and included).
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{WSDLParser$get_schemas()}\if{html}{\out{</div>}}
+}
+
+\subsection{Returns}{
+A list of schema metadata records with \code{target_namespace},
+\code{element_form_default}, \code{attribute_form_default}, \code{source}, and \code{kind}.
+}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-WSDLParser-get_services"></a>}}
@@ -178,7 +201,7 @@ A list of operations.
 \if{html}{\out{<a id="method-WSDLParser-get_type_definitions"></a>}}
 \if{latex}{\out{\hypertarget{method-WSDLParser-get_type_definitions}{}}}
 \subsection{Method \code{get_type_definitions()}}{
-Get all type definitions from the WSDL.
+Get all type definitions across all WSDL, imported, and included schemas.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{WSDLParser$get_type_definitions()}\if{html}{\out{</div>}}
 }
@@ -193,13 +216,15 @@ A list of type definitions.
 \subsection{Method \code{parse_complex_type()}}{
 Parse a complexType node.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{WSDLParser$parse_complex_type(node)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{WSDLParser$parse_complex_type(node, schema_ns = self$ns)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
 \item{\code{node}}{The complexType xml_node.}
+
+\item{\code{schema_ns}}{Namespace vector to use for XPath queries on this schema.}
 }
 \if{html}{\out{</div>}}
 }
@@ -213,13 +238,15 @@ A list representing the complex type.
 \subsection{Method \code{parse_simple_type()}}{
 Parse a simpleType node.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{WSDLParser$parse_simple_type(node)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{WSDLParser$parse_simple_type(node, schema_ns = self$ns)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
 \item{\code{node}}{The simpleType xml_node.}
+
+\item{\code{schema_ns}}{Namespace vector to use for XPath queries on this schema.}
 }
 \if{html}{\out{</div>}}
 }
@@ -253,13 +280,15 @@ The string without the namespace prefix.
 \subsection{Method \code{parse_documentation()}}{
 Parse documentation from a node.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{WSDLParser$parse_documentation(node)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{WSDLParser$parse_documentation(node, schema_ns = self$ns)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
 \item{\code{node}}{The xml_node.}
+
+\item{\code{schema_ns}}{Namespace vector to use for XPath queries on this schema.}
 }
 \if{html}{\out{</div>}}
 }

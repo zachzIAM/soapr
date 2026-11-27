@@ -10,6 +10,12 @@ WSDLParser <- R6::R6Class(
     doc = NULL,
     #' @field ns The namespace definitions.
     ns = NULL,
+    #' @field source The original WSDL file path or URL.
+    source = NULL,
+    #' @field schemas Per-schema metadata discovered across inline, imported, and included schemas.
+    schemas = list(),
+    #' @field schema_loader Optional custom loader function(uri) for resolving external schemas.
+    schema_loader = NULL,
     #' @field element_form_default The elementFormDefault value (qualified/unqualified).
     element_form_default = "unqualified",
     #' @field attribute_form_default The attributeFormDefault value (qualified/unqualified).
@@ -18,10 +24,14 @@ WSDLParser <- R6::R6Class(
     #' @description
     #' Initialize the WSDLParser.
     #' @param path_or_url Path or URL to the WSDL file.
-    initialize = function(path_or_url) {
+    #' @param schema_loader Optional function taking a URI/path and returning an xml_document or XML string.
+    initialize = function(path_or_url, schema_loader = NULL) {
+      self$source <- path_or_url
+      self$schema_loader <- schema_loader
       self$doc <- xml2::read_xml(path_or_url)
       self$ns <- self$extend_namespace(xml2::xml_ns(self$doc))
       self$get_target_namespace()
+      private$collect_schemas()
       self$parse_schema_defaults()
     },
 
@@ -64,26 +74,44 @@ WSDLParser <- R6::R6Class(
     },
 
     #' @description
-    #' Parse schema defaults (elementFormDefault, attributeFormDefault) from the WSDL.
+    #' Parse schema defaults (elementFormDefault, attributeFormDefault) from the WSDL schemas.
     parse_schema_defaults = function() {
-      schema <- xml2::xml_find_first(self$doc, ".//xsd:schema", self$ns)
-
-      if (inherits(schema, "xml_node")) {
-        efd <- xml2::xml_attr(schema, "elementFormDefault")
-        afd <- xml2::xml_attr(schema, "attributeFormDefault")
-
-        if (!is.na(efd)) {
-          self$element_form_default <- efd
-        }
-
-        # attributeFormDefault defaults to "unqualified" if missing,
-        # but if present we assume it overrides.
-        if (!is.na(afd)) {
-          self$attribute_form_default <- afd
-        } else {
-          self$attribute_form_default <- "unqualified"
-        }
+      if (length(self$schemas) == 0L) {
+        self$element_form_default <- "unqualified"
+        self$attribute_form_default <- "unqualified"
+        return(invisible(NULL))
       }
+
+      wsdl_tns <- self$get_target_namespace()
+      inline_schemas <- Filter(function(s) identical(s$kind, "inline"), self$schemas)
+      primary <- NULL
+
+      if (length(inline_schemas) > 0L) {
+        tns_matches <- Filter(function(s) identical(s$target_namespace, wsdl_tns), inline_schemas)
+        primary <- if (length(tns_matches) > 0L) tns_matches[[1]] else inline_schemas[[1]]
+      } else {
+        primary <- self$schemas[[1]]
+      }
+
+      self$element_form_default <- primary$element_form_default
+      self$attribute_form_default <- primary$attribute_form_default
+      invisible(NULL)
+    },
+
+    #' @description
+    #' Get metadata for all discovered schemas (inline, imported, and included).
+    #' @return A list of schema metadata records with `target_namespace`,
+    #'   `element_form_default`, `attribute_form_default`, `source`, and `kind`.
+    get_schemas = function() {
+      lapply(self$schemas, function(s) {
+        list(
+          target_namespace = s$target_namespace,
+          element_form_default = s$element_form_default,
+          attribute_form_default = s$attribute_form_default,
+          source = s$source,
+          kind = s$kind
+        )
+      })
     },
 
     #' @description
@@ -259,80 +287,67 @@ WSDLParser <- R6::R6Class(
     },
 
     #' @description
-    #' Get all type definitions from the WSDL.
+    #' Get all type definitions across all WSDL, imported, and included schemas.
     #' @return A list of type definitions.
     get_type_definitions = function() {
-      # Find schema node
-      schema <- xml2::xml_find_first(self$doc, "//xsd:schema", self$ns)
-      if (is_xml_missing(schema)) {
+      if (length(self$schemas) == 0L) {
         return(list())
       }
 
-      # Get elementFormDefault
-      element_form_default <- xml2::xml_attr(schema, "elementFormDefault")
-      if (is.na(element_form_default)) {
-        element_form_default <- "unqualified" # Default per XSD spec
-      }
-      self$element_form_default <- element_form_default
-
-      # Get attributeFormDefault
-      attribute_form_default <- xml2::xml_attr(schema, "attributeFormDefault")
-      if (is.na(attribute_form_default)) {
-        attribute_form_default <- "unqualified" # Default per XSD spec
-      }
-      self$attribute_form_default <- attribute_form_default
-
+      self$parse_schema_defaults()
       types <- list()
 
-      # Parse complexTypes
-      complex_types <- xml2::xml_find_all(schema, "./xsd:complexType", self$ns)
-      for (ct in complex_types) {
-        name <- xml2::xml_attr(ct, "name")
-        if (!is.na(name)) {
-          types[[name]] <- self$parse_complex_type(ct)
-        }
-      }
+      for (entry in self$schemas) {
+        schema <- entry$node
+        schema_ns <- entry$ns
 
-      # Parse simpleTypes (enumerations)
-      simple_types <- xml2::xml_find_all(schema, "./xsd:simpleType", self$ns)
-      for (st in simple_types) {
-        name <- xml2::xml_attr(st, "name")
-        if (!is.na(name)) {
-          types[[name]] <- self$parse_simple_type(st)
+        complex_types <- xml2::xml_find_all(schema, "./xsd:complexType", schema_ns)
+        for (ct in complex_types) {
+          name <- xml2::xml_attr(ct, "name")
+          if (!is.na(name)) {
+            types[[name]] <- self$parse_complex_type(ct, schema_ns = schema_ns)
+          }
         }
-      }
 
-      # Parse elements that define types directly
-      elements <- xml2::xml_find_all(schema, "./xsd:element", self$ns)
-      for (el in elements) {
-        name <- xml2::xml_attr(el, "name")
-        ct <- xml2::xml_find_first(el, "./xsd:complexType", self$ns)
-        if (!is_xml_missing(ct)) {
-          types[[name]] <- self$parse_complex_type(ct)
-        } else {
-          # Check if it has a type attribute (Simple Element)
-          type_attr <- self$strip_ns(xml2::xml_attr(el, "type"))
-          if (!is.na(type_attr)) {
-            types[[name]] <- list(
-              kind = "element",
-              name = name,
-              type = type_attr,
-              documentation = self$parse_documentation(el)
-            )
+        simple_types <- xml2::xml_find_all(schema, "./xsd:simpleType", schema_ns)
+        for (st in simple_types) {
+          name <- xml2::xml_attr(st, "name")
+          if (!is.na(name)) {
+            types[[name]] <- self$parse_simple_type(st, schema_ns = schema_ns)
+          }
+        }
+
+        elements <- xml2::xml_find_all(schema, "./xsd:element", schema_ns)
+        for (el in elements) {
+          name <- xml2::xml_attr(el, "name")
+          ct <- xml2::xml_find_first(el, "./xsd:complexType", schema_ns)
+          if (!is_xml_missing(ct)) {
+            types[[name]] <- self$parse_complex_type(ct, schema_ns = schema_ns)
+          } else {
+            type_attr <- self$strip_ns(xml2::xml_attr(el, "type"))
+            if (!is.na(type_attr)) {
+              types[[name]] <- list(
+                kind = "element",
+                name = name,
+                type = type_attr,
+                documentation = self$parse_documentation(el, schema_ns = schema_ns)
+              )
+            }
           }
         }
       }
 
-      return(types)
+      types
     },
 
     #' @description
     #' Parse a complexType node.
     #' @param node The complexType xml_node.
+    #' @param schema_ns Namespace vector to use for XPath queries on this schema.
     #' @return A list representing the complex type.
-    parse_complex_type = function(node) {
+    parse_complex_type = function(node, schema_ns = self$ns) {
       # Get attributes
-      attrs <- xml2::xml_find_all(node, ".//xsd:attribute", self$ns)
+      attrs <- xml2::xml_find_all(node, ".//xsd:attribute", schema_ns)
       attr_defs <- list()
       for (a in attrs) {
         name <- xml2::xml_attr(a, "name")
@@ -342,7 +357,7 @@ WSDLParser <- R6::R6Class(
             type = self$strip_ns(xml2::xml_attr(a, "type")),
             use = xml2::xml_attr(a, "use"),
             default = xml2::xml_attr(a, "default"),
-            documentation = self$parse_documentation(a)
+            documentation = self$parse_documentation(a, schema_ns = schema_ns)
           )
         }
       }
@@ -351,42 +366,30 @@ WSDLParser <- R6::R6Class(
       seq_elements <- xml2::xml_find_all(
         node,
         ".//xsd:sequence/xsd:element",
-        self$ns
+        schema_ns
       )
       elem_defs <- list()
       for (e in seq_elements) {
         name <- xml2::xml_attr(e, "name")
         type <- self$strip_ns(xml2::xml_attr(e, "type"))
 
-        # Handle ref
+        # Handle ref across all collected schemas (inline, imported, included)
         if (is.na(name)) {
           ref <- self$strip_ns(xml2::xml_attr(e, "ref"))
           if (!is.na(ref)) {
             name <- ref
-            # Resolve ref: look up the global element definition
-            global_elem_xpath <- sprintf("//xsd:element[@name='%s']", ref)
-            global_elem <- xml2::xml_find_first(
-              self$doc,
-              global_elem_xpath,
-              self$ns
-            )
+            resolved <- private$find_global_element(ref)
 
-            if (!is_xml_missing(global_elem)) {
-              # Check for type attribute on global element
+            if (!is.null(resolved)) {
+              global_elem <- resolved$node
+              global_ns <- resolved$ns
               ref_type <- self$strip_ns(xml2::xml_attr(global_elem, "type"))
               if (!is.na(ref_type)) {
                 type <- ref_type
-              } else {
-                # If no type attribute, check if it has an inline complexType
-                if (
-                  !is_xml_missing(xml2::xml_find_first(
-                    global_elem,
-                    "./xsd:complexType",
-                    self$ns
-                  ))
-                ) {
-                  type <- ref
-                }
+              } else if (
+                !is_xml_missing(xml2::xml_find_first(global_elem, "./xsd:complexType", global_ns))
+              ) {
+                type <- ref
               }
             }
 
@@ -403,13 +406,12 @@ WSDLParser <- R6::R6Class(
             minOccurs = xml2::xml_attr(e, "minOccurs"),
             maxOccurs = xml2::xml_attr(e, "maxOccurs"),
             default = xml2::xml_attr(e, "default"),
-            documentation = self$parse_documentation(e)
+            documentation = self$parse_documentation(e, schema_ns = schema_ns)
           )
         }
       }
 
-      doc <- self$parse_documentation(node)
-      type_name <- xml2::xml_attr(node, "name")
+      doc <- self$parse_documentation(node, schema_ns = schema_ns)
 
       list(
         kind = "complex",
@@ -422,12 +424,13 @@ WSDLParser <- R6::R6Class(
     #' @description
     #' Parse a simpleType node.
     #' @param node The simpleType xml_node.
+    #' @param schema_ns Namespace vector to use for XPath queries on this schema.
     #' @return A list representing the simple type.
-    parse_simple_type = function(node) {
-      restriction <- xml2::xml_find_first(node, "./xsd:restriction", self$ns)
+    parse_simple_type = function(node, schema_ns = self$ns) {
+      restriction <- xml2::xml_find_first(node, "./xsd:restriction", schema_ns)
       base <- self$strip_ns(xml2::xml_attr(restriction, "base"))
 
-      enums <- xml2::xml_find_all(restriction, "./xsd:enumeration", self$ns)
+      enums <- xml2::xml_find_all(restriction, "./xsd:enumeration", schema_ns)
       values <- xml2::xml_attr(enums, "value")
 
       list(
@@ -456,15 +459,16 @@ WSDLParser <- R6::R6Class(
     #' @description
     #' Parse documentation from a node.
     #' @param node The xml_node.
+    #' @param schema_ns Namespace vector to use for XPath queries on this schema.
     #' @return The documentation text, or NULL.
-    parse_documentation = function(node) {
-      doc_node <- xml2::xml_find_first(node, "./wsdl:documentation", self$ns)
+    parse_documentation = function(node, schema_ns = self$ns) {
+      doc_node <- xml2::xml_find_first(node, "./wsdl:documentation", schema_ns)
       if (is_xml_missing(doc_node)) {
         # Try xsd:annotation/xsd:documentation for types
         doc_node <- xml2::xml_find_first(
           node,
           ".//xsd:annotation/xsd:documentation",
-          self$ns
+          schema_ns
         )
       }
 
@@ -472,6 +476,194 @@ WSDLParser <- R6::R6Class(
         return(trimws(xml2::xml_text(doc_node)))
       }
       return(NULL)
+    }
+  ),
+  private = list(
+    normalize_schema_key = function(uri) {
+      if (is.null(uri) || length(uri) == 0L || is.na(uri)) {
+        return("")
+      }
+      uri <- trimws(as.character(uri))
+      if (grepl("^https?://", uri, ignore.case = TRUE)) {
+        return(sub("#.*$", "", uri))
+      }
+      local_path <- sub("^file://", "", uri)
+      normalizePath(local_path, winslash = "/", mustWork = FALSE)
+    },
+
+    resolve_schema_location = function(location, base_uri) {
+      if (is.null(location) || is.na(location) || !nzchar(trimws(location))) {
+        return(NULL)
+      }
+      location <- trimws(location)
+      if (grepl("^https?://", location, ignore.case = TRUE)) {
+        return(location)
+      }
+      if (
+        !is.null(base_uri) &&
+          length(base_uri) == 1L &&
+          !is.na(base_uri) &&
+          grepl("^https?://", base_uri, ignore.case = TRUE)
+      ) {
+        return(xml2::url_absolute(location, base_uri))
+      }
+      if (grepl("^file://", location, ignore.case = TRUE)) {
+        return(private$normalize_schema_key(location))
+      }
+      if (grepl("^(/|[A-Za-z]:[/\\\\])", location)) {
+        return(private$normalize_schema_key(location))
+      }
+      base_dir <- if (!is.null(base_uri) && length(base_uri) == 1L && !is.na(base_uri)) {
+        dirname(sub("^file://", "", base_uri))
+      } else {
+        "."
+      }
+      private$normalize_schema_key(file.path(base_dir, location))
+    },
+
+    fetch_schema_doc = function(uri) {
+      tryCatch(
+        {
+          if (!is.null(self$schema_loader)) {
+            res <- self$schema_loader(uri)
+            if (inherits(res, "xml_document")) {
+              return(res)
+            }
+            if (is.character(res) && length(res) > 0L) {
+              return(xml2::read_xml(paste(res, collapse = "\n")))
+            }
+            return(NULL)
+          }
+          if (grepl("^https?://", uri, ignore.case = TRUE)) {
+            resp <- httr::GET(uri, httr::timeout(2))
+            httr::stop_for_status(resp)
+            txt <- httr::content(resp, "text", encoding = "UTF-8")
+            if (is.null(txt) || is.na(txt) || !nzchar(trimws(txt))) {
+              return(NULL)
+            }
+            return(xml2::read_xml(txt))
+          }
+          if (!file.exists(uri)) {
+            return(NULL)
+          }
+          xml2::read_xml(uri)
+        },
+        error = function(e) NULL
+      )
+    },
+
+    collect_schemas = function() {
+      state <- new.env(parent = emptyenv())
+      state$schemas <- list()
+      state$visited <- character(0)
+
+      if (!is.null(self$source) && nzchar(trimws(as.character(self$source)))) {
+        state$visited <- private$normalize_schema_key(self$source)
+      }
+
+      inline_nodes <- xml2::xml_find_all(self$doc, "//xsd:schema", self$ns)
+      for (node in inline_nodes) {
+        private$process_schema_node(
+          schema_node = node,
+          schema_ns = self$ns,
+          source_uri = self$source,
+          kind = "inline",
+          inherited_tns = NA_character_,
+          state = state
+        )
+      }
+
+      self$schemas <- state$schemas
+      invisible(NULL)
+    },
+
+    process_schema_node = function(
+      schema_node,
+      schema_ns,
+      source_uri,
+      kind,
+      inherited_tns = NA_character_,
+      state
+    ) {
+      tns <- xml2::xml_attr(schema_node, "targetNamespace")
+      if (is.na(tns) || !nzchar(tns)) {
+        tns <- inherited_tns
+      }
+      efd <- xml2::xml_attr(schema_node, "elementFormDefault")
+      if (is.na(efd) || !nzchar(efd)) {
+        efd <- "unqualified"
+      }
+      afd <- xml2::xml_attr(schema_node, "attributeFormDefault")
+      if (is.na(afd) || !nzchar(afd)) {
+        afd <- "unqualified"
+      }
+
+      state$schemas[[length(state$schemas) + 1L]] <- list(
+        node = schema_node,
+        ns = schema_ns,
+        target_namespace = tns,
+        element_form_default = efd,
+        attribute_form_default = afd,
+        source = source_uri,
+        kind = kind
+      )
+
+      imports <- xml2::xml_find_all(schema_node, "./xsd:import", schema_ns)
+      for (imp in imports) {
+        loc <- xml2::xml_attr(imp, "schemaLocation")
+        imp_tns <- xml2::xml_attr(imp, "namespace")
+        resolved <- private$resolve_schema_location(loc, source_uri)
+        if (!is.null(resolved)) {
+          private$load_external_schema(resolved, kind = "import", inherited_tns = imp_tns, state = state)
+        }
+      }
+
+      includes <- xml2::xml_find_all(schema_node, "./xsd:include", schema_ns)
+      for (inc in includes) {
+        loc <- xml2::xml_attr(inc, "schemaLocation")
+        resolved <- private$resolve_schema_location(loc, source_uri)
+        if (!is.null(resolved)) {
+          private$load_external_schema(resolved, kind = "include", inherited_tns = tns, state = state)
+        }
+      }
+    },
+
+    load_external_schema = function(uri, kind, inherited_tns, state) {
+      key <- private$normalize_schema_key(uri)
+      if (!nzchar(key) || key %in% state$visited) {
+        return(invisible(NULL))
+      }
+      state$visited <- c(state$visited, key)
+
+      ext_doc <- private$fetch_schema_doc(uri)
+      if (is.null(ext_doc)) {
+        return(invisible(NULL))
+      }
+
+      ext_ns <- self$extend_namespace(xml2::xml_ns(ext_doc))
+      schema_nodes <- xml2::xml_find_all(ext_doc, "//xsd:schema", ext_ns)
+      for (s_node in schema_nodes) {
+        private$process_schema_node(
+          schema_node = s_node,
+          schema_ns = ext_ns,
+          source_uri = uri,
+          kind = kind,
+          inherited_tns = inherited_tns,
+          state = state
+        )
+      }
+      invisible(NULL)
+    },
+
+    find_global_element = function(elem_name) {
+      xpath <- sprintf("./xsd:element[@name='%s']", elem_name)
+      for (entry in self$schemas) {
+        node <- xml2::xml_find_first(entry$node, xpath, entry$ns)
+        if (!is_xml_missing(node)) {
+          return(list(node = node, ns = entry$ns))
+        }
+      }
+      NULL
     }
   )
 )
