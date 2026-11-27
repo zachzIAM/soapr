@@ -2,6 +2,26 @@ is_xml_missing <- function(node) {
   inherits(node, "xml_missing")
 }
 
+soap_envelope_ns <- function(soap_version = "1.1") {
+  if (identical(soap_version, "1.2")) {
+    "http://www.w3.org/2003/05/soap-envelope"
+  } else {
+    "http://schemas.xmlsoap.org/soap/envelope/"
+  }
+}
+
+soap_content_type <- function(action = "", soap_version = "1.1") {
+  if (identical(soap_version, "1.2")) {
+    if (!is.null(action) && length(action) == 1L && !is.na(action) && nzchar(action)) {
+      sprintf('application/soap+xml; charset=utf-8; action="%s"', action)
+    } else {
+      "application/soap+xml; charset=utf-8"
+    }
+  } else {
+    "text/xml; charset=utf-8"
+  }
+}
+
 soap_get_active_default_ns <- function(node) {
   cur <- node
   while (inherits(cur, "xml_node") && xml2::xml_type(cur) == "element") {

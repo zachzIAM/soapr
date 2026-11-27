@@ -540,6 +540,38 @@ is_xml_missing <- function(node) {
   return(inherits(node, "xml_missing"))
 }
 
+get_soap_envelope_ns <- function(soap_version = "1.1") {
+  if (identical(soap_version, "1.2")) {
+    "http://www.w3.org/2003/05/soap-envelope"
+  } else {
+    "http://schemas.xmlsoap.org/soap/envelope/"
+  }
+}
+
+build_soap_content_type <- function(action = "", soap_version = "1.1") {
+  if (identical(soap_version, "1.2")) {
+    if (!is.null(action) && length(action) == 1L && !is.na(action) && nzchar(action)) {
+      sprintf('application/soap+xml; charset=utf-8; action="%s"', action)
+    } else {
+      "application/soap+xml; charset=utf-8"
+    }
+  } else {
+    "text/xml; charset=utf-8"
+  }
+}
+
+build_transport_config <- function(config, action = "", soap_version = "1.1") {
+  ct <- build_soap_content_type(action = action, soap_version = soap_version)
+  req_config <- if (is.list(config)) config else list()
+  extra_headers <- if (identical(soap_version, "1.2")) {
+    c("Content-Type" = ct)
+  } else {
+    c("Content-Type" = ct, SOAPAction = if (is.null(action)) "" else action)
+  }
+  req_config$headers <- c(req_config$headers, extra_headers)
+  req_config
+}
+
 check_soap_type <- function(obj, expected_type, arg_name) {
   if (is.list(obj) && !inherits(obj, "soap_object")) {
     for (i in seq_along(obj)) {

@@ -90,9 +90,11 @@ Client <- R6::R6Class(
       {{{.}}}
       {{/arg_assignments}}
 
+      soap_version <- if (!is.null(self$port_def$soap_version)) self$port_def$soap_version else "1.1"
+
       # Construct Envelope
       envelope <- xml2::xml_new_root("soap:Envelope",
-        "xmlns:soap" = "http://schemas.xmlsoap.org/soap/envelope/",
+        "xmlns:soap" = get_soap_envelope_ns(soap_version),
         "xmlns:xsi" = "http://www.w3.org/2001/XMLSchema-instance",
         "xmlns:xsd" = "http://www.w3.org/2001/XMLSchema",
         "xmlns:tns" = "{{{tns}}}"
@@ -114,14 +116,24 @@ Client <- R6::R6Class(
         build_xml_node(op_node, arg_name, args[[arg_name]])
       }
 
+      ct <- build_soap_content_type(action = action, soap_version = soap_version)
       if (!is.null(self$transport)) {
-        response <- self$transport(self$url, action, as.character(envelope), self$config, self$handle)
+        req_config <- build_transport_config(self$config, action = action, soap_version = soap_version)
+        response <- self$transport(self$url, action, as.character(envelope), req_config, self$handle)
+      } else if (identical(soap_version, "1.2")) {
+        response <- httr::POST(
+          url = self$url,
+          handle = self$handle,
+          httr::content_type(ct),
+          body = as.character(envelope),
+          config = self$config
+        )
       } else {
         response <- httr::POST(
           url = self$url,
           handle = self$handle,
           httr::add_headers(SOAPAction = action),
-          httr::content_type("text/xml; charset=utf-8"),
+          httr::content_type(ct),
           body = as.character(envelope),
           config = self$config
         )

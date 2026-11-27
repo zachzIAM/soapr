@@ -140,9 +140,18 @@ WSDLParser <- R6::R6Class(
       ports <- xml2::xml_find_all(service_node, "./wsdl:port", self$ns)
       res <- purrr::map(ports, function(port) {
         binding_name <- self$strip_ns(xml2::xml_attr(port, "binding"))
+        soap_version <- self$get_binding_soap_version(binding_name)
+        if (
+          identical(soap_version, "1.1") &&
+            is_xml_missing(xml2::xml_find_first(port, ".//soap:address", self$ns)) &&
+            !is_xml_missing(xml2::xml_find_first(port, ".//soap12:address", self$ns))
+        ) {
+          soap_version <- "1.2"
+        }
         list(
           name = xml2::xml_attr(port, "name"),
           binding = binding_name,
+          soap_version = soap_version,
           location = self$get_port_location(port),
           operations = self$get_operations(binding_name)
         )
@@ -151,6 +160,28 @@ WSDLParser <- R6::R6Class(
         res <- purrr::set_names(res, purrr::map_chr(res, "name"))
       }
       return(res)
+    },
+
+    #' @description
+    #' Detect the SOAP protocol version ("1.1" or "1.2") for a binding.
+    #' @param binding_name The name of the binding.
+    #' @return Character string "1.1" or "1.2".
+    get_binding_soap_version = function(binding_name) {
+      xpath <- sprintf("//wsdl:binding[@name='%s']", binding_name)
+      binding <- xml2::xml_find_first(self$doc, xpath, self$ns)
+      if (is_xml_missing(binding)) {
+        return("1.1")
+      }
+      if (!is_xml_missing(xml2::xml_find_first(binding, "./soap12:binding", self$ns))) {
+        return("1.2")
+      }
+      if (!is_xml_missing(xml2::xml_find_first(binding, "./soap:binding", self$ns))) {
+        return("1.1")
+      }
+      if (!is_xml_missing(xml2::xml_find_first(binding, "./wsdl:operation/soap12:operation", self$ns))) {
+        return("1.2")
+      }
+      "1.1"
     },
 
     #' @description
@@ -214,8 +245,12 @@ WSDLParser <- R6::R6Class(
       for (op in binding_ops) {
         name <- xml2::xml_attr(op, "name")
         soap_op <- xml2::xml_find_first(op, "./soap:operation", self$ns)
-        action <- if (!is.na(soap_op)) {
-          xml2::xml_attr(soap_op, "soapAction")
+        if (is_xml_missing(soap_op)) {
+          soap_op <- xml2::xml_find_first(op, "./soap12:operation", self$ns)
+        }
+        action <- if (!is_xml_missing(soap_op)) {
+          raw_action <- xml2::xml_attr(soap_op, "soapAction")
+          if (is.na(raw_action)) "" else raw_action
         } else {
           ""
         }
