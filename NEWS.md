@@ -1,3 +1,8 @@
+# soapr 0.4.0 (2026-11-27)
+
+### Features
+- end-to-end SOAP 1.2 protocol support (9458efd)
+
 # soapr 0.3.0 (2026-11-27)
 
 ### Features
