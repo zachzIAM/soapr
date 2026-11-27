@@ -105,10 +105,25 @@ Factory <- R6::R6Class(
         }
       }
 
+      # Add text content field for simpleContent types
+      if (isTRUE(type_def$simple_content)) {
+        val_field <- if (!is.null(type_def$value_field)) type_def$value_field else "value"
+        if (!is.null(args[[val_field]])) {
+          obj[[val_field]] <- args[[val_field]]
+        } else if (length(args) > 0L && (is.null(names(args)) || !nzchar(names(args)[1]))) {
+          obj[[val_field]] <- args[[1]]
+        } else {
+          obj[[val_field]] <- NA
+        }
+      }
+
       # Add class and type attribute
       class(obj) <- c("soap_object", "list")
       attr(obj, "soap_type") <- type_name
       attr(obj, "soap_attrs") <- names(type_def$attributes)
+      if (isTRUE(type_def$simple_content)) {
+        attr(obj, "soap_simple_content") <- if (!is.null(type_def$value_field)) type_def$value_field else "value"
+      }
 
       return(obj)
     },
@@ -165,6 +180,14 @@ Factory <- R6::R6Class(
             obj[[elem_name]] <- NA
           }
         }
+      }
+
+      if (isTRUE(type_def$simple_content)) {
+        val_field <- if (!is.null(type_def$value_field)) type_def$value_field else "value"
+        if (is.null(obj[[val_field]])) {
+          obj[[val_field]] <- NA
+        }
+        attr(obj, "soap_simple_content") <- val_field
       }
 
       class(obj) <- c("soap_object", "list")

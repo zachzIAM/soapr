@@ -216,7 +216,13 @@ A list of type definitions.
 \subsection{Method \code{parse_complex_type()}}{
 Parse a complexType node.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{WSDLParser$parse_complex_type(node, schema_ns = self$ns)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{WSDLParser$parse_complex_type(
+  node,
+  schema_ns = self$ns,
+  type_name = NULL,
+  visited = character(0),
+  nested_collector = NULL
+)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
@@ -225,6 +231,12 @@ Parse a complexType node.
 \item{\code{node}}{The complexType xml_node.}
 
 \item{\code{schema_ns}}{Namespace vector to use for XPath queries on this schema.}
+
+\item{\code{type_name}}{Optional enclosing type name for scoping inline anonymous subtypes.}
+
+\item{\code{visited}}{Visited base type names to prevent inheritance cycles.}
+
+\item{\code{nested_collector}}{Optional environment collecting inline anonymous subtypes.}
 }
 \if{html}{\out{</div>}}
 }

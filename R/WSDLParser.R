@@ -296,6 +296,8 @@ WSDLParser <- R6::R6Class(
 
       self$parse_schema_defaults()
       types <- list()
+      nested_collector <- new.env(parent = emptyenv())
+      nested_collector$types <- list()
 
       for (entry in self$schemas) {
         schema <- entry$node
@@ -305,7 +307,12 @@ WSDLParser <- R6::R6Class(
         for (ct in complex_types) {
           name <- xml2::xml_attr(ct, "name")
           if (!is.na(name)) {
-            types[[name]] <- self$parse_complex_type(ct, schema_ns = schema_ns)
+            types[[name]] <- self$parse_complex_type(
+              ct,
+              schema_ns = schema_ns,
+              type_name = name,
+              nested_collector = nested_collector
+            )
           }
         }
 
@@ -320,20 +327,39 @@ WSDLParser <- R6::R6Class(
         elements <- xml2::xml_find_all(schema, "./xsd:element", schema_ns)
         for (el in elements) {
           name <- xml2::xml_attr(el, "name")
+          if (is.na(name)) {
+            next
+          }
           ct <- xml2::xml_find_first(el, "./xsd:complexType", schema_ns)
           if (!is_xml_missing(ct)) {
-            types[[name]] <- self$parse_complex_type(ct, schema_ns = schema_ns)
+            types[[name]] <- self$parse_complex_type(
+              ct,
+              schema_ns = schema_ns,
+              type_name = name,
+              nested_collector = nested_collector
+            )
           } else {
-            type_attr <- self$strip_ns(xml2::xml_attr(el, "type"))
-            if (!is.na(type_attr)) {
-              types[[name]] <- list(
-                kind = "element",
-                name = name,
-                type = type_attr,
-                documentation = self$parse_documentation(el, schema_ns = schema_ns)
-              )
+            st <- xml2::xml_find_first(el, "./xsd:simpleType", schema_ns)
+            if (!is_xml_missing(st)) {
+              types[[name]] <- self$parse_simple_type(st, schema_ns = schema_ns)
+            } else {
+              type_attr <- self$strip_ns(xml2::xml_attr(el, "type"))
+              if (!is.na(type_attr)) {
+                types[[name]] <- list(
+                  kind = "element",
+                  name = name,
+                  type = type_attr,
+                  documentation = self$parse_documentation(el, schema_ns = schema_ns)
+                )
+              }
             }
           }
+        }
+      }
+
+      for (nested_name in names(nested_collector$types)) {
+        if (is.null(types[[nested_name]])) {
+          types[[nested_name]] <- nested_collector$types[[nested_name]]
         }
       }
 
@@ -344,32 +370,127 @@ WSDLParser <- R6::R6Class(
     #' Parse a complexType node.
     #' @param node The complexType xml_node.
     #' @param schema_ns Namespace vector to use for XPath queries on this schema.
+    #' @param type_name Optional enclosing type name for scoping inline anonymous subtypes.
+    #' @param visited Visited base type names to prevent inheritance cycles.
+    #' @param nested_collector Optional environment collecting inline anonymous subtypes.
     #' @return A list representing the complex type.
-    parse_complex_type = function(node, schema_ns = self$ns) {
-      # Get attributes
-      attrs <- xml2::xml_find_all(node, ".//xsd:attribute", schema_ns)
+    parse_complex_type = function(
+      node,
+      schema_ns = self$ns,
+      type_name = NULL,
+      visited = character(0),
+      nested_collector = NULL
+    ) {
+      effective_name <- if (
+        !is.null(type_name) &&
+          length(type_name) == 1L &&
+          !is.na(type_name) &&
+          nzchar(type_name)
+      ) {
+        type_name
+      } else {
+        xml2::xml_attr(node, "name")
+      }
+      if (!is.na(effective_name) && nzchar(effective_name)) {
+        visited <- unique(c(visited, effective_name))
+      }
+
       attr_defs <- list()
-      for (a in attrs) {
-        name <- xml2::xml_attr(a, "name")
-        if (!is.na(name)) {
-          attr_defs[[name]] <- list(
-            name = name,
-            type = self$strip_ns(xml2::xml_attr(a, "type")),
-            use = xml2::xml_attr(a, "use"),
-            default = xml2::xml_attr(a, "default"),
-            documentation = self$parse_documentation(a, schema_ns = schema_ns)
-          )
+      elem_defs <- list()
+      is_simple_content <- FALSE
+      simple_base <- NULL
+
+      # Check simpleContent (text value + attributes)
+      sc_node <- xml2::xml_find_first(node, "./xsd:simpleContent/xsd:extension", schema_ns)
+      if (is_xml_missing(sc_node)) {
+        sc_node <- xml2::xml_find_first(node, "./xsd:simpleContent/xsd:restriction", schema_ns)
+      }
+
+      if (!is_xml_missing(sc_node)) {
+        is_simple_content <- TRUE
+        raw_base <- self$strip_ns(xml2::xml_attr(sc_node, "base"))
+        simple_base <- if (!is.na(raw_base) && nzchar(raw_base)) raw_base else "string"
+
+        if (!simple_base %in% visited) {
+          base_res <- private$find_complex_type(simple_base)
+          if (!is.null(base_res)) {
+            base_def <- self$parse_complex_type(
+              base_res$node,
+              schema_ns = base_res$ns,
+              type_name = simple_base,
+              visited = c(visited, simple_base),
+              nested_collector = nested_collector
+            )
+            attr_defs <- c(attr_defs, base_def$attributes)
+            if (isTRUE(base_def$simple_content) && !is.null(base_def$base)) {
+              simple_base <- base_def$base
+            }
+          }
+        }
+
+        own_attrs <- private$parse_attribute_list(sc_node, schema_ns)
+        for (an in names(own_attrs)) {
+          attr_defs[[an]] <- own_attrs[[an]]
+        }
+
+        doc <- self$parse_documentation(node, schema_ns = schema_ns)
+        value_field <- if ("value" %in% names(attr_defs)) ".value" else "value"
+
+        return(list(
+          kind = "complex",
+          attributes = attr_defs,
+          elements = list(),
+          simple_content = TRUE,
+          base = simple_base,
+          value_field = value_field,
+          documentation = doc
+        ))
+      }
+
+      # Check complexContent inheritance (extension / restriction)
+      cc_node <- xml2::xml_find_first(node, "./xsd:complexContent/xsd:extension", schema_ns)
+      if (is_xml_missing(cc_node)) {
+        cc_node <- xml2::xml_find_first(node, "./xsd:complexContent/xsd:restriction", schema_ns)
+      }
+
+      content_owner <- if (!is_xml_missing(cc_node)) cc_node else node
+
+      if (!is_xml_missing(cc_node)) {
+        base_name <- self$strip_ns(xml2::xml_attr(cc_node, "base"))
+        if (!is.null(base_name) && !is.na(base_name) && nzchar(base_name) && !base_name %in% visited) {
+          base_res <- private$find_complex_type(base_name)
+          if (!is.null(base_res)) {
+            base_def <- self$parse_complex_type(
+              base_res$node,
+              schema_ns = base_res$ns,
+              type_name = base_name,
+              visited = c(visited, base_name),
+              nested_collector = nested_collector
+            )
+            for (an in names(base_def$attributes)) {
+              attr_defs[[an]] <- base_def$attributes[[an]]
+            }
+            for (en in names(base_def$elements)) {
+              elem_defs[[en]] <- base_def$elements[[en]]
+            }
+            if (isTRUE(base_def$simple_content)) {
+              is_simple_content <- TRUE
+              simple_base <- base_def$base
+            }
+          }
         }
       }
 
-      # Get sequence elements
-      seq_elements <- xml2::xml_find_all(
-        node,
-        ".//xsd:sequence/xsd:element",
-        schema_ns
-      )
-      elem_defs <- list()
-      for (e in seq_elements) {
+      # Parse own attributes
+      own_attrs <- private$parse_attribute_list(content_owner, schema_ns)
+      for (an in names(own_attrs)) {
+        attr_defs[[an]] <- own_attrs[[an]]
+      }
+
+      # Parse own elements from sequence / choice / all compositors
+      elem_items <- private$collect_compositor_elements(content_owner)
+      for (item in elem_items) {
+        e <- item$node
         name <- xml2::xml_attr(e, "name")
         type <- self$strip_ns(xml2::xml_attr(e, "type"))
 
@@ -387,7 +508,8 @@ WSDLParser <- R6::R6Class(
               if (!is.na(ref_type)) {
                 type <- ref_type
               } else if (
-                !is_xml_missing(xml2::xml_find_first(global_elem, "./xsd:complexType", global_ns))
+                !is_xml_missing(xml2::xml_find_first(global_elem, "./xsd:complexType", global_ns)) ||
+                  !is_xml_missing(xml2::xml_find_first(global_elem, "./xsd:simpleType", global_ns))
               ) {
                 type <- ref
               }
@@ -397,14 +519,50 @@ WSDLParser <- R6::R6Class(
               type <- ref
             }
           }
+        } else if (is.na(type)) {
+          # Handle inline anonymous <xsd:complexType> / <xsd:simpleType>
+          nested_prefix <- if (!is.na(effective_name) && nzchar(effective_name)) {
+            paste0(effective_name, "_", name)
+          } else {
+            name
+          }
+          inline_ct <- xml2::xml_find_first(e, "./xsd:complexType", schema_ns)
+          inline_st <- xml2::xml_find_first(e, "./xsd:simpleType", schema_ns)
+          if (!is_xml_missing(inline_ct)) {
+            type <- nested_prefix
+            nested_def <- self$parse_complex_type(
+              inline_ct,
+              schema_ns = schema_ns,
+              type_name = nested_prefix,
+              visited = visited,
+              nested_collector = nested_collector
+            )
+            if (!is.null(nested_collector)) {
+              nested_collector$types[[nested_prefix]] <- nested_def
+            }
+          } else if (!is_xml_missing(inline_st)) {
+            type <- nested_prefix
+            nested_st <- self$parse_simple_type(inline_st, schema_ns = schema_ns)
+            if (!is.null(nested_collector)) {
+              nested_collector$types[[nested_prefix]] <- nested_st
+            }
+          }
         }
 
         if (!is.na(name)) {
+          elem_min <- xml2::xml_attr(e, "minOccurs")
+          if (isTRUE(item$in_choice)) {
+            elem_min <- "0"
+          }
+          elem_max <- xml2::xml_attr(e, "maxOccurs")
+          if (is.na(elem_max) && !is.null(item$inherited_max) && !is.na(item$inherited_max)) {
+            elem_max <- item$inherited_max
+          }
           elem_defs[[name]] <- list(
             name = name,
             type = type,
-            minOccurs = xml2::xml_attr(e, "minOccurs"),
-            maxOccurs = xml2::xml_attr(e, "maxOccurs"),
+            minOccurs = elem_min,
+            maxOccurs = elem_max,
             default = xml2::xml_attr(e, "default"),
             documentation = self$parse_documentation(e, schema_ns = schema_ns)
           )
@@ -412,13 +570,18 @@ WSDLParser <- R6::R6Class(
       }
 
       doc <- self$parse_documentation(node, schema_ns = schema_ns)
-
-      list(
+      res <- list(
         kind = "complex",
         attributes = attr_defs,
         elements = elem_defs,
         documentation = doc
       )
+      if (is_simple_content) {
+        res$simple_content <- TRUE
+        res$base <- simple_base
+        res$value_field <- if ("value" %in% names(attr_defs)) ".value" else "value"
+      }
+      res
     },
 
     #' @description
@@ -664,6 +827,63 @@ WSDLParser <- R6::R6Class(
         }
       }
       NULL
+    },
+
+    find_complex_type = function(type_name) {
+      xpath <- sprintf("./xsd:complexType[@name='%s']", type_name)
+      for (entry in self$schemas) {
+        node <- xml2::xml_find_first(entry$node, xpath, entry$ns)
+        if (!is_xml_missing(node)) {
+          return(list(node = node, ns = entry$ns))
+        }
+      }
+      NULL
+    },
+
+    parse_attribute_list = function(owner_node, schema_ns) {
+      attrs <- xml2::xml_find_all(owner_node, "./xsd:attribute", schema_ns)
+      attr_defs <- list()
+      for (a in attrs) {
+        name <- xml2::xml_attr(a, "name")
+        if (!is.na(name)) {
+          attr_defs[[name]] <- list(
+            name = name,
+            type = self$strip_ns(xml2::xml_attr(a, "type")),
+            use = xml2::xml_attr(a, "use"),
+            default = xml2::xml_attr(a, "default"),
+            documentation = self$parse_documentation(a, schema_ns = schema_ns)
+          )
+        }
+      }
+      attr_defs
+    },
+
+    collect_compositor_elements = function(container, in_choice = FALSE, inherited_max = NULL) {
+      items <- list()
+      children <- xml2::xml_children(container)
+      for (child in children) {
+        local_name <- xml2::xml_name(child)
+        if (local_name == "element") {
+          items[[length(items) + 1L]] <- list(
+            node = child,
+            in_choice = in_choice,
+            inherited_max = inherited_max
+          )
+        } else if (local_name %in% c("sequence", "all", "choice")) {
+          child_in_choice <- in_choice || identical(local_name, "choice")
+          comp_max <- xml2::xml_attr(child, "maxOccurs")
+          next_max <- if (!is.na(comp_max)) comp_max else inherited_max
+          sub_items <- private$collect_compositor_elements(
+            child,
+            in_choice = child_in_choice,
+            inherited_max = next_max
+          )
+          if (length(sub_items) > 0L) {
+            items <- c(items, sub_items)
+          }
+        }
+      }
+      items
     }
   )
 )

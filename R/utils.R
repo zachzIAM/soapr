@@ -124,6 +124,23 @@ soap_build_xml_node <- function(
   )
 
   if (is.list(value)) {
+    simple_field <- attr(value, "soap_simple_content")
+    if (!is.null(simple_field) && length(simple_field) == 1L && !is.na(simple_field)) {
+      text_val <- value[[simple_field]]
+      text_str <- if (
+        !is.null(text_val) &&
+          length(text_val) > 0L &&
+          !(is.atomic(text_val) && length(text_val) == 1L && is.na(text_val))
+      ) {
+        if (is.logical(text_val)) tolower(as.character(text_val)) else as.character(text_val)
+      } else {
+        NULL
+      }
+      child <- soap_add_namespaced_child(parent, name, node_ns, text = text_str)
+      soap_apply_soap_attrs(child, value, attribute_form_default, target_namespace_prefix)
+      return(invisible(NULL))
+    }
+
     child <- soap_add_namespaced_child(parent, name, node_ns)
     soap_apply_soap_attrs(child, value, attribute_form_default, target_namespace_prefix)
     soap_attrs <- attr(value, "soap_attrs")
@@ -479,6 +496,19 @@ soap_deserialize <- function(
     }
   }
 
+  if (isTRUE(type_def$simple_content)) {
+    val_field <- if (!is.null(type_def$value_field)) type_def$value_field else "value"
+    raw_text <- xml2::xml_text(node)
+    base_type <- if (!is.null(type_def$base)) type_def$base else "xsd:string"
+    if (!is.null(schema[[base_type]]) && identical(schema[[base_type]]$kind, "simple")) {
+      base_type <- if (!is.null(schema[[base_type]]$base)) schema[[base_type]]$base else "xsd:string"
+    }
+    if (!nzchar(trimws(raw_text)) && !identical(gsub("^.*:", "", base_type), "string")) {
+      raw_text <- NA_character_
+    }
+    obj[[val_field]] <- soap_convert_builtin_type(raw_text, base_type)
+  }
+
   children <- xml2::xml_children(node)
   child_names <- xml2::xml_name(children)
   for (elem_name in names(type_def$elements)) {
@@ -521,6 +551,9 @@ soap_deserialize <- function(
   class(obj) <- c("soap_object", "list")
   attr(obj, "soap_type") <- type_name
   attr(obj, "soap_attrs") <- names(type_def$attributes)
+  if (isTRUE(type_def$simple_content)) {
+    attr(obj, "soap_simple_content") <- if (!is.null(type_def$value_field)) type_def$value_field else "value"
+  }
   obj
 }
 
