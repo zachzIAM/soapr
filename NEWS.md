@@ -1,3 +1,8 @@
+# soapr 0.3.0 (2026-11-27)
+
+### Features
+- support XSD inheritance, choice/all compositors, simpleContent, and anonymous nested types (0c9b2a2)
+
 # soapr 0.2.0 (2026-11-27)
 
 ### Features
