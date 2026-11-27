@@ -129,10 +129,18 @@ XMLSerializer <- R6::R6Class(
 
     resolve_node_ns = function(ns = NULL) {
       if (!is.null(ns)) {
+        if (length(ns) == 1L && is.na(ns)) {
+          return(NULL)
+        }
         return(ns)
       }
       if (identical(self$element_form_default, "qualified")) {
-        if (!is.null(self$target_namespace) && nzchar(self$target_namespace)) {
+        if (
+          !is.null(self$target_namespace) &&
+            length(self$target_namespace) == 1L &&
+            !is.na(self$target_namespace) &&
+            nzchar(self$target_namespace)
+        ) {
           return(self$target_namespace)
         }
         return(NULL)
@@ -142,7 +150,7 @@ XMLSerializer <- R6::R6Class(
 
     add_namespaced_child = function(parent, name, node_ns, text = NULL) {
       parent_ns <- private$get_active_default_ns(parent)
-      needs_xmlns <- !is.null(node_ns) && !identical(node_ns, parent_ns)
+      needs_xmlns <- !is.null(node_ns) && length(node_ns) == 1L && !is.na(node_ns) && !identical(node_ns, parent_ns)
 
       if (is.null(text)) {
         if (needs_xmlns && nzchar(node_ns)) {
@@ -169,7 +177,7 @@ XMLSerializer <- R6::R6Class(
       }
       for (attr_name in soap_attrs) {
         attr_val <- value[[attr_name]]
-        if (!is.null(attr_val) && length(attr_val) > 0 && !is.na(attr_val[[1]])) {
+        if (!is.null(attr_val) && length(attr_val) > 0 && !is.null(attr_val[[1]]) && !is.na(attr_val[[1]])) {
           attr_str <- if (is.logical(attr_val)) {
             tolower(as.character(attr_val))
           } else {

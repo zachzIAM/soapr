@@ -12,7 +12,7 @@ get_active_default_ns <- function(node) {
 
 add_namespaced_child <- function(parent, name, node_ns, text = NULL) {
   parent_ns <- get_active_default_ns(parent)
-  needs_xmlns <- !is.null(node_ns) && !identical(node_ns, parent_ns)
+  needs_xmlns <- !is.null(node_ns) && length(node_ns) == 1L && !is.na(node_ns) && !identical(node_ns, parent_ns)
 
   if (is.null(text)) {
     if (needs_xmlns && nzchar(node_ns)) {
@@ -58,9 +58,11 @@ build_xml_node <- function(parent, name, value, ns = NULL) {
   target_namespace <- "{{{target_namespace}}}"
 
   node_ns <- ns
-  if (is.null(node_ns)) {
+  if (!is.null(node_ns) && length(node_ns) == 1L && is.na(node_ns)) {
+    node_ns <- NULL
+  } else if (is.null(node_ns)) {
     if (identical(element_form_default, "qualified")) {
-      node_ns <- if (nzchar(target_namespace)) target_namespace else NULL
+      node_ns <- if (!is.na(target_namespace) && nzchar(target_namespace)) target_namespace else NULL
     } else {
       node_ns <- ""
     }
@@ -73,7 +75,7 @@ build_xml_node <- function(parent, name, value, ns = NULL) {
     if (!is.null(soap_attrs)) {
       for (attr_name in soap_attrs) {
         val <- value[[attr_name]]
-        if (!is.null(val) && length(val) > 0 && !is.na(val[[1]])) {
+        if (!is.null(val) && length(val) > 0 && !is.null(val[[1]]) && !is.na(val[[1]])) {
           attr_str <- if (is.logical(val)) tolower(as.character(val)) else as.character(val)
           full_attr_name <- if (identical(attribute_form_default, "qualified")) {
             paste0("tns:", attr_name)
