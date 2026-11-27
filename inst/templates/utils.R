@@ -69,6 +69,37 @@ build_xml_node <- function(parent, name, value, ns = NULL) {
   }
 
   if (is.list(value)) {
+    simple_field <- attr(value, "soap_simple_content")
+    if (!is.null(simple_field) && length(simple_field) == 1L && !is.na(simple_field)) {
+      text_val <- value[[simple_field]]
+      text_str <- if (
+        !is.null(text_val) &&
+          length(text_val) > 0L &&
+          !(is.atomic(text_val) && length(text_val) == 1L && is.na(text_val))
+      ) {
+        if (is.logical(text_val)) tolower(as.character(text_val)) else as.character(text_val)
+      } else {
+        NULL
+      }
+      child <- add_namespaced_child(parent, name, node_ns, text = text_str)
+      soap_attrs <- attr(value, "soap_attrs")
+      if (!is.null(soap_attrs)) {
+        for (attr_name in soap_attrs) {
+          val <- value[[attr_name]]
+          if (!is.null(val) && length(val) > 0 && !is.null(val[[1]]) && !is.na(val[[1]])) {
+            attr_str <- if (is.logical(val)) tolower(as.character(val)) else as.character(val)
+            full_attr_name <- if (identical(attribute_form_default, "qualified")) {
+              paste0("tns:", attr_name)
+            } else {
+              attr_name
+            }
+            xml2::xml_attr(child, full_attr_name) <- attr_str
+          }
+        }
+      }
+      return()
+    }
+
     child <- add_namespaced_child(parent, name, node_ns)
     soap_attrs <- attr(value, "soap_attrs")
 
@@ -413,6 +444,19 @@ deserialize <- function(node, type_name, schema, factory = NULL) {
     }
   }
 
+  if (isTRUE(type_def$simple_content)) {
+    val_field <- if (!is.null(type_def$value_field)) type_def$value_field else "value"
+    raw_text <- xml2::xml_text(node)
+    base_type <- if (!is.null(type_def$base)) type_def$base else "xsd:string"
+    if (!is.null(schema[[base_type]]) && identical(schema[[base_type]]$kind, "simple")) {
+      base_type <- if (!is.null(schema[[base_type]]$base)) schema[[base_type]]$base else "xsd:string"
+    }
+    if (!nzchar(trimws(raw_text)) && !identical(gsub("^.*:", "", base_type), "string")) {
+      raw_text <- NA_character_
+    }
+    obj[[val_field]] <- convert_builtin_type(raw_text, base_type)
+  }
+
   # Elements
   for (elem_name in names(type_def$elements)) {
     elem_def <- type_def$elements[[elem_name]]
@@ -456,6 +500,9 @@ deserialize <- function(node, type_name, schema, factory = NULL) {
   class(obj) <- c("soap_object", "list")
   attr(obj, "soap_type") <- type_name
   attr(obj, "soap_attrs") <- names(type_def$attributes)
+  if (isTRUE(type_def$simple_content)) {
+    attr(obj, "soap_simple_content") <- if (!is.null(type_def$value_field)) type_def$value_field else "value"
+  }
 
   return(obj)
 }

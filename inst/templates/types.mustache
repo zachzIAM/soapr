@@ -19,6 +19,9 @@ TypeFactory <- R6::R6Class(
       {{#has_attrs}}
       attr(obj, "soap_attrs") <- {{{attr_names}}}
       {{/has_attrs}}
+      {{#is_simple_content}}
+      attr(obj, "soap_simple_content") <- "{{{value_field}}}"
+      {{/is_simple_content}}
       return(obj)
     }{{^last}},{{/last}}
 

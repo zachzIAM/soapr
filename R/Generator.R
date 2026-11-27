@@ -264,6 +264,16 @@ Generator <- R6::R6Class(
           if (.x$kind == "complex") {
             attributes_handling <- purrr::map(.x$attributes, process_attribute)
             elements_handling <- purrr::map(.x$elements, process_element)
+            val_field <- if (!is.null(.x$value_field)) .x$value_field else "value"
+            if (isTRUE(.x$simple_content)) {
+              elements_handling[[val_field]] <- list(
+                arg = paste(val_field, "= NA"),
+                body = as.name(val_field),
+                param_doc = sprintf("%s Text content (%s).", val_field, .x$base %||% "string"),
+                name = val_field,
+                type_override = .x$base
+              )
+            }
 
             # build return elements
             args <- paste(
@@ -310,8 +320,8 @@ Generator <- R6::R6Class(
 
             # Helper to check for enum and update arg/validation
             process_enum <- function(item, item_def) {
-              if (!is.null(item_def)) {
-                type_name <- item_def$type
+              type_name <- item$type_override %||% if (!is.null(item_def)) item_def$type else NULL
+              if (!is.null(type_name)) {
                 type_def <- types[[type_name]]
                 if (
                   !is.null(type_def) &&
@@ -328,14 +338,16 @@ Generator <- R6::R6Class(
                   # Check if optional
                   is_optional <- TRUE
                   if (
-                    !is.null(item_def$use) &&
+                    !is.null(item_def) &&
+                      !is.null(item_def$use) &&
                       !is.na(item_def$use) &&
                       item_def$use == "required"
                   ) {
                     is_optional <- FALSE
                   }
                   if (
-                    !is.null(item_def$minOccurs) &&
+                    !is.null(item_def) &&
+                      !is.null(item_def$minOccurs) &&
                       !is.na(item_def$minOccurs) &&
                       as.integer(item_def$minOccurs) > 0
                   ) {
@@ -410,6 +422,8 @@ Generator <- R6::R6Class(
               args = args,
               attr_names = attr_names,
               has_attrs = !is.null(attr_names),
+              is_simple_content = isTRUE(.x$simple_content),
+              value_field = val_field,
               body = body,
               validation_code = validation_code,
               is_complex = TRUE
