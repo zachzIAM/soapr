@@ -92,7 +92,7 @@ test_that("NA and edge-case boolean conversion works in Factory and generated ut
   gen$generate_package(pkg_dir, "EdgeCasePkg")
   pkg_path <- file.path(pkg_dir, "EdgeCasePkg")
   pkgload::load_all(pkg_path, quiet = TRUE)
-  on.exit(pkgload::unload("EdgeCasePkg"), add = TRUE)
+  on.exit(pkgload::unload("EdgeCasePkg"), add = TRUE, after = FALSE)
 
   ns_env <- asNamespace("EdgeCasePkg")
   expect_identical(ns_env$convert_builtin_type(NA, "xsd:boolean"), NA)
@@ -147,10 +147,26 @@ test_that("Dynamic and static clients handle empty SOAP Body and case-insensitiv
   expect_null(svc$client$Ping())
 
   svc$client$transport <- function(url, handle, body, ...) {
+    make_resp(url, list(`content-type` = "text/xml; charset=utf-8"), "")
+  }
+  expect_null(svc$client$Ping())
+
+  svc$client$transport <- function(url, handle, body, ...) {
     make_resp(url, list(`content-type` = "text/xml; charset=utf-8"), ok_xml)
   }
   dyn_res <- svc$client$Ping()
   expect_identical(dyn_res$Ok, TRUE)
+
+  fault_xml <- paste0(
+    '<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">',
+    "<soap:Body><soap:Fault>",
+    "<faultcode>soap:Server</faultcode><faultstring>Boom</faultstring>",
+    "</soap:Fault></soap:Body></soap:Envelope>"
+  )
+  svc$client$transport <- function(url, handle, body, ...) {
+    make_resp(url, list(`content-type` = "text/xml; charset=utf-8"), fault_xml, status = 500)
+  }
+  expect_error(svc$client$Ping(), "SOAP Fault: \\[soap:Server\\] Boom")
 
   expect_error(
     svc$client$serializer$deserialize_response(
@@ -169,7 +185,7 @@ test_that("Dynamic and static clients handle empty SOAP Body and case-insensitiv
   gen <- Generator$new(WSDLParser$new(wsdl_file))
   gen$generate_package(pkg_dir, "EdgeRespPkg")
   pkgload::load_all(file.path(pkg_dir, "EdgeRespPkg"), quiet = TRUE)
-  on.exit(pkgload::unload("EdgeRespPkg"), add = TRUE)
+  on.exit(pkgload::unload("EdgeRespPkg"), add = TRUE, after = FALSE)
 
   ns_env <- asNamespace("EdgeRespPkg")
   stat_client <- ns_env$new_client(
@@ -177,6 +193,11 @@ test_that("Dynamic and static clients handle empty SOAP Body and case-insensitiv
       make_resp(url, list(`content-type` = "text/xml; charset=utf-8"), empty_body_xml)
     }
   )
+  expect_null(stat_client$Ping())
+
+  stat_client$transport <- function(url, action, body, config, handle) {
+    make_resp(url, list(`content-type` = "text/xml; charset=utf-8"), "")
+  }
   expect_null(stat_client$Ping())
 
   stat_client$transport <- function(url, action, body, config, handle) {
@@ -192,12 +213,6 @@ test_that("Dynamic and static clients handle empty SOAP Body and case-insensitiv
     "Response is not XML"
   )
 
-  fault_xml <- paste0(
-    '<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">',
-    "<soap:Body><soap:Fault>",
-    "<faultcode>soap:Server</faultcode><faultstring>Boom</faultstring>",
-    "</soap:Fault></soap:Body></soap:Envelope>"
-  )
   stat_client$transport <- function(url, action, body, config, handle) {
     make_resp(url, list(`content-type` = "text/xml; charset=utf-8"), fault_xml, status = 500)
   }

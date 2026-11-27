@@ -119,6 +119,7 @@ deserialize_response <- function(response) {
     !is.null(content_type) &&
       length(content_type) > 0 &&
       !is.na(content_type[[1]]) &&
+      nzchar(trimws(content_type[[1]])) &&
       !grepl("xml", content_type[[1]], ignore.case = TRUE)
   ) {
     stop("Response is not XML")
