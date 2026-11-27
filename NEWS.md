@@ -1,3 +1,8 @@
+# soapr 0.2.0 (2026-11-27)
+
+### Features
+- support multiple schemas and xsd import/include resolution (aa5ac9a)
+
 # soapr 0.1.3 (2026-11-27)
 
 ### Bug Fixes
