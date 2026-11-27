@@ -2,8 +2,7 @@ Type: Package
 Package: soapr
 Title: SOAP API Client Generator
 Version: 0.1.0
-Author: Zach (User)
-Maintainer: Zach (User) <zach@example.com>
+Authors@R: person("Zahari", "Zankov", email = "zach.zankov@gmail.com", role = c("aut", "cre", "cph"))
 Description: A robust SOAP client generator for R. Generates static R packages from WSDL files, supporting WS-Security, custom transports, and type-safe deserialization.
 License: MIT + file LICENSE
 Encoding: UTF-8

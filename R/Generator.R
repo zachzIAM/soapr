@@ -20,7 +20,16 @@ Generator <- R6::R6Class(
     #' Generate the R package.
     #' @param path The output directory path.
     #' @param package_name The name of the package to generate.
-    generate_package = function(path, package_name) {
+    #' @param author The package author name for DESCRIPTION.
+    #' @param email The package maintainer email for DESCRIPTION.
+    #' @param license_holder The copyright holder name for LICENSE.
+    generate_package = function(
+      path,
+      package_name,
+      author = "Package Author",
+      email = "author@example.com",
+      license_holder = paste(package_name, "authors")
+    ) {
       # Create directories
       pkg_path <- file.path(path, package_name)
       if (!dir.exists(pkg_path)) {
@@ -31,13 +40,13 @@ Generator <- R6::R6Class(
       }
 
       # Create DESCRIPTION
-      self$write_description(pkg_path, package_name)
+      self$write_description(pkg_path, package_name, author = author, email = email)
 
       # Create README.md
       self$write_readme(pkg_path, package_name)
 
       # Create License
-      private$write_license(pkg_path, package_name)
+      private$write_license(pkg_path, package_name, license_holder = license_holder)
 
       # Create R/utils.R (helper functions)
       self$write_utils(pkg_path)
@@ -72,8 +81,16 @@ Generator <- R6::R6Class(
     #' Write the DESCRIPTION file.
     #' @param path The package directory path.
     #' @param name The package name.
-    write_description = function(path, name) {
-      view <- list(package_name = name)
+    #' @param author The package author name.
+    #' @param email The package maintainer email.
+    write_description = function(path, name, author = "Package Author", email = "author@example.com") {
+      safe_author <- private$normalize_metadata_value(author, "Package Author", escape_quotes = TRUE)
+      safe_email <- private$normalize_metadata_value(email, "author@example.com", escape_quotes = TRUE)
+      view <- list(
+        package_name = name,
+        author = safe_author,
+        email = safe_email
+      )
       template <- private$read_template("DESCRIPTION.mustache")
       content <- whisker::whisker.render(template, view)
       writeLines(content, file.path(path, "DESCRIPTION"))
@@ -146,12 +163,30 @@ Generator <- R6::R6Class(
     }
   ),
   private = list(
-    write_license = function(path, package_name) {
+    normalize_metadata_value = function(val, default, escape_quotes = FALSE) {
+      normalized <- if (
+        is.null(val) ||
+          length(val) != 1L ||
+          is.na(val) ||
+          !nzchar(trimws(as.character(val)))
+      ) {
+        default
+      } else {
+        as.character(val)
+      }
+      if (escape_quotes) {
+        normalized <- gsub("\\\\", "\\\\\\\\", normalized)
+        normalized <- gsub('"', '\\\\"', normalized)
+      }
+      normalized
+    },
+    write_license = function(path, package_name, license_holder = paste(package_name, "authors")) {
       year <- format(Sys.Date(), "%Y")
+      holder <- private$normalize_metadata_value(license_holder, paste(package_name, "authors"))
       writeLines(
         c(
           paste("YEAR:", year),
-          paste("COPYRIGHT HOLDER:", package_name, "authors")
+          paste("COPYRIGHT HOLDER:", holder)
         ),
         file.path(path, "LICENSE")
       )
@@ -375,9 +410,7 @@ Generator <- R6::R6Class(
             # For consistency with complex types, we might wrap it or just return it?
             # Existing Factory logic for simple types might expect just the value.
 
-            # Let's generate a method that takes the value.
-            # args: "OpRequest = NA"
-            # body: "OpRequest"
+            # Let's generate a method that takes the value as a single argument defaulting to NA.
 
             list(
               name = .y,

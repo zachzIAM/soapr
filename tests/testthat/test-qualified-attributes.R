@@ -2,8 +2,8 @@ library(testthat)
 library(soapr)
 
 test_that("XMLSerializer handles qualified attributes", {
-    # Mock WSDL with attributeFormDefault="qualified"
-    wsdl_content <- '<?xml version="1.0" encoding="UTF-8"?>
+  # Mock WSDL with attributeFormDefault="qualified"
+  wsdl_content <- '<?xml version="1.0" encoding="UTF-8"?>
 <wsdl:definitions xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
                   xmlns:tns="http://example.org/qualified"
                   xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
@@ -25,39 +25,42 @@ test_that("XMLSerializer handles qualified attributes", {
     <wsdl:portType name="PT"><wsdl:operation name="Op"><wsdl:input message="tns:Msg"/></wsdl:operation></wsdl:portType>
     <wsdl:binding name="B" type="tns:PT">
       <soap:binding transport="http://schemas.xmlsoap.org/soap/http"/>
-      <wsdl:operation name="Op"><soap:operation soapAction="Op"/><wsdl:input><soap:body use="literal"/></wsdl:input></wsdl:operation>
+      <wsdl:operation name="Op">
+        <soap:operation soapAction="Op"/>
+        <wsdl:input><soap:body use="literal"/></wsdl:input>
+      </wsdl:operation>
     </wsdl:binding>
     <wsdl:service name="S">
       <wsdl:port name="P" binding="tns:B"><soap:address location="http://e.org"/></wsdl:port>
     </wsdl:service>
 </wsdl:definitions>'
 
-    wsdl_file <- tempfile(fileext = ".wsdl")
-    writeLines(wsdl_content, wsdl_file)
-    on.exit(unlink(wsdl_file))
+  wsdl_file <- tempfile(fileext = ".wsdl")
+  writeLines(wsdl_content, wsdl_file)
+  on.exit(unlink(wsdl_file))
 
-    service <- Service$new(wsdl_file)
-    factory <- service$factory
+  service <- Service$new(wsdl_file)
+  factory <- service$factory
 
-    # Create object
-    obj <- factory$create("QualifiedType", Attr1 = "Value1", Elem1 = "Val1")
+  # Create object
+  obj <- factory$create("QualifiedType", Attr1 = "Value1", Elem1 = "Val1")
 
-    # Serialize
-    serializer <- XMLSerializer$new(
-        element_form_default = "qualified",
-        attribute_form_default = "qualified",
-        target_namespace = "http://example.org/qualified",
-        target_namespace_prefix = "tns"
-    )
+  # Serialize
+  serializer <- XMLSerializer$new(
+    element_form_default = "qualified",
+    attribute_form_default = "qualified",
+    target_namespace = "http://example.org/qualified",
+    target_namespace_prefix = "tns"
+  )
 
-    doc <- xml2::xml_new_root("root", "xmlns:tns" = "http://example.org/qualified")
-    serializer$serialize(doc, "Obj", obj, ns = "http://example.org/qualified")
+  doc <- xml2::xml_new_root("root", "xmlns:tns" = "http://example.org/qualified")
+  serializer$serialize(doc, "Obj", obj, ns = "http://example.org/qualified")
 
-    # Check XML
-    # Expected: <tns:Obj tns:Attr1="Value1" ...><tns:Elem1>Val1</tns:Elem1></tns:Obj>
+  # Check XML
+  # Expected: <tns:Obj tns:Attr1="Value1" ...><tns:Elem1>Val1</tns:Elem1></tns:Obj>
 
-    xml_str <- as.character(doc)
-    expect_true(grepl('tns:Attr1="Value1"', xml_str))
-    # Elem1 is qualified via default namespace from Obj
-    expect_true(grepl("<Elem1>Val1</Elem1>", xml_str))
+  xml_str <- as.character(doc)
+  expect_true(grepl('tns:Attr1="Value1"', xml_str))
+  # Elem1 is qualified via default namespace from Obj
+  expect_true(grepl("<Elem1>Val1</Elem1>", xml_str))
 })
