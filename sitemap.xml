@@ -1,5 +1,6 @@
 <urlset xmlns = 'http://www.sitemaps.org/schemas/sitemap/0.9'>
 <url><loc>/404.html</loc></url>
+<url><loc>/AGENTS.html</loc></url>
 <url><loc>/LICENSE-text.html</loc></url>
 <url><loc>/LICENSE.html</loc></url>
 <url><loc>/articles/getting-started.html</loc></url>
@@ -15,6 +16,5 @@
 <url><loc>/reference/XMLSerializer.html</loc></url>
 <url><loc>/reference/index.html</loc></url>
 <url><loc>/reference/soapr-package.html</loc></url>
-<url><loc>/reference/wss_username_token.html</loc></url>
 </urlset>
 
