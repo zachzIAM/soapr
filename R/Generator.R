@@ -37,7 +37,7 @@ Generator <- R6::R6Class(
       self$write_readme(pkg_path, package_name)
 
       # Create License
-      withr::with_dir(pkg_path, usethis::use_mit_license("Ninety One"))
+      private$write_license(pkg_path, package_name)
 
       # Create R/utils.R (helper functions)
       self$write_utils(pkg_path)
@@ -146,6 +146,16 @@ Generator <- R6::R6Class(
     }
   ),
   private = list(
+    write_license = function(path, package_name) {
+      year <- format(Sys.Date(), "%Y")
+      writeLines(
+        c(
+          paste("YEAR:", year),
+          paste("COPYRIGHT HOLDER:", package_name, "authors")
+        ),
+        file.path(path, "LICENSE")
+      )
+    },
     read_template = function(name) {
       readLines(system.file("templates", name, package = "soapr"), warn = FALSE)
     },

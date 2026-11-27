@@ -1,8 +1,0 @@
-           name     value
-         <char>    <char>
-1:    Benchmark MSAWIF_AD
-2: BaseCurrency       USD
-           name    value
-         <char>   <char>
-1:    Benchmark MSCIJPND
-2: BaseCurrency      JPY
