@@ -39,24 +39,25 @@ Factory <- R6::R6Class(
       type_def <- self$types[[type_name]]
 
       if (type_def$kind == "simple") {
-        # Check if we have a default value in the definition (rare for simpleType defs themselves, usually on element/attr)
+        # Check if we have a default value in the definition
+        # (rare for simpleType defs themselves, usually on element/attr)
         # But for Enums (restrictions), we might just return NA or the first allowed value?
         # Returning NA is safer to indicate "not set".
         # We can use convert_builtin_type to get the NA of correct type (e.g. integer)
         base <- type_def$base %||% "xsd:string"
-        
+
         val <- if (length(args) > 0) args[[1]] else NA
         if (!is.null(names(args)) && !is.null(args[["value"]])) {
-            val <- args[["value"]]
+          val <- args[["value"]]
         }
         return(self$convert_builtin_type(val, base))
       }
-      
+
       if (type_def$kind == "element") {
         arg_name <- type_def$name
         val <- if (length(args) > 0) args[[1]] else NA
         if (!is.null(names(args)) && !is.null(args[[arg_name]])) {
-            val <- args[[arg_name]]
+          val <- args[[arg_name]]
         }
         return(self$convert_builtin_type(val, type_def$type %||% "xsd:string"))
       }
@@ -206,7 +207,7 @@ Factory <- R6::R6Class(
         }
         return(self$convert_builtin_type(val, base_type))
       }
-      
+
       if (type_def$kind == "element") {
         if (!is.null(type_def$type) && type_def$type != type_name && type_def$type != "") {
           return(self$deserialize(node, type_def$type))
@@ -259,9 +260,9 @@ Factory <- R6::R6Class(
       parsed <- tryCatch({
         do.call(self$create, c(list(type_name = type_name), obj))
       }, error = function(e) NULL)
-      
+
       if (!is.null(parsed) && inherits(parsed, "soap_object")) {
-         return(parsed)
+        return(parsed)
       }
 
       class(obj) <- c("soap_object", "list")
@@ -270,59 +271,59 @@ Factory <- R6::R6Class(
 
       return(obj)
     },
-    
+
     #' @description
     #' Dynamically deserialize unknown structures
     #' @param node The xml node
     #' @param type_name The requested type name
     deserialize_dynamic = function(node, type_name) {
       children <- xml2::xml_children(node)
-      
+
       if (length(children) == 0) {
         val <- xml2::xml_text(node)
         if (!is.null(self$types[[type_name]])) {
-           parsed <- tryCatch({
-               do.call(self$create, list(type_name = type_name, val))
-           }, error = function(e) NULL)
-           if (!is.null(parsed)) return(parsed)
+          parsed <- tryCatch({
+            do.call(self$create, list(type_name = type_name, val))
+          }, error = function(e) NULL)
+          if (!is.null(parsed)) return(parsed)
         }
         return(self$convert_builtin_type(val, type_name))
       }
-      
+
       res <- list()
       for (child in children) {
         child_name <- xml2::xml_name(child)
         local_child_name <- gsub("^.*:", "", child_name)
-        
+
         child_val <- self$deserialize(child, local_child_name)
-        
+
         if (!local_child_name %in% names(res)) {
           res[[local_child_name]] <- child_val
         } else {
           current <- res[[local_child_name]]
           if (inherits(current, "soap_object") || is.atomic(current)) {
-             res[[local_child_name]] <- list(current, child_val)
+            res[[local_child_name]] <- list(current, child_val)
           } else {
-             res[[local_child_name]][[length(current) + 1]] <- child_val
+            res[[local_child_name]][[length(current) + 1]] <- child_val
           }
         }
       }
-      
+
       attrs <- xml2::xml_attrs(node)
       if (length(attrs) > 0) {
-         attributes(res) <- c(attributes(res), as.list(attrs))
+        attributes(res) <- c(attributes(res), as.list(attrs))
       }
-      
+
       if (!is.null(self$types[[type_name]])) {
         parsed <- tryCatch({
           do.call(self$create, c(list(type_name = type_name), res))
         }, error = function(e) NULL)
-        
+
         if (!is.null(parsed) && inherits(parsed, "soap_object")) {
-           return(parsed)
+          return(parsed)
         }
       }
-      
+
       class(res) <- c("soap_object", "list")
       attr(res, "soap_type") <- type_name
       return(res)
@@ -337,7 +338,11 @@ Factory <- R6::R6Class(
       if (is.list(val)) {
         # If it's a list and we expect a primitive, try to unlist
         local_type <- gsub("^.*:", "", type_name)
-        if (local_type %in% c("int", "integer", "long", "short", "byte", "decimal", "float", "double", "boolean", "string")) {
+        primitive_types <- c(
+          "int", "integer", "long", "short", "byte",
+          "decimal", "float", "double", "boolean", "string"
+        )
+        if (local_type %in% primitive_types) {
           val <- unlist(val)
         } else {
           # Complex structure or unknown type

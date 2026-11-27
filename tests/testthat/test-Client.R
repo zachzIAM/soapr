@@ -35,13 +35,15 @@ test_that("Client sends requests and parses responses correctly", {
 
     # Return Mock Response
     # LoginResponse is empty in WSDL, so we return empty body
-    response_xml <- '
-    <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
-      <soap:Body>
-        <LoginResponse xmlns="http://barra.com/cp/bdti" />
-      </soap:Body>
-    </soap:Envelope>
-    '
+    response_xml <- paste0(
+      '<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" ',
+      'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ',
+      'xmlns:xsd="http://www.w3.org/2001/XMLSchema">',
+      "<soap:Body>",
+      '<LoginResponse xmlns="http://barra.com/cp/bdti" />',
+      "</soap:Body>",
+      "</soap:Envelope>"
+    )
 
     # Mock httr response object
     structure(

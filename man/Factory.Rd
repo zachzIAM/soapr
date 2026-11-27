@@ -28,6 +28,7 @@ Creates objects for SOAP requests.
 \item \href{#method-Factory-from_list}{\code{Factory$from_list()}}
 \item \href{#method-Factory-get_type_names}{\code{Factory$get_type_names()}}
 \item \href{#method-Factory-deserialize}{\code{Factory$deserialize()}}
+\item \href{#method-Factory-deserialize_dynamic}{\code{Factory$deserialize_dynamic()}}
 \item \href{#method-Factory-convert_builtin_type}{\code{Factory$convert_builtin_type()}}
 \item \href{#method-Factory-clone}{\code{Factory$clone()}}
 }
@@ -126,6 +127,25 @@ Deserialize an XML node into an R object.
 }
 \subsection{Returns}{
 The deserialized R object.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-Factory-deserialize_dynamic"></a>}}
+\if{latex}{\out{\hypertarget{method-Factory-deserialize_dynamic}{}}}
+\subsection{Method \code{deserialize_dynamic()}}{
+Dynamically deserialize unknown structures
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Factory$deserialize_dynamic(node, type_name)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{node}}{The xml node}
+
+\item{\code{type_name}}{The requested type name}
+}
+\if{html}{\out{</div>}}
 }
 }
 \if{html}{\out{<hr>}}

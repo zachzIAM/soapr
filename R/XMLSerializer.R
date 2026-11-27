@@ -26,7 +26,12 @@ XMLSerializer <- R6::R6Class(
     #' @param attribute_form_default The attributeFormDefault value.
     #' @param target_namespace The target namespace.
     #' @param target_namespace_prefix The prefix for target namespace.
-    initialize = function(element_form_default = "unqualified", attribute_form_default = "unqualified", target_namespace = NULL, target_namespace_prefix = "tns") {
+    initialize = function(
+      element_form_default = "unqualified",
+      attribute_form_default = "unqualified",
+      target_namespace = NULL,
+      target_namespace_prefix = "tns"
+    ) {
       self$element_form_default <- element_form_default
       self$attribute_form_default <- attribute_form_default
       self$target_namespace <- target_namespace

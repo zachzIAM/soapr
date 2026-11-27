@@ -57,7 +57,13 @@ Initialize the Generator.
 \subsection{Method \code{generate_package()}}{
 Generate the R package.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Generator$generate_package(path, package_name)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{Generator$generate_package(
+  path,
+  package_name,
+  author = "Package Author",
+  email = "author@example.com",
+  license_holder = paste(package_name, "authors")
+)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
@@ -66,6 +72,12 @@ Generate the R package.
 \item{\code{path}}{The output directory path.}
 
 \item{\code{package_name}}{The name of the package to generate.}
+
+\item{\code{author}}{The package author name for DESCRIPTION.}
+
+\item{\code{email}}{The package maintainer email for DESCRIPTION.}
+
+\item{\code{license_holder}}{The copyright holder name for LICENSE.}
 }
 \if{html}{\out{</div>}}
 }
@@ -93,7 +105,12 @@ Generate package documentation.
 \subsection{Method \code{write_description()}}{
 Write the DESCRIPTION file.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Generator$write_description(path, name)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{Generator$write_description(
+  path,
+  name,
+  author = "Package Author",
+  email = "author@example.com"
+)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
@@ -102,6 +119,10 @@ Write the DESCRIPTION file.
 \item{\code{path}}{The package directory path.}
 
 \item{\code{name}}{The package name.}
+
+\item{\code{author}}{The package author name.}
+
+\item{\code{email}}{The package maintainer email.}
 }
 \if{html}{\out{</div>}}
 }

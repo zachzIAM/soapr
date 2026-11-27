@@ -74,7 +74,10 @@ test_that("Static Client Generator (BDTInteractive)", {
         url = url,
         status_code = 200,
         headers = list(`Content-Type` = "text/xml; charset=utf-8"),
-        content = charToRaw('<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"><soap:Body><response>ok</response></soap:Body></soap:Envelope>')
+        content = charToRaw(paste0(
+          '<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">',
+          "<soap:Body><response>ok</response></soap:Body></soap:Envelope>"
+        ))
       ),
       class = "response"
     )

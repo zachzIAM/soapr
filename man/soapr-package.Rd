@@ -16,4 +16,8 @@ Useful links:
 }
 
 }
+\author{
+\strong{Maintainer}: Zahari Zankov \email{zach.zankov@gmail.com} [copyright holder]
+
+}
 \keyword{internal}

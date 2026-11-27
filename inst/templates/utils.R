@@ -161,58 +161,58 @@ convert_builtin_type <- function(val, type_name) {
 
 deserialize_dynamic <- function(node, type_name, schema, factory) {
   children <- xml2::xml_children(node)
-  
+
   if (length(children) == 0) {
     val <- xml2::xml_text(node)
-    
+
     if (!is.null(factory) && type_name %in% names(factory)) {
-       parsed <- tryCatch({
-         arg_name <- names(formals(factory[[type_name]]))[1]
-         args <- list()
-         args[[arg_name]] <- convert_builtin_type(val, type_name)
-         do.call(factory[[type_name]], args)
-       }, error = function(e) NULL)
-       if (!is.null(parsed)) return(parsed)
+      parsed <- tryCatch({
+        arg_name <- names(formals(factory[[type_name]]))[1]
+        args <- list()
+        args[[arg_name]] <- convert_builtin_type(val, type_name)
+        do.call(factory[[type_name]], args)
+      }, error = function(e) NULL)
+      if (!is.null(parsed)) return(parsed)
     }
-    
+
     return(convert_builtin_type(val, type_name))
   }
-  
+
   res <- list()
   for (child in children) {
     child_name <- xml2::xml_name(child)
     local_child_name <- gsub("^.*:", "", child_name)
-    
+
     # dynamic parse
     child_val <- deserialize(child, local_child_name, schema, factory)
-    
+
     if (!local_child_name %in% names(res)) {
       res[[local_child_name]] <- child_val
     } else {
       current <- res[[local_child_name]]
       if (inherits(current, "soap_object") || is.atomic(current)) {
-         res[[local_child_name]] <- list(current, child_val)
+        res[[local_child_name]] <- list(current, child_val)
       } else {
-         res[[local_child_name]][[length(current) + 1]] <- child_val
+        res[[local_child_name]][[length(current) + 1]] <- child_val
       }
     }
   }
-  
+
   attrs <- xml2::xml_attrs(node)
   if (length(attrs) > 0) {
-     attributes(res) <- c(attributes(res), as.list(attrs))
+    attributes(res) <- c(attributes(res), as.list(attrs))
   }
-  
+
   if (!is.null(factory) && type_name %in% names(factory)) {
     parsed <- tryCatch({
       do.call(factory[[type_name]], res)
     }, error = function(e) NULL)
-    
+
     if (!is.null(parsed)) {
-       return(parsed)
+      return(parsed)
     }
   }
-  
+
   class(res) <- c("soap_object", "list")
   attr(res, "soap_type") <- type_name
   return(res)
@@ -245,7 +245,7 @@ deserialize <- function(node, type_name, schema, factory = NULL) {
     if (!is.null(type_def$type) && type_def$type != type_name && type_def$type != "") {
       return(deserialize(node, type_def$type, schema, factory))
     }
-    
+
     return(deserialize_dynamic(node, type_name, schema, factory))
   }
 
@@ -297,9 +297,9 @@ deserialize <- function(node, type_name, schema, factory = NULL) {
     parsed <- tryCatch({
       do.call(factory[[type_name]], obj)
     }, error = function(e) NULL)
-    
+
     if (!is.null(parsed)) {
-       return(parsed)
+      return(parsed)
     }
   }
 
@@ -327,12 +327,27 @@ check_soap_type <- function(obj, expected_type, arg_name) {
   }
 
   if (!inherits(obj, "soap_object")) {
-    stop(sprintf("Argument '%s' must be an object of class 'soap_object', but got '%s'.", arg_name, class(obj)[1]), call. = FALSE)
+    stop(
+      sprintf(
+        "Argument '%s' must be an object of class 'soap_object', but got '%s'.",
+        arg_name,
+        class(obj)[1]
+      ),
+      call. = FALSE
+    )
   }
 
   actual_type <- attr(obj, "soap_type")
   if (!identical(actual_type, expected_type)) {
-    stop(sprintf("Argument '%s' must be of SOAP type '%s', but got '%s'.", arg_name, expected_type, actual_type), call. = FALSE)
+    stop(
+      sprintf(
+        "Argument '%s' must be of SOAP type '%s', but got '%s'.",
+        arg_name,
+        expected_type,
+        actual_type
+      ),
+      call. = FALSE
+    )
   }
   invisible(TRUE)
 }
