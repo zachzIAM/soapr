@@ -104,8 +104,10 @@ SOAPR & R PACKAGE REVIEW CHECKLIST:
      `R/Generator.R` (and vice versa). Flag any unexplained drift as
      `[BLOCKING]`.
 3. Dependencies & Namespace Discipline
-   - No tidyverse additions; keep dependencies lean (prefer base R over adding a
-     package for 1–2 helpers).
+   - No data-frame/tabular tidyverse additions (`dplyr`, `tidyr`, `tibble`, etc.);
+     keep dependencies lean (prefer base R over adding a package for 1–2
+     helpers; lean type-safety/r-lib packages like `purrr` are fine in `soapr`
+     itself, but must NOT be added to generated static packages).
    - Every `pkg::fn()` used in `R/` must be declared in `DESCRIPTION`
      (`Imports:` or `Suggests:`), and every `pkg::fn()` used in `tests/` must be
      in `Imports:` or `Suggests:`.
