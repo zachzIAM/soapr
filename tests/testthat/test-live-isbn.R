@@ -1,8 +1,8 @@
 library(testthat)
 library(soapr)
-skip_on_ci()
 
 test_that("ISBN Service Integration", {
+  skip_if_not_live()
   wsdl_path <- "http://webservices.daehosting.com/services/isbnservice.wso?WSDL"
 
   service <- Service$new(wsdl_path)

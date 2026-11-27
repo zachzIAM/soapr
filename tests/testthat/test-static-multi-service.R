@@ -16,7 +16,7 @@ test_that("Static Client Generator support for multiple services and disjoint op
     expect_true(dir.exists(pkg_path))
 
     # Load generated package
-    devtools::load_all(pkg_path, quiet = TRUE)
+    pkgload::load_all(pkg_path, quiet = TRUE)
     on.exit(pkgload::unload("MultiServicePkg"), add = TRUE)
 
     # Check method existence regardless of initialization

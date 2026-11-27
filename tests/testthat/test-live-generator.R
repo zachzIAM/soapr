@@ -1,8 +1,8 @@
 library(testthat)
 library(soapr)
-skip_on_ci()
 
 test_that("Static Client Generator (BDTInteractive)", {
+  skip_if_not_live()
   wsdl_path <- test_path("testdata/valid_wsdls/BDTInteractive.xml")
 
   output_path <- tempfile("generated_packages")

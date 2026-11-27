@@ -1,7 +1,7 @@
 library(testthat)
-skip_on_ci()
 
 test_that("NumberConversion service works", {
+  skip_if_not_live()
   wsdl_url <- "http://www.dataaccess.com/webservicesserver/NumberConversion.wso?WSDL"
 
   service <- Service$new(wsdl_url, verbose = FALSE)

@@ -2,7 +2,7 @@ library(testthat)
 library(soapr)
 
 test_that("Static Client Generator works for Calculator service", {
-  skip_on_cran()
+  skip_if_not_live()
 
   # Use a temporary directory for generation
   temp_dir <- tempdir()
@@ -36,7 +36,7 @@ test_that("Static Client Generator works for Calculator service", {
 })
 
 test_that("Static Client Generator works for NumberConversion service", {
-  skip_on_cran()
+  skip_if_not_live()
 
   temp_dir <- tempdir()
   pkg_name <- "numberconversion"

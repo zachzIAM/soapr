@@ -1,7 +1,7 @@
 library(testthat)
-skip_on_ci()
 
 test_that("Calculator service works", {
+  skip_if_not_live()
   wsdl_url <- "http://www.dneonline.com/calculator.asmx?WSDL"
 
   service <- Service$new(wsdl_url, verbose = FALSE)
