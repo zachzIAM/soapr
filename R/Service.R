@@ -37,22 +37,13 @@ Service <- R6::R6Class(
       # Select Service
       if (is.null(service_name)) {
         service_def <- services[[1]]
-        self$service_name <- service_def$name
       } else {
-        # Find service by name
-        found <- FALSE
-        for (svc in services) {
-          if (svc$name == service_name) {
-            service_def <- svc
-            self$service_name <- svc$name
-            found <- TRUE
-            break
-          }
-        }
-        if (!found) {
+        service_def <- purrr::detect(services, ~ identical(.x$name, service_name))
+        if (is.null(service_def)) {
           stop(sprintf("Service '%s' not found", service_name))
         }
       }
+      self$service_name <- service_def$name
 
       if (length(service_def$ports) == 0) {
         stop("No ports found in service")
@@ -61,19 +52,9 @@ Service <- R6::R6Class(
       # Select Port
       if (is.null(port_name)) {
         port_def <- service_def$ports[[1]]
-        self$port_name <- port_def$name
       } else {
-        # Find port by name
-        found <- FALSE
-        for (port in service_def$ports) {
-          if (port$name == port_name) {
-            port_def <- port
-            self$port_name <- port$name
-            found <- TRUE
-            break
-          }
-        }
-        if (!found) {
+        port_def <- purrr::detect(service_def$ports, ~ identical(.x$name, port_name))
+        if (is.null(port_def)) {
           stop(sprintf(
             "Port '%s' not found in service '%s'",
             port_name,
@@ -81,6 +62,7 @@ Service <- R6::R6Class(
           ))
         }
       }
+      self$port_name <- port_def$name
 
       self$factory <- Factory$new(self$wsdl)
       self$client <- Client$new(
@@ -95,20 +77,21 @@ Service <- R6::R6Class(
     #' List all available services.
     #' @return A character vector of service names.
     list_services = function() {
-      unname(sapply(self$wsdl$get_services(), function(x) x$name))
+      unname(purrr::map_chr(self$wsdl$get_services(), "name"))
     },
 
     #' @description
     #' List all available ports for the current service.
     #' @return A character vector of port names.
     list_ports = function() {
-      services <- self$wsdl$get_services()
-      for (svc in services) {
-        if (svc$name == self$service_name) {
-          return(unname(sapply(svc$ports, function(x) x$name)))
-        }
+      svc <- purrr::detect(
+        self$wsdl$get_services(),
+        ~ identical(.x$name, self$service_name)
+      )
+      if (is.null(svc)) {
+        return(character(0))
       }
-      return(character(0))
+      unname(purrr::map_chr(svc$ports, "name"))
     }
   )
 )

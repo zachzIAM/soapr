@@ -246,7 +246,7 @@ Factory <- R6::R6Class(
         }
 
         # Deserialize children
-        child_vals <- lapply(matching_children, function(child) {
+        child_vals <- purrr::map(matching_children, function(child) {
           self$deserialize(child, elem_def$type)
         })
 
@@ -392,7 +392,7 @@ Factory <- R6::R6Class(
         return(val)
       }
       vals <- as.character(val)
-      parsed <- vapply(vals, function(s) {
+      parsed <- purrr::map_dbl(vals, function(s) {
         if (is.na(s)) {
           return(NA_real_)
         }
@@ -403,7 +403,7 @@ Factory <- R6::R6Class(
         s <- sub("(Z|[+-][0-9]{2}:?[0-9]{2})$", "", s, ignore.case = TRUE)
         d <- tryCatch(as.Date(s, format = "%Y-%m-%d"), error = function(e) as.Date(NA))
         as.numeric(d)
-      }, numeric(1), USE.NAMES = FALSE)
+      })
       as.Date(parsed, origin = "1970-01-01")
     },
 
@@ -417,7 +417,7 @@ Factory <- R6::R6Class(
         return(out)
       }
       vals <- as.character(val)
-      parsed <- vapply(vals, function(s) {
+      parsed <- purrr::map_dbl(vals, function(s) {
         if (is.na(s)) {
           return(NA_real_)
         }
@@ -443,7 +443,7 @@ Factory <- R6::R6Class(
           return(NA_real_)
         }
         as.numeric(dt) - offset_sec
-      }, numeric(1), USE.NAMES = FALSE)
+      })
       as.POSIXct(parsed, origin = "1970-01-01", tz = "UTC")
     }
   )
