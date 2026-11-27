@@ -42,7 +42,7 @@ jobs:
           git add DESCRIPTION NEWS.md
           git commit -m "chore(release): ${{ steps.release.outputs.tag }}"
           git tag -a "${{ steps.release.outputs.tag }}" -m "Release ${{ steps.release.outputs.tag }}"
-          git push origin main "${{ steps.release.outputs.tag }}"
+          git push --atomic origin main "${{ steps.release.outputs.tag }}"
           gh release create "${{ steps.release.outputs.tag }}" \
             --title "${{ steps.release.outputs.tag }}" \
             --notes-file "${{ runner.temp }}/release_notes.md"
