@@ -92,14 +92,14 @@ WSDLParser <- R6::R6Class(
     get_services = function() {
       # Find all service elements
       services <- xml2::xml_find_all(self$doc, "//wsdl:service", self$ns)
-      res <- lapply(services, function(svc) {
+      res <- purrr::map(services, function(svc) {
         list(
           name = xml2::xml_attr(svc, "name"),
           ports = self$get_ports(svc)
         )
       })
       if (length(res) > 0) {
-        names(res) <- vapply(res, "[[", character(1), "name")
+        res <- purrr::set_names(res, purrr::map_chr(res, "name"))
       }
       return(res)
     },
@@ -110,7 +110,7 @@ WSDLParser <- R6::R6Class(
     #' @return A list of ports.
     get_ports = function(service_node) {
       ports <- xml2::xml_find_all(service_node, "./wsdl:port", self$ns)
-      res <- lapply(ports, function(port) {
+      res <- purrr::map(ports, function(port) {
         binding_name <- self$strip_ns(xml2::xml_attr(port, "binding"))
         list(
           name = xml2::xml_attr(port, "name"),
@@ -120,7 +120,7 @@ WSDLParser <- R6::R6Class(
         )
       })
       if (length(res) > 0) {
-        names(res) <- vapply(res, "[[", character(1), "name")
+        res <- purrr::set_names(res, purrr::map_chr(res, "name"))
       }
       return(res)
     },
@@ -203,7 +203,7 @@ WSDLParser <- R6::R6Class(
       }
 
       pt_ops <- xml2::xml_find_all(port_type, "./wsdl:operation", self$ns)
-      ops <- lapply(pt_ops, function(op_node) {
+      ops <- purrr::map(pt_ops, function(op_node) {
         op_name <- xml2::xml_attr(op_node, "name")
         input <- xml2::xml_find_first(op_node, "./wsdl:input", self$ns)
         output <- xml2::xml_find_first(op_node, "./wsdl:output", self$ns)
@@ -253,7 +253,7 @@ WSDLParser <- R6::R6Class(
         stop(sprintf("No operations found for PortType '%s'", port_type_name))
       }
 
-      names(ops) <- vapply(ops, "[[", character(1), "name")
+      ops <- purrr::set_names(ops, purrr::map_chr(ops, "name"))
 
       return(ops)
     },

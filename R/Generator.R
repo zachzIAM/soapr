@@ -500,10 +500,7 @@ Generator <- R6::R6Class(
       )
 
       # drop nulls and names
-      type_list <- purrr::set_names(
-        type_list[!purrr::map_lgl(type_list, is.null)],
-        NULL
-      )
+      type_list <- purrr::set_names(purrr::compact(type_list), NULL)
 
       # set last element flag for whisker
       if (length(type_list) > 0) {
@@ -512,13 +509,9 @@ Generator <- R6::R6Class(
 
       return(list(types = type_list))
     },
-    get_detached_docs_view_model = function() {
-      # We need to find a service and port
-      # Collect all operations from all ports
+    collect_all_operations = function() {
       all_ops <- list()
-      services <- self$wsdl$get_services()
-
-      for (svc in services) {
+      for (svc in self$wsdl$get_services()) {
         for (port in svc$ports) {
           ops <- self$wsdl$get_operations(port$binding)
           for (op_name in names(ops)) {
@@ -528,8 +521,11 @@ Generator <- R6::R6Class(
           }
         }
       }
-
-      types <- self$wsdl$get_type_definitions() # Added to fix missing variable error
+      all_ops
+    },
+    get_detached_docs_view_model = function() {
+      all_ops <- private$collect_all_operations()
+      types <- self$wsdl$get_type_definitions()
 
       # We want to generate Roxygen documentation for each operation
       # But independent of the client class (so users can read help easily)
@@ -555,20 +551,7 @@ Generator <- R6::R6Class(
       list(detached_docs = op_list)
     },
     get_client_view_model = function() {
-      # Collect all operations from all ports
-      all_ops <- list()
-      services <- self$wsdl$get_services()
-
-      for (svc in services) {
-        for (port in svc$ports) {
-          ops <- self$wsdl$get_operations(port$binding)
-          for (op_name in names(ops)) {
-            if (is.null(all_ops[[op_name]])) {
-              all_ops[[op_name]] <- ops[[op_name]]
-            }
-          }
-        }
-      }
+      all_ops <- private$collect_all_operations()
       types <- self$wsdl$get_type_definitions()
       tns <- self$wsdl$get_target_namespace()
       services_meta <- self$wsdl$get_services()
