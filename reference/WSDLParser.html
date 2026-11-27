@@ -55,7 +55,7 @@ WSDL Parser"><!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax/libs
   <div class="col-md-9 contents">
     <div class="page-header">
     <h1>WSDL Parser</h1>
-    <small class="dont-index">Source: <a href="https://github.com/zachzIAM/soapr/blob/v0.3.0/R/WSDLParser.R" class="external-link"><code>R/WSDLParser.R</code></a></small>
+    <small class="dont-index">Source: <a href="https://github.com/zachzIAM/soapr/blob/main/R/WSDLParser.R" class="external-link"><code>R/WSDLParser.R</code></a></small>
     <div class="hidden name"><code>WSDLParser.Rd</code></div>
     </div>
 
@@ -114,6 +114,7 @@ WSDL Parser"><!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax/libs
 <li><p><a href="#method-WSDLParser-get_schemas"><code>WSDLParser$get_schemas()</code></a></p></li>
 <li><p><a href="#method-WSDLParser-get_services"><code>WSDLParser$get_services()</code></a></p></li>
 <li><p><a href="#method-WSDLParser-get_ports"><code>WSDLParser$get_ports()</code></a></p></li>
+<li><p><a href="#method-WSDLParser-get_binding_soap_version"><code>WSDLParser$get_binding_soap_version()</code></a></p></li>
 <li><p><a href="#method-WSDLParser-get_port_location"><code>WSDLParser$get_port_location()</code></a></p></li>
 <li><p><a href="#method-WSDLParser-get_operations"><code>WSDLParser$get_operations()</code></a></p></li>
 <li><p><a href="#method-WSDLParser-get_type_definitions"><code>WSDLParser$get_type_definitions()</code></a></p></li>
@@ -224,35 +225,15 @@ and standard ones, prioritizing the document's namespace but ensure standard pre
 <p>A list of ports.</p>
 </div>
 
-</div><p></p><hr><a id="method-WSDLParser-get_port_location"></a><div class="section">
-<h3 id="method-get-port-location-">Method <code>get_port_location()</code><a class="anchor" aria-label="anchor" href="#method-get-port-location-"></a></h3>
-<p>Get the location of a service port.</p><div class="section">
+</div><p></p><hr><a id="method-WSDLParser-get_binding_soap_version"></a><div class="section">
+<h3 id="method-get-binding-soap-version-">Method <code>get_binding_soap_version()</code><a class="anchor" aria-label="anchor" href="#method-get-binding-soap-version-"></a></h3>
+<p>Detect the SOAP protocol version ("1.1" or "1.2") for a binding.</p><div class="section">
 <h4 id="usage-7">Usage<a class="anchor" aria-label="anchor" href="#usage-7"></a></h4>
-<p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">WSDLParser</span><span class="op">$</span><span class="fu">get_port_location</span><span class="op">(</span><span class="va">port_node</span><span class="op">)</span></span></code></pre></div><p></p></div>
+<p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">WSDLParser</span><span class="op">$</span><span class="fu">get_binding_soap_version</span><span class="op">(</span><span class="va">binding_name</span><span class="op">)</span></span></code></pre></div><p></p></div>
 </div>
 
 <div class="section">
 <h4 id="arguments-3">Arguments<a class="anchor" aria-label="anchor" href="#arguments-3"></a></h4>
-<p></p><div class="arguments"><dl><dt><code>port_node</code></dt>
-<dd><p>The port xml_node.</p></dd>
-
-
-</dl><p></p></div>
-</div>
-<div class="section">
-<h4 id="returns-4">Returns<a class="anchor" aria-label="anchor" href="#returns-4"></a></h4>
-<p>A list of ports.</p>
-</div>
-
-</div><p></p><hr><a id="method-WSDLParser-get_operations"></a><div class="section">
-<h3 id="method-get-operations-">Method <code>get_operations()</code><a class="anchor" aria-label="anchor" href="#method-get-operations-"></a></h3>
-<p>Get a list of operations for a binding.</p><div class="section">
-<h4 id="usage-8">Usage<a class="anchor" aria-label="anchor" href="#usage-8"></a></h4>
-<p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">WSDLParser</span><span class="op">$</span><span class="fu">get_operations</span><span class="op">(</span><span class="va">binding_name</span><span class="op">)</span></span></code></pre></div><p></p></div>
-</div>
-
-<div class="section">
-<h4 id="arguments-4">Arguments<a class="anchor" aria-label="anchor" href="#arguments-4"></a></h4>
 <p></p><div class="arguments"><dl><dt><code>binding_name</code></dt>
 <dd><p>The name of the binding.</p></dd>
 
@@ -260,26 +241,66 @@ and standard ones, prioritizing the document's namespace but ensure standard pre
 </dl><p></p></div>
 </div>
 <div class="section">
+<h4 id="returns-4">Returns<a class="anchor" aria-label="anchor" href="#returns-4"></a></h4>
+<p>Character string "1.1" or "1.2".</p>
+</div>
+
+</div><p></p><hr><a id="method-WSDLParser-get_port_location"></a><div class="section">
+<h3 id="method-get-port-location-">Method <code>get_port_location()</code><a class="anchor" aria-label="anchor" href="#method-get-port-location-"></a></h3>
+<p>Get the location of a service port.</p><div class="section">
+<h4 id="usage-8">Usage<a class="anchor" aria-label="anchor" href="#usage-8"></a></h4>
+<p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">WSDLParser</span><span class="op">$</span><span class="fu">get_port_location</span><span class="op">(</span><span class="va">port_node</span><span class="op">)</span></span></code></pre></div><p></p></div>
+</div>
+
+<div class="section">
+<h4 id="arguments-4">Arguments<a class="anchor" aria-label="anchor" href="#arguments-4"></a></h4>
+<p></p><div class="arguments"><dl><dt><code>port_node</code></dt>
+<dd><p>The port xml_node.</p></dd>
+
+
+</dl><p></p></div>
+</div>
+<div class="section">
 <h4 id="returns-5">Returns<a class="anchor" aria-label="anchor" href="#returns-5"></a></h4>
+<p>A list of ports.</p>
+</div>
+
+</div><p></p><hr><a id="method-WSDLParser-get_operations"></a><div class="section">
+<h3 id="method-get-operations-">Method <code>get_operations()</code><a class="anchor" aria-label="anchor" href="#method-get-operations-"></a></h3>
+<p>Get a list of operations for a binding.</p><div class="section">
+<h4 id="usage-9">Usage<a class="anchor" aria-label="anchor" href="#usage-9"></a></h4>
+<p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">WSDLParser</span><span class="op">$</span><span class="fu">get_operations</span><span class="op">(</span><span class="va">binding_name</span><span class="op">)</span></span></code></pre></div><p></p></div>
+</div>
+
+<div class="section">
+<h4 id="arguments-5">Arguments<a class="anchor" aria-label="anchor" href="#arguments-5"></a></h4>
+<p></p><div class="arguments"><dl><dt><code>binding_name</code></dt>
+<dd><p>The name of the binding.</p></dd>
+
+
+</dl><p></p></div>
+</div>
+<div class="section">
+<h4 id="returns-6">Returns<a class="anchor" aria-label="anchor" href="#returns-6"></a></h4>
 <p>A list of operations.</p>
 </div>
 
 </div><p></p><hr><a id="method-WSDLParser-get_type_definitions"></a><div class="section">
 <h3 id="method-get-type-definitions-">Method <code>get_type_definitions()</code><a class="anchor" aria-label="anchor" href="#method-get-type-definitions-"></a></h3>
 <p>Get all type definitions across all WSDL, imported, and included schemas.</p><div class="section">
-<h4 id="usage-9">Usage<a class="anchor" aria-label="anchor" href="#usage-9"></a></h4>
+<h4 id="usage-10">Usage<a class="anchor" aria-label="anchor" href="#usage-10"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">WSDLParser</span><span class="op">$</span><span class="fu">get_type_definitions</span><span class="op">(</span><span class="op">)</span></span></code></pre></div><p></p></div>
 </div>
 
 <div class="section">
-<h4 id="returns-6">Returns<a class="anchor" aria-label="anchor" href="#returns-6"></a></h4>
+<h4 id="returns-7">Returns<a class="anchor" aria-label="anchor" href="#returns-7"></a></h4>
 <p>A list of type definitions.</p>
 </div>
 
 </div><p></p><hr><a id="method-WSDLParser-parse_complex_type"></a><div class="section">
 <h3 id="method-parse-complex-type-">Method <code>parse_complex_type()</code><a class="anchor" aria-label="anchor" href="#method-parse-complex-type-"></a></h3>
 <p>Parse a complexType node.</p><div class="section">
-<h4 id="usage-10">Usage<a class="anchor" aria-label="anchor" href="#usage-10"></a></h4>
+<h4 id="usage-11">Usage<a class="anchor" aria-label="anchor" href="#usage-11"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">WSDLParser</span><span class="op">$</span><span class="fu">parse_complex_type</span><span class="op">(</span></span>
 <span>  <span class="va">node</span>,</span>
 <span>  schema_ns <span class="op">=</span> <span class="va">self</span><span class="op">$</span><span class="va">ns</span>,</span>
@@ -290,7 +311,7 @@ and standard ones, prioritizing the document's namespace but ensure standard pre
 </div>
 
 <div class="section">
-<h4 id="arguments-5">Arguments<a class="anchor" aria-label="anchor" href="#arguments-5"></a></h4>
+<h4 id="arguments-6">Arguments<a class="anchor" aria-label="anchor" href="#arguments-6"></a></h4>
 <p></p><div class="arguments"><dl><dt><code>node</code></dt>
 <dd><p>The complexType xml_node.</p></dd>
 
@@ -314,19 +335,19 @@ and standard ones, prioritizing the document's namespace but ensure standard pre
 </dl><p></p></div>
 </div>
 <div class="section">
-<h4 id="returns-7">Returns<a class="anchor" aria-label="anchor" href="#returns-7"></a></h4>
+<h4 id="returns-8">Returns<a class="anchor" aria-label="anchor" href="#returns-8"></a></h4>
 <p>A list representing the complex type.</p>
 </div>
 
 </div><p></p><hr><a id="method-WSDLParser-parse_simple_type"></a><div class="section">
 <h3 id="method-parse-simple-type-">Method <code>parse_simple_type()</code><a class="anchor" aria-label="anchor" href="#method-parse-simple-type-"></a></h3>
 <p>Parse a simpleType node.</p><div class="section">
-<h4 id="usage-11">Usage<a class="anchor" aria-label="anchor" href="#usage-11"></a></h4>
+<h4 id="usage-12">Usage<a class="anchor" aria-label="anchor" href="#usage-12"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">WSDLParser</span><span class="op">$</span><span class="fu">parse_simple_type</span><span class="op">(</span><span class="va">node</span>, schema_ns <span class="op">=</span> <span class="va">self</span><span class="op">$</span><span class="va">ns</span><span class="op">)</span></span></code></pre></div><p></p></div>
 </div>
 
 <div class="section">
-<h4 id="arguments-6">Arguments<a class="anchor" aria-label="anchor" href="#arguments-6"></a></h4>
+<h4 id="arguments-7">Arguments<a class="anchor" aria-label="anchor" href="#arguments-7"></a></h4>
 <p></p><div class="arguments"><dl><dt><code>node</code></dt>
 <dd><p>The simpleType xml_node.</p></dd>
 
@@ -338,19 +359,19 @@ and standard ones, prioritizing the document's namespace but ensure standard pre
 </dl><p></p></div>
 </div>
 <div class="section">
-<h4 id="returns-8">Returns<a class="anchor" aria-label="anchor" href="#returns-8"></a></h4>
+<h4 id="returns-9">Returns<a class="anchor" aria-label="anchor" href="#returns-9"></a></h4>
 <p>A list representing the simple type.</p>
 </div>
 
 </div><p></p><hr><a id="method-WSDLParser-strip_ns"></a><div class="section">
 <h3 id="method-strip-ns-">Method <code>strip_ns()</code><a class="anchor" aria-label="anchor" href="#method-strip-ns-"></a></h3>
 <p>Strip namespace prefix from a string.</p><div class="section">
-<h4 id="usage-12">Usage<a class="anchor" aria-label="anchor" href="#usage-12"></a></h4>
+<h4 id="usage-13">Usage<a class="anchor" aria-label="anchor" href="#usage-13"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">WSDLParser</span><span class="op">$</span><span class="fu">strip_ns</span><span class="op">(</span><span class="va">str</span><span class="op">)</span></span></code></pre></div><p></p></div>
 </div>
 
 <div class="section">
-<h4 id="arguments-7">Arguments<a class="anchor" aria-label="anchor" href="#arguments-7"></a></h4>
+<h4 id="arguments-8">Arguments<a class="anchor" aria-label="anchor" href="#arguments-8"></a></h4>
 <p></p><div class="arguments"><dl><dt><code>str</code></dt>
 <dd><p>The string to strip.</p></dd>
 
@@ -358,19 +379,19 @@ and standard ones, prioritizing the document's namespace but ensure standard pre
 </dl><p></p></div>
 </div>
 <div class="section">
-<h4 id="returns-9">Returns<a class="anchor" aria-label="anchor" href="#returns-9"></a></h4>
+<h4 id="returns-10">Returns<a class="anchor" aria-label="anchor" href="#returns-10"></a></h4>
 <p>The string without the namespace prefix.</p>
 </div>
 
 </div><p></p><hr><a id="method-WSDLParser-parse_documentation"></a><div class="section">
 <h3 id="method-parse-documentation-">Method <code>parse_documentation()</code><a class="anchor" aria-label="anchor" href="#method-parse-documentation-"></a></h3>
 <p>Parse documentation from a node.</p><div class="section">
-<h4 id="usage-13">Usage<a class="anchor" aria-label="anchor" href="#usage-13"></a></h4>
+<h4 id="usage-14">Usage<a class="anchor" aria-label="anchor" href="#usage-14"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">WSDLParser</span><span class="op">$</span><span class="fu">parse_documentation</span><span class="op">(</span><span class="va">node</span>, schema_ns <span class="op">=</span> <span class="va">self</span><span class="op">$</span><span class="va">ns</span><span class="op">)</span></span></code></pre></div><p></p></div>
 </div>
 
 <div class="section">
-<h4 id="arguments-8">Arguments<a class="anchor" aria-label="anchor" href="#arguments-8"></a></h4>
+<h4 id="arguments-9">Arguments<a class="anchor" aria-label="anchor" href="#arguments-9"></a></h4>
 <p></p><div class="arguments"><dl><dt><code>node</code></dt>
 <dd><p>The xml_node.</p></dd>
 
@@ -382,19 +403,19 @@ and standard ones, prioritizing the document's namespace but ensure standard pre
 </dl><p></p></div>
 </div>
 <div class="section">
-<h4 id="returns-10">Returns<a class="anchor" aria-label="anchor" href="#returns-10"></a></h4>
+<h4 id="returns-11">Returns<a class="anchor" aria-label="anchor" href="#returns-11"></a></h4>
 <p>The documentation text, or NULL.</p>
 </div>
 
 </div><p></p><hr><a id="method-WSDLParser-clone"></a><div class="section">
 <h3 id="method-clone-">Method <code>clone()</code><a class="anchor" aria-label="anchor" href="#method-clone-"></a></h3>
 <p>The objects of this class are cloneable with this method.</p><div class="section">
-<h4 id="usage-14">Usage<a class="anchor" aria-label="anchor" href="#usage-14"></a></h4>
+<h4 id="usage-15">Usage<a class="anchor" aria-label="anchor" href="#usage-15"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">WSDLParser</span><span class="op">$</span><span class="fu">clone</span><span class="op">(</span>deep <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div><p></p></div>
 </div>
 
 <div class="section">
-<h4 id="arguments-9">Arguments<a class="anchor" aria-label="anchor" href="#arguments-9"></a></h4>
+<h4 id="arguments-10">Arguments<a class="anchor" aria-label="anchor" href="#arguments-10"></a></h4>
 <p></p><div class="arguments"><dl><dt><code>deep</code></dt>
 <dd><p>Whether to make a deep clone.</p></dd>
 
