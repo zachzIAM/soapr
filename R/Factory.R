@@ -412,7 +412,9 @@ Factory <- R6::R6Class(
         return(as.POSIXct(NA_real_, origin = "1970-01-01", tz = "UTC"))
       }
       if (inherits(val, "POSIXt")) {
-        return(as.POSIXct(val, tz = "UTC"))
+        out <- as.POSIXct(val)
+        attr(out, "tzone") <- "UTC"
+        return(out)
       }
       vals <- as.character(val)
       parsed <- vapply(vals, function(s) {

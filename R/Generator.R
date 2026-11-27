@@ -184,6 +184,18 @@ Generator <- R6::R6Class(
       }
       normalized
     },
+    resolve_input_element = function(op_def, fallback_name) {
+      if (
+        !is.null(op_def$input_element) &&
+          length(op_def$input_element) == 1L &&
+          !is.na(op_def$input_element) &&
+          nzchar(op_def$input_element)
+      ) {
+        op_def$input_element
+      } else {
+        fallback_name
+      }
+    },
     write_license = function(path, package_name, license_holder = paste(package_name, "authors")) {
       year <- format(Sys.Date(), "%Y")
       holder <- private$normalize_metadata_value(license_holder, paste(package_name, "authors"))
@@ -567,16 +579,7 @@ Generator <- R6::R6Class(
 
       op_list <- purrr::imap(all_ops, function(op, name) {
         doc <- op$documentation %||% paste("Call operation", name)
-        input_element <- if (
-          !is.null(op$input_element) &&
-            length(op$input_element) == 1L &&
-            !is.na(op$input_element) &&
-            nzchar(op$input_element)
-        ) {
-          op$input_element
-        } else {
-          name
-        }
+        input_element <- private$resolve_input_element(op, name)
 
         args_info <- private$process_operation_args(name, op, types)
 
@@ -609,16 +612,7 @@ Generator <- R6::R6Class(
       # For Document/Literal Wrapped, the input element name is usually the operation name.
 
       # Use input element if extracted by parser, otherwise fallback to operation name
-      type_name <- if (
-        !is.null(op_def$input_element) &&
-          length(op_def$input_element) == 1L &&
-          !is.na(op_def$input_element) &&
-          nzchar(op_def$input_element)
-      ) {
-        op_def$input_element
-      } else {
-        op_name
-      }
+      type_name <- private$resolve_input_element(op_def, op_name)
       op_type <- types[[type_name]]
 
       if (!is.null(op_type) && op_type$kind == "complex") {
