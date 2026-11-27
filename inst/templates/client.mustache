@@ -127,9 +127,19 @@ Client <- R6::R6Class(
         )
       }
       handle_fault(response)
-      content <- httr::content(response, as = "parsed", encoding = "UTF-8")
+      content <- deserialize_response(response)
+      if (!inherits(content, "xml_node")) {
+        return(NULL)
+      }
       body_node <- xml2::xml_find_first(content, ".//*[local-name()='Body']")
-      response_node <- xml2::xml_children(body_node)[[1]]
+      if (is_xml_missing(body_node)) {
+        return(NULL)
+      }
+      body_children <- xml2::xml_children(body_node)
+      if (length(body_children) == 0) {
+        return(NULL)
+      }
+      response_node <- body_children[[1]]
       response_name <- xml2::xml_name(response_node)
       local_name <- gsub("^.*:", "", response_name)
       schema <- get_schema()

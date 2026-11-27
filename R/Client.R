@@ -243,7 +243,10 @@ Client <- R6::R6Class(
       self$handle_fault(response)
 
       # Parse Response
-      content <- httr::content(response, as = "parsed", encoding = "UTF-8")
+      content <- self$serializer$deserialize_response(response)
+      if (!inherits(content, "xml_node")) {
+        return(NULL)
+      }
 
       if (self$verbose) {
         cat("Response XML:\n")
@@ -252,17 +255,16 @@ Client <- R6::R6Class(
 
       # Extract Body
       body_node <- xml2::xml_find_first(content, ".//*[local-name()='Body']")
+      if (is_xml_missing(body_node)) {
+        return(NULL)
+      }
 
-      # The body should contain the response element
-      # We expect the first child of Body to be the response
-      # But we should check op$output to be sure what we are looking for
+      body_children <- xml2::xml_children(body_node)
+      if (length(body_children) == 0) {
+        return(NULL)
+      }
 
-      # op$output is the output message name.
-      # We need to find the element name associated with that message.
-      # This info is not easily available here without looking up the message definition again.
-      # However, usually it's just the first child.
-
-      response_node <- xml2::xml_children(body_node)[[1]]
+      response_node <- body_children[[1]]
 
       # We need the type name for this response node.
       # In document/literal wrapped, the element name IS the type name (or close to it).

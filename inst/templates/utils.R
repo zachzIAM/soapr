@@ -98,24 +98,45 @@ build_xml_node <- function(parent, name, value, ns = NULL) {
   }
 }
 
+get_header_ci <- function(headers, target_name) {
+  if (is.null(headers) || length(headers) == 0) {
+    return(NULL)
+  }
+  hdr_names <- names(headers)
+  if (is.null(hdr_names)) {
+    return(NULL)
+  }
+  idx <- which(tolower(hdr_names) == tolower(target_name))
+  if (length(idx) == 0) {
+    return(NULL)
+  }
+  headers[[idx[1]]]
+}
+
+deserialize_response <- function(response) {
+  content_type <- get_header_ci(httr::headers(response), "Content-Type")
+  if (
+    !is.null(content_type) &&
+      length(content_type) > 0 &&
+      !is.na(content_type[[1]]) &&
+      nzchar(trimws(content_type[[1]])) &&
+      !grepl("xml", content_type[[1]], ignore.case = TRUE)
+  ) {
+    stop("Response is not XML")
+  }
+
+  body_text <- httr::content(response, "text", encoding = "UTF-8")
+  if (is.null(body_text) || length(body_text) == 0 || is.na(body_text[[1]]) || !nzchar(trimws(body_text[[1]]))) {
+    return(NULL)
+  }
+
+  xml2::read_xml(body_text[[1]])
+}
+
 handle_fault <- function(response) {
   # Try to parse XML
   doc <- tryCatch(
-    {
-      content_type <- httr::headers(response)$`Content-Type`
-      if (
-        !is.null(content_type) &&
-          !grepl("xml", content_type, ignore.case = TRUE)
-      ) {
-        NULL
-      } else {
-        xml2::read_xml(httr::content(
-          response,
-          "text",
-          encoding = "UTF-8"
-        ))
-      }
-    },
+    deserialize_response(response),
     error = function(e) NULL
   )
 
@@ -193,7 +214,17 @@ convert_builtin_type <- function(val, type_name) {
     "float" = as.numeric(val),
     "double" = as.numeric(val),
     "boolean" = {
-      if (tolower(val) == "true" || val == "1") TRUE else FALSE
+      if (is.null(val) || length(val) == 0) {
+        NA
+      } else if (is.logical(val)) {
+        val
+      } else {
+        val_chr <- tolower(trimws(as.character(val)))
+        res <- rep(FALSE, length(val_chr))
+        res[is.na(val)] <- NA
+        res[!is.na(val) & (val_chr == "true" | val_chr == "1")] <- TRUE
+        res
+      }
     },
     "string" = as.character(val),
     "date" = as.Date(val),
