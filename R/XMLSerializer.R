@@ -55,71 +55,29 @@ XMLSerializer <- R6::R6Class(
       }
 
       # Determine namespace for this element
-      node_ns <- ns
-
-      if (is.null(node_ns)) {
-        if (self$element_form_default == "qualified") {
-          if (!is.null(self$target_namespace)) {
-            node_ns <- self$target_namespace
-          } else {
-            node_ns <- NULL
-          }
-        } else {
-          node_ns <- "" # Unqualified - Explicitly remove namespace
-        }
-      }
+      node_ns <- private$resolve_node_ns(ns)
 
       if (inherits(value, "soap_object")) {
-        # Complex Type
-        if (!is.null(node_ns) && node_ns != "") {
-          # Qualified: Use xmlns to force prefix usage
-          node <- xml2::xml_add_child(parent, name, xmlns = node_ns)
-        } else {
-          # Unqualified or Inherit
-          node <- xml2::xml_add_child(parent, name)
-        }
+        node <- private$add_namespaced_child(parent, name, node_ns)
+        private$apply_soap_attrs(node, value)
 
-        if (!is.null(node_ns) && node_ns == "") {
-          xml2::xml_attr(node, "xmlns") <- ""
-        }
-
-        # Add attributes
-        if (!is.null(attr(value, "soap_attrs"))) {
-          for (attr_name in attr(value, "soap_attrs")) {
-            attr_val <- value[[attr_name]]
-            if (!is.null(attr_val) && !is.na(attr_val)) {
-              # Check attribute qualification
-              full_attr_name <- attr_name
-              if (self$attribute_form_default == "qualified") {
-                # Prefix with target namespace prefix
-                full_attr_name <- paste0(self$target_namespace_prefix, ":", attr_name)
-              }
-              xml2::xml_attr(node, full_attr_name) <- as.character(attr_val)
-            }
-          }
-        }
-
-        # Add elements
         soap_attrs <- attr(value, "soap_attrs")
         for (elem_name in names(value)) {
           if (!elem_name %in% soap_attrs) {
             self$serialize(node, elem_name, value[[elem_name]])
           }
         }
-      } else if (is.list(value) && !inherits(value, "soap_object")) {
+      } else if (is.list(value)) {
         if (!is.null(names(value)) && any(names(value) != "")) {
           # Named list -> Treat as fields of a complex type (structure)
-          # Create a container node for this complex type
-          node <- xml2::xml_add_child(parent, name)
-          if (!is.null(node_ns) && node_ns == "") {
-            xml2::xml_attr(node, "xmlns") <- ""
-          }
+          node <- private$add_namespaced_child(parent, name, node_ns)
+          private$apply_soap_attrs(node, value)
 
-          # Recursively serialize fields
-          # Note: We don't know which are attributes vs elements here without schema.
-          # Defaulting to elements is safer for generic named lists.
+          soap_attrs <- attr(value, "soap_attrs")
           for (field_name in names(value)) {
-            self$serialize(node, field_name, value[[field_name]])
+            if (!field_name %in% soap_attrs) {
+              self$serialize(node, field_name, value[[field_name]])
+            }
           }
         } else {
           # Unnamed list -> Repeated items (maxOccurs > 1)
@@ -134,10 +92,7 @@ XMLSerializer <- R6::R6Class(
         } else {
           as.character(value)
         }
-        node <- xml2::xml_add_child(parent, name, val_str)
-        if (!is.null(node_ns) && node_ns == "") {
-          xml2::xml_attr(node, "xmlns") <- ""
-        }
+        private$add_namespaced_child(parent, name, node_ns, text = val_str)
       }
     },
 
@@ -157,6 +112,85 @@ XMLSerializer <- R6::R6Class(
       }
 
       xml2::read_xml(httr::content(response, "text", encoding = "UTF-8"))
+    }
+  ),
+  private = list(
+    get_active_default_ns = function(node) {
+      cur <- node
+      while (inherits(cur, "xml_node") && xml2::xml_type(cur) == "element") {
+        ns_attr <- xml2::xml_attr(cur, "xmlns")
+        if (!is.na(ns_attr)) {
+          return(ns_attr)
+        }
+        cur <- xml2::xml_parent(cur)
+      }
+      ""
+    },
+
+    resolve_node_ns = function(ns = NULL) {
+      if (!is.null(ns)) {
+        if (length(ns) == 1L && is.na(ns)) {
+          return(NULL)
+        }
+        return(ns)
+      }
+      if (identical(self$element_form_default, "qualified")) {
+        if (
+          !is.null(self$target_namespace) &&
+            length(self$target_namespace) == 1L &&
+            !is.na(self$target_namespace) &&
+            nzchar(self$target_namespace)
+        ) {
+          return(self$target_namespace)
+        }
+        return(NULL)
+      }
+      ""
+    },
+
+    add_namespaced_child = function(parent, name, node_ns, text = NULL) {
+      parent_ns <- private$get_active_default_ns(parent)
+      needs_xmlns <- !is.null(node_ns) && length(node_ns) == 1L && !is.na(node_ns) && !identical(node_ns, parent_ns)
+
+      if (is.null(text)) {
+        if (needs_xmlns && nzchar(node_ns)) {
+          return(xml2::xml_add_child(parent, name, xmlns = node_ns))
+        }
+        node <- xml2::xml_add_child(parent, name)
+      } else {
+        if (needs_xmlns && nzchar(node_ns)) {
+          return(xml2::xml_add_child(parent, name, text, xmlns = node_ns))
+        }
+        node <- xml2::xml_add_child(parent, name, text)
+      }
+
+      if (needs_xmlns && identical(node_ns, "")) {
+        xml2::xml_attr(node, "xmlns") <- ""
+      }
+      node
+    },
+
+    apply_soap_attrs = function(node, value) {
+      soap_attrs <- attr(value, "soap_attrs")
+      if (is.null(soap_attrs)) {
+        return()
+      }
+      for (attr_name in soap_attrs) {
+        attr_val <- value[[attr_name]]
+        if (!is.null(attr_val) && length(attr_val) > 0 && !is.null(attr_val[[1]]) && !is.na(attr_val[[1]])) {
+          attr_str <- if (is.logical(attr_val)) {
+            tolower(as.character(attr_val))
+          } else {
+            as.character(attr_val)
+          }
+          full_attr_name <- if (identical(self$attribute_form_default, "qualified")) {
+            paste0(self$target_namespace_prefix, ":", attr_name)
+          } else {
+            attr_name
+          }
+          xml2::xml_attr(node, full_attr_name) <- attr_str
+        }
+      }
     }
   )
 )
