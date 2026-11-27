@@ -93,10 +93,12 @@ Client <- R6::R6Class(
     #' @param args A list of arguments for the operation.
     #' @return The result of the operation.
     call_operation = function(op, args) {
+      soap_version <- self$port_def$soap_version %||% "1.1"
+
       # Construct SOAP Envelope
       envelope <- xml2::xml_new_root(
         "soap:Envelope",
-        "xmlns:soap" = "http://schemas.xmlsoap.org/soap/envelope/",
+        "xmlns:soap" = soap_envelope_ns(soap_version),
         "xmlns:xsi" = "http://www.w3.org/2001/XMLSchema-instance",
         "xmlns:xsd" = "http://www.w3.org/2001/XMLSchema",
         "xmlns:tns" = self$target_namespace
@@ -241,13 +243,23 @@ Client <- R6::R6Class(
         print(envelope)
       }
 
-      response <- self$transport(
-        url = self$port_def$location,
-        handle = self$handle,
-        httr::add_headers(SOAPAction = op$action),
-        httr::content_type("text/xml; charset=utf-8"),
-        body = as.character(envelope)
-      )
+      ct <- soap_content_type(action = op$action, soap_version = soap_version)
+      if (identical(soap_version, "1.2")) {
+        response <- self$transport(
+          url = self$port_def$location,
+          handle = self$handle,
+          httr::content_type(ct),
+          body = as.character(envelope)
+        )
+      } else {
+        response <- self$transport(
+          url = self$port_def$location,
+          handle = self$handle,
+          httr::add_headers(SOAPAction = op$action),
+          httr::content_type(ct),
+          body = as.character(envelope)
+        )
+      }
 
       # Check for SOAP Fault
       self$handle_fault(response)

@@ -40,6 +40,7 @@ Parses a WSDL file to extract services, ports, operations, and types.
 \item \href{#method-WSDLParser-get_schemas}{\code{WSDLParser$get_schemas()}}
 \item \href{#method-WSDLParser-get_services}{\code{WSDLParser$get_services()}}
 \item \href{#method-WSDLParser-get_ports}{\code{WSDLParser$get_ports()}}
+\item \href{#method-WSDLParser-get_binding_soap_version}{\code{WSDLParser$get_binding_soap_version()}}
 \item \href{#method-WSDLParser-get_port_location}{\code{WSDLParser$get_port_location()}}
 \item \href{#method-WSDLParser-get_operations}{\code{WSDLParser$get_operations()}}
 \item \href{#method-WSDLParser-get_type_definitions}{\code{WSDLParser$get_type_definitions()}}
@@ -155,6 +156,26 @@ Get a list of ports for a service.
 }
 \subsection{Returns}{
 A list of ports.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-WSDLParser-get_binding_soap_version"></a>}}
+\if{latex}{\out{\hypertarget{method-WSDLParser-get_binding_soap_version}{}}}
+\subsection{Method \code{get_binding_soap_version()}}{
+Detect the SOAP protocol version ("1.1" or "1.2") for a binding.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{WSDLParser$get_binding_soap_version(binding_name)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{binding_name}}{The name of the binding.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+Character string "1.1" or "1.2".
 }
 }
 \if{html}{\out{<hr>}}
