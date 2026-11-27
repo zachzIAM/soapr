@@ -111,7 +111,13 @@ Generator Class"><!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax/
 <h3 id="method-generate-package-">Method <code>generate_package()</code><a class="anchor" aria-label="anchor" href="#method-generate-package-"></a></h3>
 <p>Generate the R package.</p><div class="section">
 <h4 id="usage-1">Usage<a class="anchor" aria-label="anchor" href="#usage-1"></a></h4>
-<p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">Generator</span><span class="op">$</span><span class="fu">generate_package</span><span class="op">(</span><span class="va">path</span>, <span class="va">package_name</span><span class="op">)</span></span></code></pre></div><p></p></div>
+<p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">Generator</span><span class="op">$</span><span class="fu">generate_package</span><span class="op">(</span></span>
+<span>  <span class="va">path</span>,</span>
+<span>  <span class="va">package_name</span>,</span>
+<span>  author <span class="op">=</span> <span class="st">"Package Author"</span>,</span>
+<span>  email <span class="op">=</span> <span class="st">"author@example.com"</span>,</span>
+<span>  license_holder <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="va">package_name</span>, <span class="st">"authors"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div><p></p></div>
 </div>
 
 <div class="section">
@@ -122,6 +128,18 @@ Generator Class"><!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax/
 
 <dt><code>package_name</code></dt>
 <dd><p>The name of the package to generate.</p></dd>
+
+
+<dt><code>author</code></dt>
+<dd><p>The package author name for DESCRIPTION.</p></dd>
+
+
+<dt><code>email</code></dt>
+<dd><p>The package maintainer email for DESCRIPTION.</p></dd>
+
+
+<dt><code>license_holder</code></dt>
+<dd><p>The copyright holder name for LICENSE.</p></dd>
 
 
 </dl><p></p></div>
@@ -147,7 +165,12 @@ Generator Class"><!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax/
 <h3 id="method-write-description-">Method <code>write_description()</code><a class="anchor" aria-label="anchor" href="#method-write-description-"></a></h3>
 <p>Write the DESCRIPTION file.</p><div class="section">
 <h4 id="usage-3">Usage<a class="anchor" aria-label="anchor" href="#usage-3"></a></h4>
-<p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">Generator</span><span class="op">$</span><span class="fu">write_description</span><span class="op">(</span><span class="va">path</span>, <span class="va">name</span><span class="op">)</span></span></code></pre></div><p></p></div>
+<p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">Generator</span><span class="op">$</span><span class="fu">write_description</span><span class="op">(</span></span>
+<span>  <span class="va">path</span>,</span>
+<span>  <span class="va">name</span>,</span>
+<span>  author <span class="op">=</span> <span class="st">"Package Author"</span>,</span>
+<span>  email <span class="op">=</span> <span class="st">"author@example.com"</span></span>
+<span><span class="op">)</span></span></code></pre></div><p></p></div>
 </div>
 
 <div class="section">
@@ -158,6 +181,14 @@ Generator Class"><!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax/
 
 <dt><code>name</code></dt>
 <dd><p>The package name.</p></dd>
+
+
+<dt><code>author</code></dt>
+<dd><p>The package author name.</p></dd>
+
+
+<dt><code>email</code></dt>
+<dd><p>The package maintainer email.</p></dd>
 
 
 </dl><p></p></div>
@@ -291,7 +322,7 @@ Generator Class"><!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax/
 
 
       <footer><div class="copyright">
-  <p></p><p>Developed by Zach.</p>
+  <p></p><p>Developed by Zahari Zankov.</p>
 </div>
 
 <div class="pkgdown">
