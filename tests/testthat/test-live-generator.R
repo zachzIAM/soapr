@@ -3,7 +3,6 @@ library(soapr)
 skip_on_ci()
 
 test_that("Static Client Generator (BDTInteractive)", {
-
   wsdl_path <- test_path("testdata/valid_wsdls/BDTInteractive.xml")
 
   output_path <- tempfile("generated_packages")
@@ -61,8 +60,31 @@ test_that("Static Client Generator (BDTInteractive)", {
   client_mock <- new_client(transport = mock_transport)
   expect_equal(client_mock$transport, mock_transport)
 
+  client_mock <- new_client(transport = mock_transport)
+  expect_equal(client_mock$transport, mock_transport)
+
+  # Test Boolean Serialization
+  bool_mock <- function(url, action, body, config, handle) {
+    if (grepl("GetCurrentSettings", action)) {
+      # Check that boolean TRUE is serialized as "true" (lowercase)
+      testthat::expect_true(grepl("<InclSessionOverride>true</InclSessionOverride>", body))
+    }
+    structure(
+      list(
+        url = url,
+        status_code = 200,
+        headers = list(`Content-Type` = "text/xml; charset=utf-8"),
+        content = charToRaw('<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"><soap:Body><response>ok</response></soap:Body></soap:Envelope>')
+      ),
+      class = "response"
+    )
+  }
+  client_bool <- new_client(transport = bool_mock)
+  client_bool$GetCurrentSettings(InclSessionOverride = TRUE)
+
   # To fully test it, we would need to call an operation.
   # But we don't know the operation names easily here without parsing WSDL again.
   # However, we know the generated code uses it.
 
+  pkgload::unload(package_name)
 })

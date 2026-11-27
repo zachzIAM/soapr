@@ -4,3 +4,5 @@
 ^README\.Rmd$
 ^\.github$
 ^\.lintr$
+^AGENTS\.md$
+^\.agents$

@@ -15,9 +15,26 @@ build_xml_node <- function(parent, name, value) {
   }
 
   # Create node
-  # Check if name is namespaced
-  node_name <- if (grepl(":", name)) name else paste0("tns:", name)
-  child <- xml2::xml_add_child(parent, node_name)
+  # Create node
+  # Handle namespaces based on elementFormDefault
+  element_form_default <- "{{{element_form_default}}}"
+
+  if (element_form_default == "qualified") {
+    node_name <- if (grepl(":", name)) name else paste0("tns:", name)
+    child <- xml2::xml_add_child(parent, node_name)
+  } else {
+    # Unqualified
+    # If parent has a default namespace, we must explicitly unset it for the child
+    # to ensure it is in no namespace.
+    node_name <- name
+    child <- xml2::xml_add_child(parent, node_name)
+
+    # Check if parent has default namespace
+    parent_ns <- xml2::xml_attr(parent, "xmlns")
+    if (!is.na(parent_ns) && parent_ns != "") {
+      xml2::xml_attr(child, "xmlns") <- ""
+    }
+  }
 
   if (is.list(value)) {
     soap_attrs <- attr(value, "soap_attrs")
@@ -33,7 +50,8 @@ build_xml_node <- function(parent, name, value) {
       }
     }
   } else {
-    xml2::xml_set_text(child, as.character(value))
+    val_str <- if (is.logical(value)) tolower(as.character(value)) else as.character(value)
+    xml2::xml_set_text(child, val_str)
   }
 }
 
@@ -72,19 +90,19 @@ handle_fault <- function(response) {
   )
 
   # Check for SOAP 1.2 Fault
-  if (inherits(fault_node, "xml_missing")) {
+  if (is_xml_missing(fault_node)) {
     fault_node <- tryCatch(
       xml2::xml_find_first(doc, ".//env:Fault", ns),
       warning = function(w) xml2::xml_missing()
     )
   }
 
-  if (inherits(fault_node, "xml_missing")) {
+  if (is_xml_missing(fault_node)) {
     # Fallback for when prefix is different but local name is Fault
     fault_node <- xml2::xml_find_first(doc, ".//*[local-name()='Fault']")
   }
 
-  if (!inherits(fault_node, "xml_missing")) {
+  if (!is_xml_missing(fault_node)) {
     # Extract Fault Code
     fault_code <- xml2::xml_text(xml2::xml_find_first(
       fault_node,
@@ -125,7 +143,7 @@ convert_builtin_type <- function(val, type_name) {
   switch(local_type,
     "int" = as.integer(val),
     "integer" = as.integer(val),
-    "long" = as.numeric(val),
+    "long" = bit64::as.integer64(val),
     "short" = as.integer(val),
     "byte" = as.integer(val),
     "decimal" = as.numeric(val),
@@ -135,20 +153,80 @@ convert_builtin_type <- function(val, type_name) {
       if (tolower(val) == "true" || val == "1") TRUE else FALSE
     },
     "string" = as.character(val),
+    "date" = as.Date(val),
+    "dateTime" = as.POSIXct(val, format = "%Y-%m-%dT%H:%M:%OSZ", tz = "UTC"),
     val # Default: return as is
   )
 }
 
-deserialize <- function(node, type_name, schema) {
+deserialize_dynamic <- function(node, type_name, schema, factory) {
+  children <- xml2::xml_children(node)
+  
+  if (length(children) == 0) {
+    val <- xml2::xml_text(node)
+    
+    if (!is.null(factory) && type_name %in% names(factory)) {
+       parsed <- tryCatch({
+         arg_name <- names(formals(factory[[type_name]]))[1]
+         args <- list()
+         args[[arg_name]] <- convert_builtin_type(val, type_name)
+         do.call(factory[[type_name]], args)
+       }, error = function(e) NULL)
+       if (!is.null(parsed)) return(parsed)
+    }
+    
+    return(convert_builtin_type(val, type_name))
+  }
+  
+  res <- list()
+  for (child in children) {
+    child_name <- xml2::xml_name(child)
+    local_child_name <- gsub("^.*:", "", child_name)
+    
+    # dynamic parse
+    child_val <- deserialize(child, local_child_name, schema, factory)
+    
+    if (!local_child_name %in% names(res)) {
+      res[[local_child_name]] <- child_val
+    } else {
+      current <- res[[local_child_name]]
+      if (inherits(current, "soap_object") || is.atomic(current)) {
+         res[[local_child_name]] <- list(current, child_val)
+      } else {
+         res[[local_child_name]][[length(current) + 1]] <- child_val
+      }
+    }
+  }
+  
+  attrs <- xml2::xml_attrs(node)
+  if (length(attrs) > 0) {
+     attributes(res) <- c(attributes(res), as.list(attrs))
+  }
+  
+  if (!is.null(factory) && type_name %in% names(factory)) {
+    parsed <- tryCatch({
+      do.call(factory[[type_name]], res)
+    }, error = function(e) NULL)
+    
+    if (!is.null(parsed)) {
+       return(parsed)
+    }
+  }
+  
+  class(res) <- c("soap_object", "list")
+  attr(res, "soap_type") <- type_name
+  return(res)
+}
+
+deserialize <- function(node, type_name, schema, factory = NULL) {
   if (is.null(schema[[type_name]])) {
     # Check for built-in XSD types
-    val <- if (length(xml2::xml_children(node)) == 0) {
-      xml2::xml_text(node)
+    if (length(xml2::xml_children(node)) == 0) {
+      val <- xml2::xml_text(node)
+      return(convert_builtin_type(val, type_name))
     } else {
-      xml2::as_list(node)
+      return(deserialize_dynamic(node, type_name, schema, factory))
     }
-
-    return(convert_builtin_type(val, type_name))
   }
 
   type_def <- schema[[type_name]]
@@ -161,6 +239,14 @@ deserialize <- function(node, type_name, schema) {
       "xsd:string"
     }
     return(convert_builtin_type(val, base_type))
+  }
+
+  if (type_def$kind == "element") {
+    if (!is.null(type_def$type) && type_def$type != type_name && type_def$type != "") {
+      return(deserialize(node, type_def$type, schema, factory))
+    }
+    
+    return(deserialize_dynamic(node, type_name, schema, factory))
   }
 
   # Complex Type
@@ -197,7 +283,7 @@ deserialize <- function(node, type_name, schema) {
 
     # Deserialize children
     child_vals <- lapply(matching_children, function(child) {
-      deserialize(child, elem_def$type, schema)
+      deserialize(child, elem_def$type, schema, factory)
     })
 
     if (!is.na(elem_def$maxOccurs) && elem_def$maxOccurs == "unbounded") {
@@ -207,9 +293,46 @@ deserialize <- function(node, type_name, schema) {
     }
   }
 
+  if (!is.null(factory) && type_name %in% names(factory)) {
+    parsed <- tryCatch({
+      do.call(factory[[type_name]], obj)
+    }, error = function(e) NULL)
+    
+    if (!is.null(parsed)) {
+       return(parsed)
+    }
+  }
+
   class(obj) <- c("soap_object", "list")
   attr(obj, "soap_type") <- type_name
   attr(obj, "soap_attrs") <- names(type_def$attributes)
 
   return(obj)
+}
+
+is_xml_missing <- function(node) {
+  return(inherits(node, "xml_missing"))
+}
+
+check_soap_type <- function(obj, expected_type, arg_name) {
+  if (is.list(obj) && !inherits(obj, "soap_object")) {
+    for (i in seq_along(obj)) {
+      check_soap_type(obj[[i]], expected_type, sprintf("%s[[%d]]", arg_name, i))
+    }
+    return(invisible(TRUE))
+  }
+
+  if (is.atomic(obj) && length(obj) == 1 && is.na(obj)) {
+    return(invisible(TRUE))
+  }
+
+  if (!inherits(obj, "soap_object")) {
+    stop(sprintf("Argument '%s' must be an object of class 'soap_object', but got '%s'.", arg_name, class(obj)[1]), call. = FALSE)
+  }
+
+  actual_type <- attr(obj, "soap_type")
+  if (!identical(actual_type, expected_type)) {
+    stop(sprintf("Argument '%s' must be of SOAP type '%s', but got '%s'.", arg_name, expected_type, actual_type), call. = FALSE)
+  }
+  invisible(TRUE)
 }

@@ -18,14 +18,44 @@ Client <- R6::R6Class(
     transport = NULL,
     #' @field types Factory for creating complex types.
     types = NULL,
+    #' @field port_def The definition of the current port.
+    port_def = NULL,
+    #' @field service_name The name of the selected service.
+    service_name = NULL,
+    #' @field port_name The name of the selected port.
+    port_name = NULL,
 
     #' @description
     #' Initialize the client.
     #' @param url The service endpoint URL.
+    #' @param service The service name to use. defaults to the first available.
+    #' @param port The port name to use. defaults to the first available.
     #' @param config A list of httr configuration options.
     #' @param transport A custom transport function.
-    initialize = function(url = NULL, config = list(), transport = NULL) {
-      if (is.null(url)) url <- "{{{service_url}}}"
+    initialize = function(url = NULL, service = NULL, port = NULL, config = list(), transport = NULL) {
+      services_meta <- {{{services_meta}}}
+
+      # Select Service
+      if (is.null(service)) {
+        self$service_name <- names(services_meta)[1]
+      } else {
+        if (!service %in% names(services_meta)) stop("Service not found")
+        self$service_name <- service
+      }
+      
+      service_def <- services_meta[[self$service_name]]
+      
+      # Select Port
+      if (is.null(port)) {
+        self$port_name <- names(service_def$ports)[1]
+      } else {
+         if (!port %in% names(service_def$ports)) stop("Port not found")
+         self$port_name <- port
+      }
+      
+      self$port_def <- service_def$ports[[self$port_name]]
+
+      if (is.null(url)) url <- self$port_def$location
       self$url <- url
       self$handle <- httr::handle(url)
       self$config <- config
@@ -42,13 +72,16 @@ Client <- R6::R6Class(
     },
     {{#operations}}
 
-    #' @description Call the {{{name}}} operation.
-{{#args_doc}}
-    #' @param {{{.}}}
-{{/args_doc}}
+    #' @description {{{doc}}}
+    {{{param_docs_str}}}
     {{{name}}} = function({{{args}}}) {
       op_name <- "{{{name}}}"
-      action <- "{{{action}}}"
+      op_meta <- self$port_def$operations[[op_name]]
+      if (is.null(op_meta)) {
+          stop(sprintf("Operation '%s' is not supported by port '%s'", op_name, self$port_name))
+      }
+      action <- op_meta$action
+      
       {{#arg_validations}}
       {{{.}}}
       {{/arg_validations}}
@@ -101,7 +134,7 @@ Client <- R6::R6Class(
       local_name <- gsub("^.*:", "", response_name)
       schema <- get_schema()
       if (!is.null(schema[[local_name]])) {
-        deserialize(response_node, local_name, schema)
+        deserialize(response_node, local_name, schema, self$types)
       } else {
         content
       }
@@ -112,10 +145,12 @@ Client <- R6::R6Class(
 
 #' Create Client
 #' @param url The service endpoint URL. Defaults to the WSDL location.
+#' @param service The service name to use. Defaults to first available.
+#' @param port The port name to use. Defaults to first available. 
 #' @param config A list of httr configuration options (e.g., authentication).
 #' @param transport A custom transport function for mocking. Defaults to NULL.
 #' @return A Client object.
 #' @export
-new_client <- function(url = NULL, config = list(), transport = NULL) {
-  Client$new(url = url, config = config, transport = transport)
+new_client <- function(url = NULL, service = NULL, port = NULL, config = list(), transport = NULL) {
+  Client$new(url = url, service = service, port = port, config = config, transport = transport)
 }
