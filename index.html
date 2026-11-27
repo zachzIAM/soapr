@@ -81,130 +81,201 @@
 </h1></div>
 <!-- badges: start -->
 
-<p><strong>soapr</strong> is a modern, robust SOAP client generator for R. It bridges the gap between legacy SOAP services and modern R workflows by generating type-safe, object-oriented R packages from WSDL files.</p>
+<p><strong>soapr</strong> is a modern SOAP client and R package generator driven by WSDL definitions. Use it either to <strong>generate standalone, type-safe R packages</strong> from a WSDL file/URL or to <strong>interact dynamically</strong> with SOAP 1.1 and SOAP 1.2 web services at runtime.</p>
 <div class="section level2">
-<h2 id="sparkles-features">✨ Features<a class="anchor" aria-label="anchor" href="#sparkles-features"></a>
+<h2 id="features">Features<a class="anchor" aria-label="anchor" href="#features"></a>
 </h2>
 <ul>
-<li>📦 <strong>Static Client Generation</strong>: Generate full-fledged R packages with R6 classes, documentation, and dependencies.</li>
-<li>🚀 <strong>Dynamic Client</strong>: Interact with services on-the-fly for quick exploration.</li>
-<li>🛡️ <strong>Type Safety</strong>:
-<ul>
 <li>
-<strong>Complex Types</strong>: Auto-generated factories for complex objects.</li>
+<strong>Static Client Generation (<code>Generator</code>)</strong>: Generates standalone R packages (<code>httr</code>, <code>xml2</code>, <code>R6</code>, <code>bit64</code> only) with <code>Client</code> and <code>TypeFactory</code> R6 classes, Roxygen documentation, <code>NAMESPACE</code>, and <code>LICENSE</code>.</li>
 <li>
-<strong>Enums</strong>: <code>match.arg</code> validation and autocomplete for enumerated types.</li>
-</ul>
-</li>
-<li>🔒 <strong>WS-Security</strong>: Built-in support for UsernameToken authentication.</li>
-<li>🧪 <strong>Testing Ready</strong>: Easily mock network transports for robust testing.</li>
+<strong>Dynamic Runtime Client (<code>Service</code> / <code>Client</code>)</strong>: Connects to services directly from a WSDL path or URL for ad-hoc exploration and scripting.</li>
+<li>
+<strong>Comprehensive WSDL &amp; XSD Support (<code>WSDLParser</code>)</strong>: Parses multi-schema <code>&lt;wsdl:types&gt;</code>, resolves local and remote <code>&lt;xsd:import&gt;</code> / <code>&lt;xsd:include&gt;</code> chains with cycle protection, and supports recursive <code>&lt;xsd:complexContent&gt;</code> inheritance, <code>&lt;xsd:simpleContent&gt;</code>, <code>&lt;xsd:sequence&gt;</code> / <code>&lt;xsd:choice&gt;</code> / <code>&lt;xsd:all&gt;</code> compositors, and inline anonymous nested types.</li>
+<li>
+<strong>SOAP 1.1 &amp; SOAP 1.2 Protocol Parity</strong>: Automatically selects SOAP 1.1 (<code>http://schemas.xmlsoap.org/soap/envelope/</code>, <code>text/xml; charset=utf-8</code>, <code>SOAPAction</code>) or SOAP 1.2 (<code>http://www.w3.org/2003/05/soap-envelope</code>, <code>application/soap+xml; charset=utf-8; action="..."</code>) per port binding and parses SOAP 1.1 / 1.2 faults uniformly across dynamic and static clients.</li>
+<li>
+<strong>Type Safety &amp; XSD Conversion</strong>: Typed constructors, <code><a href="https://rdrr.io/r/base/match.arg.html" class="external-link">match.arg()</a></code> validation for enums, <code>xsd:date</code> (<code>Date</code>), UTC <code>xsd:dateTime</code> (<code>POSIXct</code> with timezone offset normalization), <code>xsd:long</code> (<code><a href="https://bit64.r-lib.org/reference/bit64-package.html" class="external-link">bit64::integer64</a></code>), <code>xsd:boolean</code>, and namespace-compliant <code>elementFormDefault</code> / <code>attributeFormDefault</code> serialization.</li>
+<li>
+<strong>WS-Security &amp; Mockable Transports</strong>: Built-in <code>WSSecurity</code> <code>UsernameToken</code> headers and injectable transport hooks for offline unit testing.</li>
+<li>
+<strong>Lean Dependency Footprint</strong>: Base-R and minimal XML/HTTP dependencies (<code>soapr</code> avoids data-frame/tabular tidyverse packages; generated packages require only <code>httr</code>, <code>xml2</code>, <code>R6</code>, and <code>bit64</code>).</li>
 </ul>
 </div>
 <div class="section level2">
-<h2 id="package-installation">📦 Installation<a class="anchor" aria-label="anchor" href="#package-installation"></a>
+<h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
-<p>You can install the development version of soapr from <a href="https://github.com/" class="external-link">GitHub</a> with:</p>
+<p>Install the development version of <code>soapr</code> from <a href="https://github.com/zachzIAM/soapr" class="external-link">GitHub</a> with:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># install.packages("devtools")</span></span>
 <span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"zachzIAM/soapr"</span>, build_vignettes <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 <blockquote>
-<p><strong>Note</strong>: <code>build_vignettes = TRUE</code> is required to view the vignettes locally.</p>
+<p><strong>Note</strong>: Pass <code>build_vignettes = TRUE</code> (with <code>pandoc</code> available) if you want to build and view vignettes locally.</p>
 </blockquote>
 </div>
 <div class="section level2">
-<h2 id="rocket-quick-start">🚀 Quick Start<a class="anchor" aria-label="anchor" href="#rocket-quick-start"></a>
+<h2 id="quick-start">Quick Start<a class="anchor" aria-label="anchor" href="#quick-start"></a>
 </h2>
 <div class="section level3">
-<h3 id="id_1-generate-a-client-package">1. Generate a Client Package<a class="anchor" aria-label="anchor" href="#id_1-generate-a-client-package"></a>
+<h3 id="id_1-static-client-package-recommended">1. Static Client Package (Recommended)<a class="anchor" aria-label="anchor" href="#id_1-static-client-package-recommended"></a>
 </h3>
-<p>The recommended way to use <code>soapr</code> is to generate a dedicated package for your service.</p>
+<p>Generate a dedicated, standalone R package for your SOAP service with custom package metadata:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/zachzIAM/soapr" class="external-link">soapr</a></span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># 1. Parse the WSDL</span></span>
 <span><span class="va">wsdl_url</span> <span class="op">&lt;-</span> <span class="st">"http://www.dneonline.com/calculator.asmx?WSDL"</span></span>
 <span><span class="va">wsdl</span> <span class="op">&lt;-</span> <span class="va"><a href="reference/WSDLParser.html">WSDLParser</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="va">wsdl_url</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># 2. Initialize the Generator</span></span>
 <span><span class="va">gen</span> <span class="op">&lt;-</span> <span class="va"><a href="reference/Generator.html">Generator</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="va">wsdl</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># 3. Generate the Package</span></span>
-<span><span class="co"># This creates a 'calculator' directory with a complete R package</span></span>
-<span><span class="va">gen</span><span class="op">$</span><span class="fu">generate_package</span><span class="op">(</span><span class="st">"."</span>, <span class="st">"calculator"</span><span class="op">)</span></span></code></pre></div>
-</div>
-<div class="section level3">
-<h3 id="id_2-use-the-generated-client">2. Use the Generated Client<a class="anchor" aria-label="anchor" href="#id_2-use-the-generated-client"></a>
-</h3>
-<p>Once installed, your client provides a clean, object-oriented API.</p>
+<span><span class="va">gen</span><span class="op">$</span><span class="fu">generate_package</span><span class="op">(</span></span>
+<span>  path <span class="op">=</span> <span class="st">"."</span>,</span>
+<span>  package_name <span class="op">=</span> <span class="st">"calculator"</span>,</span>
+<span>  author <span class="op">=</span> <span class="st">"Package Maintainer"</span>,</span>
+<span>  email <span class="op">=</span> <span class="st">"maintainer@example.com"</span>,</span>
+<span>  license_holder <span class="op">=</span> <span class="st">"Example Org"</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>Install or load the generated package and call operations directly:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Install and load your new package</span></span>
-<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">install</span><span class="op">(</span><span class="st">"calculator"</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">install</span><span class="op">(</span><span class="st">"calculator"</span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">calculator</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Initialize the client</span></span>
 <span><span class="va">client</span> <span class="op">&lt;-</span> <span class="fu">calculator</span><span class="fu">::</span><span class="fu">new_client</span><span class="op">(</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Call operations with autocomplete!</span></span>
-<span><span class="co"># client$Add(...)</span></span>
-<span><span class="va">result</span> <span class="op">&lt;-</span> <span class="va">client</span><span class="op">$</span><span class="fu">Add</span><span class="op">(</span>intA <span class="op">=</span> <span class="fl">5</span>, intB <span class="op">=</span> <span class="fl">10</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">result</span><span class="op">$</span><span class="va">AddResult</span><span class="op">)</span></span>
+<span><span class="va">result</span> <span class="op">&lt;-</span> <span class="va">client</span><span class="op">$</span><span class="fu">Add</span><span class="op">(</span>intA <span class="op">=</span> <span class="fl">5L</span>, intB <span class="op">=</span> <span class="fl">10L</span><span class="op">)</span></span>
+<span><span class="va">result</span><span class="op">$</span><span class="va">AddResult</span></span>
 <span><span class="co">#&gt; [1] 15</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="id_2-dynamic-runtime-client">2. Dynamic Runtime Client<a class="anchor" aria-label="anchor" href="#id_2-dynamic-runtime-client"></a>
+</h3>
+<p>Use <code>Service$new()</code> when you want to inspect and call a service without generating a package on disk:</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/zachzIAM/soapr" class="external-link">soapr</a></span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">svc</span> <span class="op">&lt;-</span> <span class="va"><a href="reference/Service.html">Service</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="st">"service.wsdl"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Create a typed input object from the schema</span></span>
+<span><span class="va">req</span> <span class="op">&lt;-</span> <span class="va">svc</span><span class="op">$</span><span class="va">factory</span><span class="op">$</span><span class="fu">create</span><span class="op">(</span><span class="st">"OrderRequest"</span>, Id <span class="op">=</span> <span class="fu">bit64</span><span class="fu">::</span><span class="fu"><a href="https://bit64.r-lib.org/reference/as.integer64.character.html" class="external-link">as.integer64</a></span><span class="op">(</span><span class="st">"9007199254740993"</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Invoke an operation</span></span>
+<span><span class="va">res</span> <span class="op">&lt;-</span> <span class="va">svc</span><span class="op">$</span><span class="va">client</span><span class="op">$</span><span class="fu">SubmitOrder</span><span class="op">(</span>Payload <span class="op">=</span> <span class="va">req</span><span class="op">)</span></span></code></pre></div>
+<p>For lower-level control, <code>Client$new(wsdl, port_def = ..., factory = ..., transport = ...)</code> accepts a pre-parsed <code>WSDLParser</code>, selected port definition, and custom transport function.</p>
 </div>
 </div>
 <div class="section level2">
-<h2 id="hammer_and_wrench-advanced-usage">🛠️ Advanced Usage<a class="anchor" aria-label="anchor" href="#hammer_and_wrench-advanced-usage"></a>
+<h2 id="protocol-schema--type-features">Protocol, Schema &amp; Type Features<a class="anchor" aria-label="anchor" href="#protocol-schema--type-features"></a>
 </h2>
 <div class="section level3">
-<h3 id="complex-types-type-factory">Complex Types (Type Factory)<a class="anchor" aria-label="anchor" href="#complex-types-type-factory"></a>
+<h3 id="multiple-services-ports--soap-11--12">Multiple Services, Ports &amp; SOAP 1.1 / 1.2<a class="anchor" aria-label="anchor" href="#multiple-services-ports--soap-11--12"></a>
 </h3>
-<p>Forget about manually constructing nested lists. Use the <strong>Type Factory</strong> to create complex objects with validation.</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Create a complex object using the factory</span></span>
-<span><span class="co"># client$types$Column(...)</span></span>
-<span><span class="va">col</span> <span class="op">&lt;-</span> <span class="va">client</span><span class="op">$</span><span class="va">types</span><span class="op">$</span><span class="fu">Column</span><span class="op">(</span></span>
-<span>  Name <span class="op">=</span> <span class="st">"ISIN"</span>, </span>
-<span>  Owner <span class="op">=</span> <span class="st">"SYSTEM"</span></span>
+<p>WSDLs that expose multiple services or both SOAP 1.1 and SOAP 1.2 ports can be targeted explicitly in both dynamic and static clients:</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Inspect discovered services, ports, and SOAP versions (1.1 vs 1.2)</span></span>
+<span><span class="va">parser</span> <span class="op">&lt;-</span> <span class="va"><a href="reference/WSDLParser.html">WSDLParser</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="st">"multiport.wsdl"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">parser</span><span class="op">$</span><span class="fu">get_services</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Dynamic client selecting service and port</span></span>
+<span><span class="va">svc12</span> <span class="op">&lt;-</span> <span class="va"><a href="reference/Service.html">Service</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span></span>
+<span>  <span class="st">"multiport.wsdl"</span>,</span>
+<span>  service_name <span class="op">=</span> <span class="st">"CountryInfoService"</span>,</span>
+<span>  port_name <span class="op">=</span> <span class="st">"CountryInfoServiceSoap12"</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Pass it to an operation</span></span>
-<span><span class="va">client</span><span class="op">$</span><span class="fu">GetPositionsReport</span><span class="op">(</span>Column <span class="op">=</span> <span class="va">col</span><span class="op">)</span></span></code></pre></div>
+<span><span class="co"># Generated static client selecting service and port</span></span>
+<span><span class="va">client12</span> <span class="op">&lt;-</span> <span class="fu">mypkg</span><span class="fu">::</span><span class="fu">new_client</span><span class="op">(</span></span>
+<span>  service <span class="op">=</span> <span class="st">"CountryInfoService"</span>,</span>
+<span>  port <span class="op">=</span> <span class="st">"CountryInfoServiceSoap12"</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>When using a SOAP 1.2 port, <code>soapr</code> automatically wraps payloads in the SOAP 1.2 envelope (<code>http://www.w3.org/2003/05/soap-envelope</code>) and sets <code>Content-Type: application/soap+xml; charset=utf-8; action="..."</code>.</p>
 </div>
 <div class="section level3">
-<h3 id="enumerations">Enumerations<a class="anchor" aria-label="anchor" href="#enumerations"></a>
+<h3 id="complex-types-enums-simplecontent-dates--qualified-schemas">Complex Types, Enums, <code>simpleContent</code>, Dates &amp; Qualified Schemas<a class="anchor" aria-label="anchor" href="#complex-types-enums-simplecontent-dates--qualified-schemas"></a>
 </h3>
-<p>Arguments with enumerated types are automatically validated and provide autocomplete.</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># 'ReportName' must be one of the allowed values</span></span>
-<span><span class="va">client</span><span class="op">$</span><span class="fu">GetReportColumnName</span><span class="op">(</span>ReportName <span class="op">=</span> <span class="st">"Positions"</span><span class="op">)</span></span></code></pre></div>
+<ul>
+<li>
+<strong>Complex types (<code>client$types</code> / <code>svc$factory$create</code>)</strong>: Create nested structures and XML attributes cleanly; generated constructors track <code>soap_type</code>, <code>soap_attrs</code>, and (for <code>&lt;xsd:simpleContent&gt;</code>) <code>soap_simple_content</code> (<code>value</code> text plus attributes).</li>
+<li>
+<strong>Enumerations</strong>: Simple type restrictions generate <code><a href="https://rdrr.io/r/base/match.arg.html" class="external-link">match.arg()</a></code> checks in static factories and runtime validation in <code>Client</code>.</li>
+<li>
+<strong>Dates &amp; DateTimes</strong>: <code>xsd:date</code> values parse to <code>Date</code>; <code>xsd:dateTime</code> values (including <code>Z</code> and numeric offsets such as <code>+02:00</code>) normalize to UTC <code>POSIXct</code>.</li>
+<li>
+<strong>Qualified Namespaces &amp; Attributes</strong>: Serializers respect per-WSDL <code>elementFormDefault</code> (<code>qualified</code> vs <code>unqualified</code>) and <code>attributeFormDefault</code> (<code>tns:</code> attribute qualification vs unqualified attributes).</li>
+</ul>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Static TypeFactory usage with attributes, enums, and dates</span></span>
+<span><span class="va">amount</span> <span class="op">&lt;-</span> <span class="va">client</span><span class="op">$</span><span class="va">types</span><span class="op">$</span><span class="fu">MoneyAmount</span><span class="op">(</span>currency <span class="op">=</span> <span class="st">"EUR"</span>, value <span class="op">=</span> <span class="fl">42.50</span><span class="op">)</span></span>
+<span><span class="va">order</span> <span class="op">&lt;-</span> <span class="va">client</span><span class="op">$</span><span class="va">types</span><span class="op">$</span><span class="fu">Order</span><span class="op">(</span></span>
+<span>  Priority <span class="op">=</span> <span class="st">"HIGH"</span>,</span>
+<span>  OrderDate <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.Date.html" class="external-link">as.Date</a></span><span class="op">(</span><span class="st">"2025-03-10"</span><span class="op">)</span>,</span>
+<span>  Amount <span class="op">=</span> <span class="va">amount</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">client</span><span class="op">$</span><span class="fu">CreateOrder</span><span class="op">(</span>Order <span class="op">=</span> <span class="va">order</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="authentication-ws-security">Authentication (WS-Security)<a class="anchor" aria-label="anchor" href="#authentication-ws-security"></a>
 </h3>
-<p>Add WS-Security headers easily.</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">header</span> <span class="op">&lt;-</span> <span class="va"><a href="reference/WSSecurity.html">WSSecurity</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="op">)</span><span class="op">$</span><span class="fu">username_token</span><span class="op">(</span>username <span class="op">=</span> <span class="st">"myuser"</span>, password <span class="op">=</span> <span class="st">"mypassword"</span><span class="op">)</span></span>
-<span><span class="va">client</span><span class="op">$</span><span class="fu">add_header</span><span class="op">(</span><span class="va">header</span><span class="op">)</span></span></code></pre></div>
+<p>Attach a <code>UsernameToken</code> SOAP header to either a dynamic client or a generated static client:</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">sec_header</span> <span class="op">&lt;-</span> <span class="va"><a href="reference/WSSecurity.html">WSSecurity</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="op">)</span><span class="op">$</span><span class="fu">username_token</span><span class="op">(</span></span>
+<span>  username <span class="op">=</span> <span class="st">"myuser"</span>,</span>
+<span>  password <span class="op">=</span> <span class="st">"mypassword"</span>,</span>
+<span>  password_type <span class="op">=</span> <span class="st">"PasswordText"</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">client</span><span class="op">$</span><span class="fu">add_header</span><span class="op">(</span><span class="va">sec_header</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
-<h3 id="mocking--testing">Mocking &amp; Testing<a class="anchor" aria-label="anchor" href="#mocking--testing"></a>
+<h3 id="mock-transport-testing">Mock Transport Testing<a class="anchor" aria-label="anchor" href="#mock-transport-testing"></a>
 </h3>
-<p>Inject a mock transport to test your code without hitting the real service.</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">mock_transport</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">url</span>, <span class="va">action</span>, <span class="va">body</span>, <span class="va">config</span>, <span class="va">handle</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>    status_code <span class="op">=</span> <span class="fl">200</span>, </span>
-<span>    content <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rawConversion.html" class="external-link">charToRaw</a></span><span class="op">(</span><span class="st">"&lt;response&gt;...&lt;/response&gt;"</span><span class="op">)</span>,</span>
-<span>    headers <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="st">"Content-Type"</span> <span class="op">=</span> <span class="st">"text/xml"</span><span class="op">)</span></span>
+<p>Inject custom transports in unit tests to inspect outgoing XML envelopes/headers and return mocked HTTP responses offline:</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">mock_httr_response</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">url</span>, <span class="va">xml_body</span>, <span class="va">ct</span> <span class="op">=</span> <span class="st">"text/xml; charset=utf-8"</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">headers</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>`Content-Type` <span class="op">=</span> <span class="va">ct</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/structure.html" class="external-link">structure</a></span><span class="op">(</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>      url <span class="op">=</span> <span class="va">url</span>,</span>
+<span>      status_code <span class="op">=</span> <span class="fl">200L</span>,</span>
+<span>      headers <span class="op">=</span> <span class="va">headers</span>,</span>
+<span>      all_headers <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>status <span class="op">=</span> <span class="fl">200L</span>, version <span class="op">=</span> <span class="st">"HTTP/1.1"</span>, headers <span class="op">=</span> <span class="va">headers</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>      content <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rawConversion.html" class="external-link">charToRaw</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Encoding.html" class="external-link">enc2utf8</a></span><span class="op">(</span><span class="va">xml_body</span><span class="op">)</span><span class="op">)</span></span>
+<span>    <span class="op">)</span>,</span>
+<span>    class <span class="op">=</span> <span class="st">"response"</span></span>
 <span>  <span class="op">)</span></span>
 <span><span class="op">}</span></span>
 <span></span>
-<span><span class="va">client</span> <span class="op">&lt;-</span> <span class="fu">calculator</span><span class="fu">::</span><span class="fu">new_client</span><span class="op">(</span>transport <span class="op">=</span> <span class="va">mock_transport</span><span class="op">)</span></span></code></pre></div>
+<span><span class="co"># Static client mock transport</span></span>
+<span><span class="va">stat_client</span> <span class="op">&lt;-</span> <span class="fu">mypkg</span><span class="fu">::</span><span class="fu">new_client</span><span class="op">(</span></span>
+<span>  transport <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">url</span>, <span class="va">action</span>, <span class="va">body</span>, <span class="va">config</span>, <span class="va">handle</span><span class="op">)</span> <span class="op">{</span></span>
+<span>    <span class="fu">mock_httr_response</span><span class="op">(</span><span class="va">url</span>, <span class="st">"&lt;soap:Envelope ...&gt;...&lt;/soap:Envelope&gt;"</span><span class="op">)</span></span>
+<span>  <span class="op">}</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Dynamic client mock transport</span></span>
+<span><span class="va">svc</span> <span class="op">&lt;-</span> <span class="va"><a href="reference/Service.html">Service</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="st">"service.wsdl"</span><span class="op">)</span></span>
+<span><span class="va">svc</span><span class="op">$</span><span class="va">client</span><span class="op">$</span><span class="va">transport</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">url</span>, <span class="va">handle</span>, <span class="va">body</span>, <span class="va">...</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="fu">mock_httr_response</span><span class="op">(</span><span class="va">url</span>, <span class="st">"&lt;soap:Envelope ...&gt;...&lt;/soap:Envelope&gt;"</span><span class="op">)</span></span>
+<span><span class="op">}</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level2">
-<h2 id="page_facing_up-license">📄 License<a class="anchor" aria-label="anchor" href="#page_facing_up-license"></a>
+<h2 id="documentation--contributing">Documentation &amp; Contributing<a class="anchor" aria-label="anchor" href="#documentation--contributing"></a>
 </h2>
-<p>MIT</p>
+<ul>
+<li>
+<strong>Package documentation site</strong>: <a href="https://zachziam.github.io/soapr/" class="external-link">https://zachziam.github.io/soapr/</a>
+</li>
+<li>
+<strong>Getting Started vignette</strong>: <a href="https://zachziam.github.io/soapr/articles/getting-started.html" class="external-link">Online article</a> | <a href="vignettes/getting-started.Rmd">vignettes/getting-started.Rmd</a>
+</li>
+<li>
+<strong>Release notes</strong>: <a href="NEWS.html">NEWS.md</a>
+</li>
+<li>
+<strong>Development workflow</strong>: See <a href="AGENTS.html">AGENTS.md</a> for branch naming, Conventional Commits, dynamic/static parity rules, and pre-PR checks (<code><a href="https://roxygen2.r-lib.org/reference/roxygenize.html" class="external-link">roxygen2::roxygenise()</a></code>, <code><a href="https://testthat.r-lib.org/reference/test_package.html" class="external-link">testthat::test_local()</a></code>, <code><a href="https://lintr.r-lib.org/reference/lint.html" class="external-link">lintr::lint_package()</a></code>, and <code><a href="http://r-lib.github.io/rcmdcheck/reference/rcmdcheck.html" class="external-link">rcmdcheck::rcmdcheck()</a></code>).</li>
+</ul>
+</div>
+<div class="section level2">
+<h2 id="license">License<a class="anchor" aria-label="anchor" href="#license"></a>
+</h2>
+<p>MIT (<a href="LICENSE">LICENSE</a>)</p>
 </div>
 </div>
   </div>
@@ -246,6 +317,9 @@
 <ul class="list-unstyled">
 <li><a href="https://lifecycle.r-lib.org/articles/stages.html#experimental" class="external-link"><img src="https://img.shields.io/badge/lifecycle-experimental-orange.svg" alt="Lifecycle: experimental"></a></li>
 <li><a href="https://github.com/zachzIAM/soapr/actions/workflows/check.yaml" class="external-link"><img src="https://github.com/zachzIAM/soapr/actions/workflows/check.yaml/badge.svg" alt="R-CMD-check"></a></li>
+<li><a href="https://github.com/zachzIAM/soapr/actions/workflows/lint.yaml" class="external-link"><img src="https://github.com/zachzIAM/soapr/actions/workflows/lint.yaml/badge.svg" alt="lint"></a></li>
+<li><a href="https://github.com/zachzIAM/soapr/releases" class="external-link"><img src="https://img.shields.io/github/v/release/zachzIAM/soapr" alt="GitHub release"></a></li>
+<li><a href="https://zachziam.github.io/soapr/" class="external-link"><img src="https://img.shields.io/badge/docs-pkgdown-blue.svg" alt="pkgdown"></a></li>
 </ul>
 </div>
 
