@@ -111,7 +111,11 @@ Generator <- R6::R6Class(
     #' Write the utils.R file.
     #' @param path The package directory path.
     write_utils = function(path) {
-      view <- list(element_form_default = self$wsdl$element_form_default)
+      view <- list(
+        element_form_default = self$wsdl$element_form_default,
+        attribute_form_default = self$wsdl$attribute_form_default,
+        target_namespace = self$wsdl$get_target_namespace()
+      )
       template <- private$read_template("utils.R")
       content <- whisker::whisker.render(template, view)
       writeLines(content, file.path(path, "R", "utils.R"))
@@ -211,7 +215,8 @@ Generator <- R6::R6Class(
       # ... (logic from before) ...
 
       process_attribute <- function(attr) {
-        default_val <- if (attr$use == "optional") "NA" else "NA" # For now, strict types handle required
+        # Strict types handle required checks; parameters default to NA when omitted.
+        default_val <- "NA"
         doc_text <- attr$documentation %||% paste("Attribute", attr$name)
         param_doc <- paste(attr$name, doc_text)
 

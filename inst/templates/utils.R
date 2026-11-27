@@ -1,4 +1,38 @@
-build_xml_node <- function(parent, name, value) {
+get_active_default_ns <- function(node) {
+  cur <- node
+  while (inherits(cur, "xml_node") && xml2::xml_type(cur) == "element") {
+    ns_attr <- xml2::xml_attr(cur, "xmlns")
+    if (!is.na(ns_attr)) {
+      return(ns_attr)
+    }
+    cur <- xml2::xml_parent(cur)
+  }
+  ""
+}
+
+add_namespaced_child <- function(parent, name, node_ns, text = NULL) {
+  parent_ns <- get_active_default_ns(parent)
+  needs_xmlns <- !is.null(node_ns) && !identical(node_ns, parent_ns)
+
+  if (is.null(text)) {
+    if (needs_xmlns && nzchar(node_ns)) {
+      return(xml2::xml_add_child(parent, name, xmlns = node_ns))
+    }
+    node <- xml2::xml_add_child(parent, name)
+  } else {
+    if (needs_xmlns && nzchar(node_ns)) {
+      return(xml2::xml_add_child(parent, name, text, xmlns = node_ns))
+    }
+    node <- xml2::xml_add_child(parent, name, text)
+  }
+
+  if (needs_xmlns && identical(node_ns, "")) {
+    xml2::xml_attr(node, "xmlns") <- ""
+  }
+  node
+}
+
+build_xml_node <- function(parent, name, value, ns = NULL) {
   if (
     is.null(value) ||
       (is.atomic(value) && length(value) == 1 && is.na(value))
@@ -6,52 +40,59 @@ build_xml_node <- function(parent, name, value) {
     return()
   }
 
-  # Handle lists (maxOccurs="unbounded")
-  if (is.list(value) && is.null(names(value))) {
+  # Handle unnamed lists (maxOccurs="unbounded")
+  if (
+    is.list(value) &&
+      !inherits(value, "soap_object") &&
+      (is.null(names(value)) || all(names(value) == ""))
+  ) {
     for (item in value) {
-      build_xml_node(parent, name, item)
+      build_xml_node(parent, name, item, ns = ns)
     }
     return()
   }
 
-  # Create node
-  # Create node
-  # Handle namespaces based on elementFormDefault
+  # Handle namespaces based on elementFormDefault and attributeFormDefault
   element_form_default <- "{{{element_form_default}}}"
+  attribute_form_default <- "{{{attribute_form_default}}}"
+  target_namespace <- "{{{target_namespace}}}"
 
-  if (element_form_default == "qualified") {
-    node_name <- if (grepl(":", name)) name else paste0("tns:", name)
-    child <- xml2::xml_add_child(parent, node_name)
-  } else {
-    # Unqualified
-    # If parent has a default namespace, we must explicitly unset it for the child
-    # to ensure it is in no namespace.
-    node_name <- name
-    child <- xml2::xml_add_child(parent, node_name)
-
-    # Check if parent has default namespace
-    parent_ns <- xml2::xml_attr(parent, "xmlns")
-    if (!is.na(parent_ns) && parent_ns != "") {
-      xml2::xml_attr(child, "xmlns") <- ""
+  node_ns <- ns
+  if (is.null(node_ns)) {
+    if (identical(element_form_default, "qualified")) {
+      node_ns <- if (nzchar(target_namespace)) target_namespace else NULL
+    } else {
+      node_ns <- ""
     }
   }
 
   if (is.list(value)) {
+    child <- add_namespaced_child(parent, name, node_ns)
     soap_attrs <- attr(value, "soap_attrs")
 
-    for (key in names(value)) {
-      val <- value[[key]]
-      if (!is.null(soap_attrs) && key %in% soap_attrs) {
-        if (!is.null(val) && !is.na(val)) {
-          xml2::xml_set_attr(child, key, as.character(val))
+    if (!is.null(soap_attrs)) {
+      for (attr_name in soap_attrs) {
+        val <- value[[attr_name]]
+        if (!is.null(val) && length(val) > 0 && !is.na(val[[1]])) {
+          attr_str <- if (is.logical(val)) tolower(as.character(val)) else as.character(val)
+          full_attr_name <- if (identical(attribute_form_default, "qualified")) {
+            paste0("tns:", attr_name)
+          } else {
+            attr_name
+          }
+          xml2::xml_attr(child, full_attr_name) <- attr_str
         }
-      } else {
-        build_xml_node(child, key, val)
+      }
+    }
+
+    for (key in names(value)) {
+      if (!key %in% soap_attrs) {
+        build_xml_node(child, key, value[[key]])
       }
     }
   } else {
     val_str <- if (is.logical(value)) tolower(as.character(value)) else as.character(value)
-    xml2::xml_set_text(child, val_str)
+    add_namespaced_child(parent, name, node_ns, text = val_str)
   }
 }
 
