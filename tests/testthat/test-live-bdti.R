@@ -1,8 +1,7 @@
 library(testthat)
 
-skip_on_ci()
-
 test_that("BDTi Service can be created and methods exist", {
+  skip_if_not_live()
 
   service <- Service$new("https://www.barraone.com/bdti/BDTInteractive?wsdl")
 

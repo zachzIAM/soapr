@@ -1,8 +1,8 @@
 library(testthat)
 library(soapr)
-skip_on_ci()
 
 test_that("Static Client Generator works with Live Services", {
+  skip_if_not_live()
   services <- list(
     list(
       name = "CalculatorClient",

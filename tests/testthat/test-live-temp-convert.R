@@ -1,8 +1,8 @@
 library(testthat)
 library(soapr)
-skip_on_ci()
 
 test_that("Temperature Conversion Service Integration", {
+  skip_if_not_live()
   wsdl_path <- "https://www.w3schools.com/xml/tempconvert.asmx?WSDL"
 
   service <- Service$new(wsdl_path)
