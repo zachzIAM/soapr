@@ -254,11 +254,7 @@ Client <- R6::R6Class(
 
       # Parse Response
       content <- self$serializer$deserialize_response(response)
-      if (!inherits(content, "xml_node")) {
-        return(NULL)
-      }
-
-      if (self$verbose) {
+      if (self$verbose && inherits(content, "xml_node")) {
         cat("Response XML:\n")
         print(content)
       }
